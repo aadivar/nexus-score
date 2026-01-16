@@ -197,12 +197,12 @@ function calculateScore(member: CrossrefMember): {
       access * WEIGHTS.access) / 100
   );
 
-  // Determine grade
+  // Determine grade (aligned with core library GRADE_THRESHOLDS)
   let grade: string;
   if (total >= 80) grade = 'A';
-  else if (total >= 60) grade = 'B';
-  else if (total >= 40) grade = 'C';
-  else if (total >= 20) grade = 'D';
+  else if (total >= 65) grade = 'B';
+  else if (total >= 50) grade = 'C';
+  else if (total >= 35) grade = 'D';
   else grade = 'F';
 
   return {
