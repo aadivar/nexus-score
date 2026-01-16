@@ -1,7 +1,7 @@
 {
   "name": "@nexus-score/mcp-server",
   "version": "1.0.0",
-  "description": "MCP server for Crossref metadata quality scoring",
+  "description": "MCP server for Crossref metadata coverage scoring",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

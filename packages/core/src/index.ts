@@ -1,6 +1,6 @@
 /**
  * @nexus-score/core
- * Core library for Crossref metadata quality scoring
+ * Core library for Crossref metadata coverage scoring
  */
 
 // Crossref API client and types

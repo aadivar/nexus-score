@@ -2,7 +2,7 @@
 
 /**
  * Nexus Score MCP Server
- * Provides Crossref metadata quality scoring tools for AI assistants
+ * Provides Crossref metadata coverage scoring tools for AI assistants
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -325,11 +325,11 @@ Content availability and discoverability.
 ${METRICS_BY_DIMENSION.access.map((m) => `- ${m.name}: ${m.weight} points`).join('\n')}
 
 ## Grades
-- **A** (80-100): Excellent metadata quality
+- **A** (80-100): Excellent metadata coverage
 - **B** (65-79): Good, with room for improvement
 - **C** (50-64): Adequate, significant gaps
 - **D** (35-49): Needs substantial work
-- **F** (0-34): Poor metadata quality
+- **F** (0-34): Poor metadata coverage
 
 ## Data Source
 Scores use pre-computed coverage statistics from the Crossref /members API endpoint, updated daily.

@@ -5,7 +5,7 @@ import { LeaderboardTable } from '@/components/leaderboard-table';
 
 export const metadata: Metadata = {
   title: 'Leaderboard - Research Nexus Score',
-  description: 'See which publishers have the best metadata quality scores.',
+  description: 'See which publishers have the best metadata coverage scores.',
 };
 
 // Revalidate every hour (but data comes from static file)
@@ -116,7 +116,7 @@ export default function LeaderboardPage() {
             Nexus Score Leaderboard
           </h1>
           <p className="mt-2 text-gray-600">
-            All publishers ranked by metadata quality score
+            All publishers ranked by metadata coverage score
           </p>
           <p className="mt-1 text-sm text-gray-500">
             Ranking <span className="font-semibold text-blue-600">{totalWithWorks.toLocaleString()}</span> publishers out of{' '}

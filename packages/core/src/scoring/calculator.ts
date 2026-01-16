@@ -1,6 +1,6 @@
 /**
  * Nexus Score Calculator
- * Calculates metadata quality scores from Crossref member/journal data
+ * Calculates metadata coverage scores from Crossref member/journal data
  */
 
 import type { CrossrefMember, CrossrefJournal, MemberCoverage } from '../crossref/types.js';

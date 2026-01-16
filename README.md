@@ -21,13 +21,13 @@
 
 ---
 
-Research Nexus Score evaluates metadata quality across five dimensions — **Provenance**, **People**, **Organizations**, **Funding**, and **Access** — giving publishers a composite score (0-100) with actionable recommendations for improvement.
+Research Nexus Score evaluates metadata coverage across five dimensions — **Provenance**, **People**, **Organizations**, **Funding**, and **Access** — giving publishers a composite score (0-100) with actionable recommendations for improvement.
 
 Built to support [Crossref's Research Nexus](https://www.crossref.org/documentation/research-nexus/) initiative and aligned with the [Barcelona Declaration on Open Research Information](https://barcelona-declaration.org/).
 
 ## Features
 
-- **Publisher Leaderboard**: Rankings for 27,830+ publishers based on metadata quality
+- **Publisher Leaderboard**: Rankings for 27,830+ publishers based on metadata coverage
 - **Composite Scoring**: Single score (0-100) that captures overall metadata contribution
 - **Dimension Breakdown**: Identify strengths and weaknesses across 5 key areas
 - **Trend Analysis**: Compare current metadata practices vs historical (backfile)
@@ -99,11 +99,11 @@ console.log(score.recommendations[0].title);     // 'Increase ORCID Coverage'
 
 | Grade | Score Range | Description |
 |-------|-------------|-------------|
-| **A** | 80-100 | Excellent metadata quality with comprehensive coverage |
-| **B** | 60-79 | Good quality with room for improvement |
-| **C** | 40-59 | Adequate quality but with significant gaps |
+| **A** | 80-100 | Excellent metadata coverage |
+| **B** | 60-79 | Good coverage with room for improvement |
+| **C** | 40-59 | Adequate coverage but with significant gaps |
 | **D** | 20-39 | Needs substantial work across multiple dimensions |
-| **F** | 0-19 | Poor metadata quality requiring immediate attention |
+| **F** | 0-19 | Poor metadata coverage requiring attention |
 
 ### Data Source
 
@@ -214,7 +214,7 @@ Research Nexus Score provides:
 
 Research Nexus Score supports the [Barcelona Declaration on Open Research Information](https://barcelona-declaration.org/) by:
 
-- Making metadata quality visible and comparable
+- Making metadata coverage visible and comparable
 - Encouraging adoption of persistent identifiers (ORCID, ROR)
 - Promoting transparency in funding acknowledgements
 - Supporting FAIR principles for metadata

@@ -3,7 +3,7 @@ import { DIMENSION_WEIGHTS, METRICS_BY_DIMENSION, GRADE_THRESHOLDS } from '@nexu
 
 export const metadata: Metadata = {
   title: 'Methodology - Research Nexus Score',
-  description: 'Learn how Research Nexus Score calculates metadata quality scores based on Crossref data.',
+  description: 'Learn how Research Nexus Score calculates metadata coverage scores based on Crossref data.',
 };
 
 export default function AboutPage() {
@@ -114,7 +114,7 @@ export default function AboutPage() {
                   </td>
                   <td className="px-6 py-4 text-gray-900">{GRADE_THRESHOLDS.A}-100</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Excellent metadata quality with comprehensive coverage
+                    Excellent metadata coverage with comprehensive coverage
                   </td>
                 </tr>
                 <tr>
@@ -125,7 +125,7 @@ export default function AboutPage() {
                     {GRADE_THRESHOLDS.B}-{GRADE_THRESHOLDS.A - 1}
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    Good quality with room for improvement in some areas
+                    Good coverage with room for improvement in some areas
                   </td>
                 </tr>
                 <tr>
@@ -136,7 +136,7 @@ export default function AboutPage() {
                     {GRADE_THRESHOLDS.C}-{GRADE_THRESHOLDS.B - 1}
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    Adequate quality but with significant gaps
+                    Adequate coverage but with significant gaps
                   </td>
                 </tr>
                 <tr>
@@ -156,7 +156,7 @@ export default function AboutPage() {
                   </td>
                   <td className="px-6 py-4 text-gray-900">0-{GRADE_THRESHOLDS.D - 1}</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Poor metadata quality requiring immediate attention
+                    Poor metadata coverage requiring immediate attention
                   </td>
                 </tr>
               </tbody>
@@ -206,7 +206,7 @@ export default function AboutPage() {
             supports this vision by:
           </p>
           <ul className="mt-4 list-inside list-disc space-y-2 text-gray-600">
-            <li>Making metadata quality visible and comparable</li>
+            <li>Making metadata coverage visible and comparable</li>
             <li>Encouraging adoption of persistent identifiers (ORCID, ROR)</li>
             <li>Promoting transparency in funding acknowledgements</li>
             <li>Supporting FAIR principles for metadata</li>

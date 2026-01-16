@@ -1,6 +1,6 @@
 /**
  * Recommendation Templates
- * Actionable suggestions for improving metadata quality
+ * Actionable suggestions for improving metadata coverage
  */
 
 import type { DimensionName, Priority } from '../scoring/types.js';

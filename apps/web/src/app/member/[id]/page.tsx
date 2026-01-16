@@ -223,10 +223,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${score.metadata.entityName} - Research Nexus Score`,
-    description: `Research Nexus Score: ${score.total}/100 (Grade ${score.grade}). View metadata quality breakdown and recommendations.`,
+    description: `Research Nexus Score: ${score.total}/100 (Grade ${score.grade}). View metadata coverage breakdown and recommendations.`,
     openGraph: {
       title: `${score.metadata.entityName} - Research Nexus Score: ${score.total}`,
-      description: `Grade ${score.grade} - View metadata quality breakdown and improvement recommendations.`,
+      description: `Grade ${score.grade} - View metadata coverage breakdown and improvement recommendations.`,
     },
   };
 }

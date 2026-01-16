@@ -9,11 +9,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Research Nexus Score - Crossref Metadata Quality',
+  title: 'Research Nexus Score - Crossref Metadata Coverage',
   description:
     'Measure how well your metadata contributes to the Research Nexus. Get scores, recommendations, and comparisons for Crossref members.',
   openGraph: {
-    title: 'Research Nexus Score - Crossref Metadata Quality',
+    title: 'Research Nexus Score - Crossref Metadata Coverage',
     description: 'Measure how well your metadata contributes to the Research Nexus.',
     type: 'website',
   },

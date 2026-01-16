@@ -23,7 +23,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">2. Description of Service</h2>
             <p className="mt-3">
-              Research Nexus Score is a free, open-source tool that evaluates metadata quality for Crossref members. The Service provides:
+              Research Nexus Score is a free, open-source tool that evaluates metadata coverage for Crossref members. The Service provides:
             </p>
             <ul className="mt-3 list-inside list-disc space-y-1">
               <li>Metadata quality scores based on Crossref API data</li>

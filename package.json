@@ -2,7 +2,7 @@
   "name": "nexus-score",
   "version": "1.0.0",
   "private": true,
-  "description": "Crossref metadata quality scoring tool",
+  "description": "Crossref metadata coverage scoring tool",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",

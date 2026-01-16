@@ -307,7 +307,7 @@ export default function HomePage() {
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-gray-600">
             Nexus Score supports the open research information movement by making
-            metadata quality visible, measurable, and improvable. Better metadata means
+            metadata coverage visible, measurable, and improvable. Better metadata means
             better connections across the scholarly ecosystem.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">

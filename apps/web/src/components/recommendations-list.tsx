@@ -45,7 +45,7 @@ export function RecommendationsList({
       <div className={cn('rounded-xl border bg-white p-6 shadow-sm', className)}>
         <h3 className="text-lg font-semibold text-gray-900">Recommendations</h3>
         <p className="mt-4 text-gray-500">
-          Great job! No recommendations at this time - metadata quality is excellent.
+          Great job! No recommendations at this time - metadata coverage is excellent.
         </p>
       </div>
     );

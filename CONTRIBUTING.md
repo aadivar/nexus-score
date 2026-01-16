@@ -1,6 +1,6 @@
 # Contributing to Research Nexus Score
 
-Thank you for your interest in contributing to Research Nexus Score! This project aims to improve metadata quality across the scholarly communication ecosystem, and we welcome contributions of all kinds.
+Thank you for your interest in contributing to Research Nexus Score! This project aims to improve metadata coverage across the scholarly communication ecosystem, and we welcome contributions of all kinds.
 
 ## Table of Contents
 
@@ -266,7 +266,7 @@ We love feature suggestions! Please create an issue with:
 If you want to propose changes to the scoring methodology:
 
 1. **Research**: Understand the current methodology in `packages/core/src/scoring/`
-2. **Justify**: Explain why the change improves metadata quality measurement
+2. **Justify**: Explain why the change improves metadata coverage measurement
 3. **Document**: Update the methodology documentation
 4. **Implement**: Make the code changes
 5. **Analyze**: Show impact on existing scores (sample publishers)
@@ -279,4 +279,4 @@ If you want to propose changes to the scoring methodology:
 
 ---
 
-Thank you for contributing to Research Nexus Score and helping improve scholarly metadata quality!
+Thank you for contributing to Research Nexus Score and helping improve scholarly metadata coverage!

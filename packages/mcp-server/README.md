@@ -1,6 +1,6 @@
 # @nexus-score/mcp-server
 
-MCP (Model Context Protocol) server for Crossref metadata quality scoring. Use with Claude Desktop or any MCP-compatible AI assistant.
+MCP (Model Context Protocol) server for Crossref metadata coverage scoring. Use with Claude Desktop or any MCP-compatible AI assistant.
 
 ## Installation
 
@@ -63,14 +63,14 @@ Get the Nexus Score for a specific journal by ISSN.
 Compare scores between multiple publishers.
 
 ```
-"Compare metadata quality between Elsevier, Springer, and Wiley"
+"Compare metadata coverage between Elsevier, Springer, and Wiley"
 ```
 
 ### get_recommendations
 Get improvement recommendations for a publisher.
 
 ```
-"What can PLOS do to improve their metadata quality?"
+"What can PLOS do to improve their metadata coverage?"
 ```
 
 ## Resources
@@ -89,7 +89,7 @@ Access the scoring methodology documentation.
 ## Example Queries
 
 1. "What's the Nexus Score for Springer Nature?"
-2. "Compare metadata quality between major academic publishers"
+2. "Compare metadata coverage between major academic publishers"
 3. "Which publishers have the best ORCID coverage?"
 4. "How can Cambridge University Press improve their metadata?"
 5. "What does each dimension of the Nexus Score measure?"
