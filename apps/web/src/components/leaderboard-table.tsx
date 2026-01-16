@@ -59,12 +59,16 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [viewMode, setViewMode] = useState<ViewMode>('overall');
 
-  // Check if improvement data is available (non-null values exist)
-  const hasImprovementData = leaderboard.some(e => e.improvement !== undefined && e.improvement !== null);
+  // Check if improvement data is available (non-null values with meaningful backfile scores)
+  const hasImprovementData = leaderboard.some(e =>
+    e.improvement !== undefined && e.improvement !== null && e.backfileScore && e.backfileScore > 0
+  );
 
-  // Count publishers with valid improvement data (has backfile)
+  // Count publishers with valid improvement data (has meaningful backfile coverage)
   const publishersWithBackfile = useMemo(() =>
-    leaderboard.filter(e => e.improvement !== undefined && e.improvement !== null).length,
+    leaderboard.filter(e =>
+      e.improvement !== undefined && e.improvement !== null && e.backfileScore && e.backfileScore > 0
+    ).length,
     [leaderboard]
   );
 
@@ -72,9 +76,11 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
   const filteredLeaderboard = useMemo(() => {
     let filtered = leaderboard;
 
-    // In progress view, only show publishers with backfile data
+    // In progress view, only show publishers with meaningful backfile data (score > 0)
     if (viewMode === 'progress') {
-      filtered = filtered.filter((entry) => entry.improvement !== undefined && entry.improvement !== null);
+      filtered = filtered.filter((entry) =>
+        entry.improvement !== undefined && entry.improvement !== null && entry.backfileScore && entry.backfileScore > 0
+      );
     }
 
     if (searchQuery.trim()) {
