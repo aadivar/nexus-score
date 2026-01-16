@@ -10,6 +10,7 @@ interface LeaderboardEntry {
   rank: number;
   id: number;
   name: string;
+  location?: string;
   score: number;
   grade: string;
   totalWorks: number;
@@ -343,6 +344,9 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
                     >
                       {entry.name}
                     </Link>
+                    {entry.location && (
+                      <p className="mt-0.5 text-xs text-gray-500">{entry.location}</p>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-center">
                     <span className="text-lg font-bold text-gray-900">

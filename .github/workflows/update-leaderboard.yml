@@ -1,0 +1,56 @@
+name: Update Leaderboard
+
+on:
+  # Run biweekly - every other Monday at 6 AM UTC
+  schedule:
+    - cron: '0 6 1,15 * *'  # 1st and 15th of each month at 6 AM UTC
+
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  update-leaderboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build core package
+        run: pnpm --filter @nexus-score/core build
+
+      - name: Generate leaderboard
+        run: pnpm tsx apps/web/scripts/generate-leaderboard.ts
+        env:
+          CROSSREF_MAILTO: ${{ secrets.CROSSREF_MAILTO || 'varma2friend@gmail.com' }}
+
+      - name: Check for changes
+        id: git-check
+        run: |
+          git diff --exit-code apps/web/data/leaderboard.json || echo "changed=true" >> $GITHUB_OUTPUT
+
+      - name: Commit and push changes
+        if: steps.git-check.outputs.changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add apps/web/data/leaderboard.json
+          git commit -m "chore: update leaderboard data $(date +'%Y-%m-%d')"
+          git push

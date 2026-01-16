@@ -219,7 +219,7 @@ export default function AboutPage() {
           <p className="mt-2 text-gray-600">
             Research Nexus Score is open source. View the code, report issues, or contribute on{' '}
             <a
-              href="https://github.com/yourusername/nexus-score"
+              href="https://github.com/aadivar/nexus-score"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 hover:underline"

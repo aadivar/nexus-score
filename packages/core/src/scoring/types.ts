@@ -102,6 +102,8 @@ export interface ScoreMetadata {
   entityType: 'member' | 'journal';
   /** Display name */
   entityName: string;
+  /** Location (city, region, country) */
+  location?: string;
   /** When score was calculated */
   calculatedAt: string;
   /** Total DOI count */

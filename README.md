@@ -186,10 +186,12 @@ The leaderboard data is pre-computed from all 31,000+ Crossref members:
 
 ```bash
 cd apps/web
-pnpm tsx scripts/generate-leaderboard.ts
+pnpm generate-leaderboard
 ```
 
 This fetches all members, calculates scores, and saves to `data/leaderboard.json`.
+
+**Automated Updates**: A GitHub Actions workflow runs biweekly (1st and 15th of each month) to automatically update the leaderboard data. You can also trigger it manually from the Actions tab.
 
 ## Why Research Nexus Score?
 

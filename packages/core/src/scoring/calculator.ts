@@ -55,6 +55,7 @@ export function calculateMemberScore(member: CrossrefMember): NexusScore {
       entityId: member.id,
       entityType: 'member',
       entityName: member['primary-name'],
+      location: member.location,
       calculatedAt: new Date().toISOString(),
       totalWorks: member.counts['total-dois'],
       currentWorks: member.counts['current-dois'],

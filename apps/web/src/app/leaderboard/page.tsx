@@ -15,6 +15,7 @@ interface LeaderboardEntry {
   rank: number;
   id: number;
   name: string;
+  location?: string;
   score: number;
   grade: string;
   totalWorks: number;
@@ -46,6 +47,21 @@ function getLeaderboardData(): LeaderboardData | null {
     return JSON.parse(content) as LeaderboardData;
   } catch {
     return null;
+  }
+}
+
+function getNextUpdateDate(fromDate: Date): Date {
+  const year = fromDate.getFullYear();
+  const month = fromDate.getMonth();
+  const day = fromDate.getDate();
+
+  // Updates happen on 1st and 15th of each month
+  if (day < 15) {
+    // Next update is 15th of current month
+    return new Date(year, month, 15);
+  } else {
+    // Next update is 1st of next month
+    return new Date(year, month + 1, 1);
   }
 }
 
@@ -139,7 +155,7 @@ export default function LeaderboardPage() {
         </div>
 
         {/* Stats */}
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
             <p className="text-sm text-gray-500">Publishers Ranked</p>
             <p className="text-2xl font-bold text-gray-900">
@@ -166,7 +182,13 @@ export default function LeaderboardPage() {
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
             <p className="text-sm text-gray-500">Last Updated</p>
             <p className="text-lg font-medium text-gray-900">
-              {new Date(generatedAt).toLocaleDateString()}
+              {new Date(generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+          </div>
+          <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
+            <p className="text-sm text-gray-500">Next Update</p>
+            <p className="text-lg font-medium text-blue-600">
+              {getNextUpdateDate(new Date()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
         </div>
@@ -225,7 +247,8 @@ export default function LeaderboardPage() {
 
         {/* Footer note */}
         <p className="mt-6 text-center text-sm text-gray-500">
-          Data generated on {new Date(generatedAt).toLocaleString()}.
+          Data updated on {new Date(generatedAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+          Rankings refresh biweekly (1st and 15th of each month).
         </p>
       </div>
     </div>

@@ -1,0 +1,115 @@
+import { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Terms of Service - Research Nexus Score',
+  description: 'Terms of Service for Research Nexus Score.',
+};
+
+export default function TermsPage() {
+  return (
+    <div className="min-h-screen py-12">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+        <h1 className="text-3xl font-bold text-gray-900">Terms of Service</h1>
+        <p className="mt-2 text-sm text-gray-500">Last updated: January 2026</p>
+
+        <div className="mt-8 space-y-8 text-gray-600">
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">1. Acceptance of Terms</h2>
+            <p className="mt-3">
+              By accessing and using Research Nexus Score (&quot;the Service&quot;), you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">2. Description of Service</h2>
+            <p className="mt-3">
+              Research Nexus Score is a free, open-source tool that evaluates metadata quality for Crossref members. The Service provides:
+            </p>
+            <ul className="mt-3 list-inside list-disc space-y-1">
+              <li>Metadata quality scores based on Crossref API data</li>
+              <li>Publisher rankings and leaderboards</li>
+              <li>Recommendations for metadata improvement</li>
+              <li>Educational resources about the Research Nexus</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">3. Data Source</h2>
+            <p className="mt-3">
+              All scoring data is derived from the publicly available Crossref REST API. Research Nexus Score is not affiliated with, endorsed by, or officially connected to Crossref. The scores and rankings are calculated independently using Crossref&apos;s public metadata coverage statistics.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">4. No Warranty</h2>
+            <p className="mt-3">
+              The Service is provided &quot;as is&quot; without warranty of any kind, express or implied. We do not guarantee:
+            </p>
+            <ul className="mt-3 list-inside list-disc space-y-1">
+              <li>The accuracy, completeness, or timeliness of scores</li>
+              <li>Uninterrupted or error-free operation</li>
+              <li>That the Service will meet your specific requirements</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">5. Limitation of Liability</h2>
+            <p className="mt-3">
+              In no event shall Research Nexus Score, its creator, or contributors be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">6. Acceptable Use</h2>
+            <p className="mt-3">
+              You agree not to:
+            </p>
+            <ul className="mt-3 list-inside list-disc space-y-1">
+              <li>Use the Service for any unlawful purpose</li>
+              <li>Attempt to interfere with the proper operation of the Service</li>
+              <li>Scrape or harvest data in a manner that impacts Service availability</li>
+              <li>Misrepresent scores or rankings in misleading ways</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">7. Open Source</h2>
+            <p className="mt-3">
+              Research Nexus Score is open-source software licensed under the MIT License. You are free to use, modify, and distribute the code in accordance with the license terms. See our{' '}
+              <a
+                href="https://github.com/aadivar/nexus-score"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                GitHub repository
+              </a>{' '}
+              for details.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">8. Changes to Terms</h2>
+            <p className="mt-3">
+              We reserve the right to modify these terms at any time. Continued use of the Service after changes constitutes acceptance of the new terms.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">9. Contact</h2>
+            <p className="mt-3">
+              For questions about these Terms, please contact{' '}
+              <a
+                href="mailto:varma2friend@gmail.com"
+                className="text-blue-600 hover:underline"
+              >
+                varma2friend@gmail.com
+              </a>
+              .
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+  );
+}

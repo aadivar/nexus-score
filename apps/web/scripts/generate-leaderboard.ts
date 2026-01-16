@@ -24,6 +24,7 @@ const RATE_LIMIT_DELAY = 100; // ms between requests (polite pool allows faster)
 interface CrossrefMember {
   id: number;
   'primary-name': string;
+  location?: string;
   counts: {
     'total-dois': number;
     'current-dois': number;
@@ -57,6 +58,7 @@ interface LeaderboardEntry {
   rank: number;
   id: number;
   name: string;
+  location?: string;
   score: number;
   grade: string;
   totalWorks: number;
@@ -208,6 +210,7 @@ async function main() {
     return {
       id: member.id,
       name: member['primary-name'],
+      location: member.location,
       score: score.total,
       grade: score.grade,
       totalWorks: member.counts['total-dois'],
