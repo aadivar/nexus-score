@@ -19,6 +19,9 @@ interface LeaderboardEntry {
   score: number;
   grade: string;
   totalWorks: number;
+  currentScore?: number;
+  backfileScore?: number;
+  improvement?: number;
   dimensions: {
     provenance: number;
     people: number;

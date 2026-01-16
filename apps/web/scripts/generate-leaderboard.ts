@@ -62,6 +62,9 @@ interface LeaderboardEntry {
   score: number;
   grade: string;
   totalWorks: number;
+  currentScore: number;
+  backfileScore: number;
+  improvement: number; // current - backfile (positive = improving)
   dimensions: {
     provenance: number;
     people: number;
@@ -90,6 +93,9 @@ const WEIGHTS = {
 function calculateScore(member: CrossrefMember): {
   total: number;
   grade: string;
+  currentScore: number;
+  backfileScore: number;
+  improvement: number;
   dimensions: LeaderboardEntry['dimensions'];
 } {
   const coverage = member.coverage || {};
@@ -97,30 +103,55 @@ function calculateScore(member: CrossrefMember): {
   // Coverage values from Crossref are decimals (0-1), convert to percentages (0-100)
   const toPercent = (val: number | undefined) => Math.round((val || 0) * 100);
 
-  // Calculate dimension percentages (average of current and backfile)
-  const provenance = Math.round(
-    (toPercent(coverage['references-current']) + toPercent(coverage['references-backfile'])) / 2
+  // Calculate CURRENT dimension percentages
+  const currentProvenance = toPercent(coverage['references-current']);
+  const currentPeople = toPercent(coverage['orcids-current']);
+  const currentOrganizations = toPercent(coverage['affiliations-current']);
+  const currentFunding = toPercent(coverage['funders-current']);
+  const currentAbstracts = toPercent(coverage['abstracts-current']);
+  const currentLicenses = toPercent(coverage['licenses-current']);
+  const currentLinks = toPercent(coverage['resource-links-current']);
+  const currentAccess = Math.round((currentAbstracts + currentLicenses + currentLinks) / 3);
+
+  // Calculate BACKFILE dimension percentages
+  const backfileProvenance = toPercent(coverage['references-backfile']);
+  const backfilePeople = toPercent(coverage['orcids-backfile']);
+  const backfileOrganizations = toPercent(coverage['affiliations-backfile']);
+  const backfileFunding = toPercent(coverage['funders-backfile']);
+  const backfileAbstracts = toPercent(coverage['abstracts-backfile']);
+  const backfileLicenses = toPercent(coverage['licenses-backfile']);
+  const backfileLinks = toPercent(coverage['resource-links-backfile']);
+  const backfileAccess = Math.round((backfileAbstracts + backfileLicenses + backfileLinks) / 3);
+
+  // Calculate weighted current score
+  const currentScore = Math.round(
+    (currentProvenance * WEIGHTS.provenance +
+      currentPeople * WEIGHTS.people +
+      currentOrganizations * WEIGHTS.organizations +
+      currentFunding * WEIGHTS.funding +
+      currentAccess * WEIGHTS.access) / 100
   );
 
-  const people = Math.round(
-    (toPercent(coverage['orcids-current']) + toPercent(coverage['orcids-backfile'])) / 2
+  // Calculate weighted backfile score
+  const backfileScore = Math.round(
+    (backfileProvenance * WEIGHTS.provenance +
+      backfilePeople * WEIGHTS.people +
+      backfileOrganizations * WEIGHTS.organizations +
+      backfileFunding * WEIGHTS.funding +
+      backfileAccess * WEIGHTS.access) / 100
   );
 
-  const organizations = Math.round(
-    (toPercent(coverage['affiliations-current']) + toPercent(coverage['affiliations-backfile'])) / 2
-  );
+  // Improvement = current - backfile (positive means improving)
+  const improvement = currentScore - backfileScore;
 
-  const funding = Math.round(
-    (toPercent(coverage['funders-current']) + toPercent(coverage['funders-backfile'])) / 2
-  );
+  // Overall dimensions (average of current and backfile)
+  const provenance = Math.round((currentProvenance + backfileProvenance) / 2);
+  const people = Math.round((currentPeople + backfilePeople) / 2);
+  const organizations = Math.round((currentOrganizations + backfileOrganizations) / 2);
+  const funding = Math.round((currentFunding + backfileFunding) / 2);
+  const access = Math.round((currentAccess + backfileAccess) / 2);
 
-  // Access: average of abstracts, licenses, and resource-links
-  const abstractsCoverage = (toPercent(coverage['abstracts-current']) + toPercent(coverage['abstracts-backfile'])) / 2;
-  const licensesCoverage = (toPercent(coverage['licenses-current']) + toPercent(coverage['licenses-backfile'])) / 2;
-  const linksCoverage = (toPercent(coverage['resource-links-current']) + toPercent(coverage['resource-links-backfile'])) / 2;
-  const access = Math.round((abstractsCoverage + licensesCoverage + linksCoverage) / 3);
-
-  // Calculate weighted total score
+  // Calculate weighted total score (average)
   const total = Math.round(
     (provenance * WEIGHTS.provenance +
       people * WEIGHTS.people +
@@ -140,6 +171,9 @@ function calculateScore(member: CrossrefMember): {
   return {
     total,
     grade,
+    currentScore,
+    backfileScore,
+    improvement,
     dimensions: { provenance, people, organizations, funding, access },
   };
 }
@@ -214,6 +248,9 @@ async function main() {
       score: score.total,
       grade: score.grade,
       totalWorks: member.counts['total-dois'],
+      currentScore: score.currentScore,
+      backfileScore: score.backfileScore,
+      improvement: score.improvement,
       dimensions: score.dimensions,
     };
   });

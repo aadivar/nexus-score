@@ -14,6 +14,9 @@ interface LeaderboardEntry {
   score: number;
   grade: string;
   totalWorks: number;
+  currentScore?: number;
+  backfileScore?: number;
+  improvement?: number;
   dimensions: {
     provenance: number;
     people: number;
@@ -44,8 +47,9 @@ const rankStyles: Record<number, string> = {
   3: 'text-amber-600',
 };
 
-type SortField = 'default' | 'score' | 'works';
+type SortField = 'default' | 'score' | 'works' | 'improvement';
 type SortDirection = 'desc' | 'asc';
+type ViewMode = 'overall' | 'progress';
 
 export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +57,10 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('default');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [viewMode, setViewMode] = useState<ViewMode>('overall');
+
+  // Check if improvement data is available
+  const hasImprovementData = leaderboard.some(e => e.improvement !== undefined);
 
   // Filter and sort leaderboard
   const filteredLeaderboard = useMemo(() => {
@@ -78,10 +86,21 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
       filtered = [...filtered].sort((a, b) =>
         sortDirection === 'desc' ? b.score - a.score : a.score - b.score
       );
+    } else if (sortField === 'improvement') {
+      filtered = [...filtered].sort((a, b) =>
+        sortDirection === 'desc'
+          ? (b.improvement ?? 0) - (a.improvement ?? 0)
+          : (a.improvement ?? 0) - (b.improvement ?? 0)
+      );
+    }
+
+    // In progress view, default sort by improvement
+    if (viewMode === 'progress' && sortField === 'default') {
+      filtered = [...filtered].sort((a, b) => (b.improvement ?? 0) - (a.improvement ?? 0));
     }
 
     return filtered;
-  }, [leaderboard, searchQuery, gradeFilter, sortField, sortDirection]);
+  }, [leaderboard, searchQuery, gradeFilter, sortField, sortDirection, viewMode]);
 
   // Pagination
   const totalPages = Math.ceil(filteredLeaderboard.length / ITEMS_PER_PAGE);
@@ -102,7 +121,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
     setCurrentPage(1);
   };
 
-  const handleSortToggle = (field: 'score' | 'works') => {
+  const handleSortToggle = (field: 'score' | 'works' | 'improvement') => {
     if (sortField === field) {
       // Toggle direction or reset to default
       if (sortDirection === 'desc') {
@@ -119,7 +138,14 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
     setCurrentPage(1);
   };
 
-  const getSortIcon = (field: 'score' | 'works') => {
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    setSortField('default');
+    setSortDirection('desc');
+    setCurrentPage(1);
+  };
+
+  const getSortIcon = (field: 'score' | 'works' | 'improvement') => {
     if (sortField !== field) {
       return (
         <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -176,6 +202,34 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
 
   return (
     <div>
+      {/* View Mode Toggle */}
+      {hasImprovementData && (
+        <div className="mb-6 flex items-center gap-2">
+          <button
+            onClick={() => handleViewModeChange('overall')}
+            className={cn(
+              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              viewMode === 'overall'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            )}
+          >
+            Overall Score
+          </button>
+          <button
+            onClick={() => handleViewModeChange('progress')}
+            className={cn(
+              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              viewMode === 'progress'
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            )}
+          >
+            Most Improved
+          </button>
+        </div>
+      )}
+
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 sm:max-w-md">
@@ -266,38 +320,60 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Rank
+                {viewMode === 'progress' ? '#' : 'Rank'}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Publisher
               </th>
-              <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                <button
-                  onClick={() => handleSortToggle('score')}
-                  className="inline-flex items-center gap-1 hover:text-gray-700"
-                >
-                  Score
-                  {getSortIcon('score')}
-                </button>
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                Grade
-              </th>
-              <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                Provenance
-              </th>
-              <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                People
-              </th>
-              <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                Orgs
-              </th>
-              <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                Funding
-              </th>
-              <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                Access
-              </th>
+              {viewMode === 'progress' ? (
+                <>
+                  <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <button
+                      onClick={() => handleSortToggle('improvement')}
+                      className="inline-flex items-center gap-1 hover:text-gray-700"
+                    >
+                      Improvement
+                      {getSortIcon('improvement')}
+                    </button>
+                  </th>
+                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 sm:table-cell">
+                    Current
+                  </th>
+                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 sm:table-cell">
+                    Backfile
+                  </th>
+                </>
+              ) : (
+                <>
+                  <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                    <button
+                      onClick={() => handleSortToggle('score')}
+                      className="inline-flex items-center gap-1 hover:text-gray-700"
+                    >
+                      Score
+                      {getSortIcon('score')}
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                    Grade
+                  </th>
+                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
+                    Provenance
+                  </th>
+                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
+                    People
+                  </th>
+                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
+                    Orgs
+                  </th>
+                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
+                    Funding
+                  </th>
+                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
+                    Access
+                  </th>
+                </>
+              )}
               <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                 <button
                   onClick={() => handleSortToggle('works')}
@@ -312,30 +388,36 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
           <tbody className="divide-y divide-gray-200">
             {paginatedLeaderboard.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={viewMode === 'progress' ? 6 : 10} className="px-4 py-8 text-center text-gray-500">
                   No publishers found matching your search.
                 </td>
               </tr>
             ) : (
-              paginatedLeaderboard.map((entry) => (
+              paginatedLeaderboard.map((entry, index) => (
                 <tr key={entry.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-4 py-4">
-                    <span
-                      className={cn(
-                        'text-lg font-bold',
-                        rankStyles[entry.rank] || 'text-gray-400'
-                      )}
-                    >
-                      {entry.rank <= 3 ? (
-                        <>
-                          {entry.rank === 1 && '🥇'}
-                          {entry.rank === 2 && '🥈'}
-                          {entry.rank === 3 && '🥉'}
-                        </>
-                      ) : (
-                        `#${entry.rank.toLocaleString()}`
-                      )}
-                    </span>
+                    {viewMode === 'progress' ? (
+                      <span className="text-lg font-bold text-gray-400">
+                        #{(startIndex + index + 1).toLocaleString()}
+                      </span>
+                    ) : (
+                      <span
+                        className={cn(
+                          'text-lg font-bold',
+                          rankStyles[entry.rank] || 'text-gray-400'
+                        )}
+                      >
+                        {entry.rank <= 3 ? (
+                          <>
+                            {entry.rank === 1 && '🥇'}
+                            {entry.rank === 2 && '🥈'}
+                            {entry.rank === 3 && '🥉'}
+                          </>
+                        ) : (
+                          `#${entry.rank.toLocaleString()}`
+                        )}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-4">
                     <Link
@@ -348,36 +430,73 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
                       <p className="mt-0.5 text-xs text-gray-500">{entry.location}</p>
                     )}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-center">
-                    <span className="text-lg font-bold text-gray-900">
-                      {entry.score}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-4 text-center">
-                    <span
-                      className={cn(
-                        'inline-flex rounded-full px-2 py-1 text-xs font-bold',
-                        gradeColors[entry.grade as Grade] || 'bg-gray-100 text-gray-800'
-                      )}
-                    >
-                      {entry.grade}
-                    </span>
-                  </td>
-                  <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 md:table-cell">
-                    {entry.dimensions.provenance}%
-                  </td>
-                  <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 md:table-cell">
-                    {entry.dimensions.people}%
-                  </td>
-                  <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
-                    {entry.dimensions.organizations}%
-                  </td>
-                  <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
-                    {entry.dimensions.funding}%
-                  </td>
-                  <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
-                    {entry.dimensions.access}%
-                  </td>
+                  {viewMode === 'progress' ? (
+                    <>
+                      <td className="whitespace-nowrap px-4 py-4 text-center">
+                        <span
+                          className={cn(
+                            'inline-flex items-center gap-1 text-lg font-bold',
+                            (entry.improvement ?? 0) > 0
+                              ? 'text-green-600'
+                              : (entry.improvement ?? 0) < 0
+                              ? 'text-red-600'
+                              : 'text-gray-500'
+                          )}
+                        >
+                          {(entry.improvement ?? 0) > 0 && (
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                            </svg>
+                          )}
+                          {(entry.improvement ?? 0) < 0 && (
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                            </svg>
+                          )}
+                          {(entry.improvement ?? 0) > 0 ? '+' : ''}{entry.improvement ?? 0}
+                        </span>
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 sm:table-cell">
+                        {entry.currentScore ?? '-'}
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 sm:table-cell">
+                        {entry.backfileScore ?? '-'}
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="whitespace-nowrap px-4 py-4 text-center">
+                        <span className="text-lg font-bold text-gray-900">
+                          {entry.score}
+                        </span>
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-4 text-center">
+                        <span
+                          className={cn(
+                            'inline-flex rounded-full px-2 py-1 text-xs font-bold',
+                            gradeColors[entry.grade as Grade] || 'bg-gray-100 text-gray-800'
+                          )}
+                        >
+                          {entry.grade}
+                        </span>
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 md:table-cell">
+                        {entry.dimensions.provenance}%
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 md:table-cell">
+                        {entry.dimensions.people}%
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
+                        {entry.dimensions.organizations}%
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
+                        {entry.dimensions.funding}%
+                      </td>
+                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
+                        {entry.dimensions.access}%
+                      </td>
+                    </>
+                  )}
                   <td className="whitespace-nowrap px-4 py-4 text-right text-sm text-gray-500">
                     {entry.totalWorks.toLocaleString()}
                   </td>
