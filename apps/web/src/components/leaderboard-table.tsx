@@ -15,8 +15,8 @@ interface LeaderboardEntry {
   grade: string;
   totalWorks: number;
   currentScore?: number;
-  backfileScore?: number;
-  improvement?: number;
+  backfileScore?: number | null;
+  improvement?: number | null;
   dimensions: {
     provenance: number;
     people: number;
@@ -59,12 +59,23 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [viewMode, setViewMode] = useState<ViewMode>('overall');
 
-  // Check if improvement data is available
-  const hasImprovementData = leaderboard.some(e => e.improvement !== undefined);
+  // Check if improvement data is available (non-null values exist)
+  const hasImprovementData = leaderboard.some(e => e.improvement !== undefined && e.improvement !== null);
+
+  // Count publishers with valid improvement data (has backfile)
+  const publishersWithBackfile = useMemo(() =>
+    leaderboard.filter(e => e.improvement !== undefined && e.improvement !== null).length,
+    [leaderboard]
+  );
 
   // Filter and sort leaderboard
   const filteredLeaderboard = useMemo(() => {
     let filtered = leaderboard;
+
+    // In progress view, only show publishers with backfile data
+    if (viewMode === 'progress') {
+      filtered = filtered.filter((entry) => entry.improvement !== undefined && entry.improvement !== null);
+    }
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
@@ -204,29 +215,37 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
     <div>
       {/* View Mode Toggle */}
       {hasImprovementData && (
-        <div className="mb-6 flex items-center gap-2">
-          <button
-            onClick={() => handleViewModeChange('overall')}
-            className={cn(
-              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              viewMode === 'overall'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            )}
-          >
-            Overall Score
-          </button>
-          <button
-            onClick={() => handleViewModeChange('progress')}
-            className={cn(
-              'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-              viewMode === 'progress'
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            )}
-          >
-            Most Improved
-          </button>
+        <div className="mb-6">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleViewModeChange('overall')}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                viewMode === 'overall'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              )}
+            >
+              Overall Score
+            </button>
+            <button
+              onClick={() => handleViewModeChange('progress')}
+              className={cn(
+                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+                viewMode === 'progress'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              )}
+            >
+              Most Improved
+            </button>
+          </div>
+          {viewMode === 'progress' && (
+            <p className="mt-2 text-sm text-gray-500">
+              Comparing current (&lt;2 years) vs backfile (&gt;2 years) metadata coverage.
+              Showing {publishersWithBackfile.toLocaleString()} publishers with historical data.
+            </p>
+          )}
         </div>
       )}
 

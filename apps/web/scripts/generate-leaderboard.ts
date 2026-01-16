@@ -28,6 +28,7 @@ interface CrossrefMember {
   counts: {
     'total-dois': number;
     'current-dois': number;
+    'backfile-dois': number;
   };
   coverage: {
     'affiliations-current': number;
@@ -63,8 +64,8 @@ interface LeaderboardEntry {
   grade: string;
   totalWorks: number;
   currentScore: number;
-  backfileScore: number;
-  improvement: number; // current - backfile (positive = improving)
+  backfileScore: number | null; // null if no backfile content
+  improvement: number | null; // null if no backfile to compare against
   dimensions: {
     provenance: number;
     people: number;
@@ -94,11 +95,12 @@ function calculateScore(member: CrossrefMember): {
   total: number;
   grade: string;
   currentScore: number;
-  backfileScore: number;
-  improvement: number;
+  backfileScore: number | null;
+  improvement: number | null;
   dimensions: LeaderboardEntry['dimensions'];
 } {
   const coverage = member.coverage || {};
+  const hasBackfile = (member.counts?.['backfile-dois'] || 0) > 0;
 
   // Coverage values from Crossref are decimals (0-1), convert to percentages (0-100)
   const toPercent = (val: number | undefined) => Math.round((val || 0) * 100);
@@ -132,8 +134,8 @@ function calculateScore(member: CrossrefMember): {
       currentAccess * WEIGHTS.access) / 100
   );
 
-  // Calculate weighted backfile score
-  const backfileScore = Math.round(
+  // Calculate weighted backfile score (only if they have backfile content)
+  const backfileScoreValue = Math.round(
     (backfileProvenance * WEIGHTS.provenance +
       backfilePeople * WEIGHTS.people +
       backfileOrganizations * WEIGHTS.organizations +
@@ -141,8 +143,9 @@ function calculateScore(member: CrossrefMember): {
       backfileAccess * WEIGHTS.access) / 100
   );
 
-  // Improvement = current - backfile (positive means improving)
-  const improvement = currentScore - backfileScore;
+  // Only set backfile score and improvement if publisher has backfile content
+  const backfileScore = hasBackfile ? backfileScoreValue : null;
+  const improvement = hasBackfile ? currentScore - backfileScoreValue : null;
 
   // Overall dimensions (average of current and backfile)
   const provenance = Math.round((currentProvenance + backfileProvenance) / 2);
