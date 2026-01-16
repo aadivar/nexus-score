@@ -47,6 +47,14 @@ interface CrossrefMember {
     'resource-links-backfile': number;
     'open-references-current': number;
     'open-references-backfile': number;
+    'update-policies-current': number;
+    'update-policies-backfile': number;
+    'similarity-checking-current': number;
+    'similarity-checking-backfile': number;
+    'ror-ids-current': number;
+    'ror-ids-backfile': number;
+    'award-numbers-current': number;
+    'award-numbers-backfile': number;
   };
   'coverage-type'?: {
     all?: {
@@ -106,24 +114,50 @@ function calculateScore(member: CrossrefMember): {
   const toPercent = (val: number | undefined) => Math.round((val || 0) * 100);
 
   // Calculate CURRENT dimension percentages
-  const currentProvenance = toPercent(coverage['references-current']);
+  // Provenance: references (15pts) + update-policies (5pts) + similarity-checking (5pts) = 25pts
+  const currentReferences = toPercent(coverage['references-current']);
+  const currentUpdatePolicies = toPercent(coverage['update-policies-current']);
+  const currentSimilarityCheck = toPercent(coverage['similarity-checking-current']);
+  const currentProvenance = Math.round((currentReferences * 15 + currentUpdatePolicies * 5 + currentSimilarityCheck * 5) / 25);
+
   const currentPeople = toPercent(coverage['orcids-current']);
-  const currentOrganizations = toPercent(coverage['affiliations-current']);
-  const currentFunding = toPercent(coverage['funders-current']);
+
+  // Organizations: affiliations (5pts) + ROR IDs (10pts) = 15pts
+  const currentAffiliations = toPercent(coverage['affiliations-current']);
+  const currentRorIds = toPercent(coverage['ror-ids-current']);
+  const currentOrganizations = Math.round((currentAffiliations * 5 + currentRorIds * 10) / 15);
+
+  // Funding: funders (10pts) + award-numbers (10pts) = 20pts
+  const currentFunders = toPercent(coverage['funders-current']);
+  const currentAwardNumbers = toPercent(coverage['award-numbers-current']);
+  const currentFunding = Math.round((currentFunders * 10 + currentAwardNumbers * 10) / 20);
+
+  // Access: licenses (7pts) + resource-links (7pts) + abstracts (6pts) = 20pts
   const currentAbstracts = toPercent(coverage['abstracts-current']);
   const currentLicenses = toPercent(coverage['licenses-current']);
   const currentLinks = toPercent(coverage['resource-links-current']);
-  const currentAccess = Math.round((currentAbstracts + currentLicenses + currentLinks) / 3);
+  const currentAccess = Math.round((currentLicenses * 7 + currentLinks * 7 + currentAbstracts * 6) / 20);
 
   // Calculate BACKFILE dimension percentages
-  const backfileProvenance = toPercent(coverage['references-backfile']);
+  const backfileReferences = toPercent(coverage['references-backfile']);
+  const backfileUpdatePolicies = toPercent(coverage['update-policies-backfile']);
+  const backfileSimilarityCheck = toPercent(coverage['similarity-checking-backfile']);
+  const backfileProvenance = Math.round((backfileReferences * 15 + backfileUpdatePolicies * 5 + backfileSimilarityCheck * 5) / 25);
+
   const backfilePeople = toPercent(coverage['orcids-backfile']);
-  const backfileOrganizations = toPercent(coverage['affiliations-backfile']);
-  const backfileFunding = toPercent(coverage['funders-backfile']);
+
+  const backfileAffiliations = toPercent(coverage['affiliations-backfile']);
+  const backfileRorIds = toPercent(coverage['ror-ids-backfile']);
+  const backfileOrganizations = Math.round((backfileAffiliations * 5 + backfileRorIds * 10) / 15);
+
+  const backfileFunders = toPercent(coverage['funders-backfile']);
+  const backfileAwardNumbers = toPercent(coverage['award-numbers-backfile']);
+  const backfileFunding = Math.round((backfileFunders * 10 + backfileAwardNumbers * 10) / 20);
+
   const backfileAbstracts = toPercent(coverage['abstracts-backfile']);
   const backfileLicenses = toPercent(coverage['licenses-backfile']);
   const backfileLinks = toPercent(coverage['resource-links-backfile']);
-  const backfileAccess = Math.round((backfileAbstracts + backfileLicenses + backfileLinks) / 3);
+  const backfileAccess = Math.round((backfileLicenses * 7 + backfileLinks * 7 + backfileAbstracts * 6) / 20);
 
   // Calculate weighted current score
   const currentScore = Math.round(
