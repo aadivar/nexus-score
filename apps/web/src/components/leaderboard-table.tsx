@@ -248,7 +248,8 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
           </div>
           {viewMode === 'progress' && (
             <p className="mt-2 text-sm text-gray-500">
-              Comparing current (&lt;2 years) vs backfile (&gt;2 years) metadata coverage.
+              Improvement = Current Score − Backfile Score. Positive values indicate better metadata
+              coverage on recent publications (&lt;2 years) compared to older content (&gt;2 years).
               Showing {publishersWithBackfile.toLocaleString()} publishers with historical data.
             </p>
           )}
