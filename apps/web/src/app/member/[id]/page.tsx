@@ -1,0 +1,506 @@
+import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import {
+  CrossrefClient,
+  calculateMemberScore,
+  CrossrefNotFoundError,
+  type NexusScore,
+} from '@nexus-score/core';
+import { ScoreCard } from '@/components/score-card';
+import { DimensionChart } from '@/components/dimension-chart';
+import { MetricsTable } from '@/components/metrics-table';
+import { RecommendationsList } from '@/components/recommendations-list';
+import { MemberSearch } from '@/components/member-search';
+import { CopyLinkButton } from '@/components/copy-link-button';
+import { formatNumber, cn } from '@/lib/utils';
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+interface LeaderboardEntry {
+  rank: number;
+  id: number;
+  name: string;
+  score: number;
+  grade: string;
+  totalWorks: number;
+  dimensions: {
+    provenance: number;
+    people: number;
+    organizations: number;
+    funding: number;
+    access: number;
+  };
+}
+
+interface LeaderboardData {
+  generatedAt: string;
+  totalMembers: number;
+  totalWithWorks: number;
+  leaderboard: LeaderboardEntry[];
+}
+
+interface RankingInfo {
+  rank: number;
+  totalPublishers: number;
+  percentile: number;
+  nearbyPublishers: LeaderboardEntry[];
+  topGap: number | null; // points needed to reach top 10%
+}
+
+const client = new CrossrefClient({
+  mailto: process.env.CROSSREF_MAILTO || 'varma2friend@gmail.com',
+});
+
+function getLeaderboardData(): LeaderboardData | null {
+  const dataPath = join(process.cwd(), 'data', 'leaderboard.json');
+  if (!existsSync(dataPath)) return null;
+  try {
+    const content = readFileSync(dataPath, 'utf-8');
+    return JSON.parse(content) as LeaderboardData;
+  } catch {
+    return null;
+  }
+}
+
+function getRankingInfo(memberId: number, score: number): RankingInfo | null {
+  const data = getLeaderboardData();
+  if (!data) return null;
+
+  const { leaderboard, totalWithWorks } = data;
+  const memberEntry = leaderboard.find((e) => e.id === memberId);
+
+  if (!memberEntry) {
+    // Member not in leaderboard (maybe 0 works) - estimate rank by score
+    const betterCount = leaderboard.filter((e) => e.score > score).length;
+    const rank = betterCount + 1;
+    const percentile = Math.round((1 - rank / totalWithWorks) * 100);
+    const top10PercentRank = Math.ceil(totalWithWorks * 0.1);
+    const top10Entry = leaderboard[top10PercentRank - 1];
+    const topGap = top10Entry ? Math.max(0, top10Entry.score - score) : null;
+
+    return {
+      rank,
+      totalPublishers: totalWithWorks,
+      percentile: Math.max(0, percentile),
+      nearbyPublishers: [],
+      topGap,
+    };
+  }
+
+  const rank = memberEntry.rank;
+  const percentile = Math.round((1 - rank / totalWithWorks) * 100);
+
+  // Get nearby publishers (2 above, 2 below)
+  const nearbyPublishers = leaderboard
+    .filter(
+      (e) =>
+        e.id !== memberId &&
+        e.rank >= Math.max(1, rank - 2) &&
+        e.rank <= rank + 2
+    )
+    .slice(0, 4);
+
+  // Calculate gap to top 10%
+  const top10PercentRank = Math.ceil(totalWithWorks * 0.1);
+  const top10Entry = leaderboard[top10PercentRank - 1];
+  const topGap =
+    rank > top10PercentRank && top10Entry
+      ? Math.max(0, top10Entry.score - score)
+      : null;
+
+  return {
+    rank,
+    totalPublishers: totalWithWorks,
+    percentile: Math.max(0, percentile),
+    nearbyPublishers,
+    topGap,
+  };
+}
+
+function getImprovementTips(dimensions: NexusScore['dimensions']): {
+  dimension: string;
+  currentPercent: number;
+  potentialGain: number;
+  tip: string;
+  docUrl: string;
+}[] {
+  const tips: {
+    dimension: string;
+    currentPercent: number;
+    potentialGain: number;
+    tip: string;
+    docUrl: string;
+  }[] = [];
+
+  // Calculate potential gains for each dimension
+  if (dimensions.provenance.percentage < 80) {
+    const gain = Math.round((80 - dimensions.provenance.percentage) * 0.25);
+    tips.push({
+      dimension: 'Provenance',
+      currentPercent: dimensions.provenance.percentage,
+      potentialGain: gain,
+      tip: 'Add reference lists to your DOI deposits. Even partial references help establish citation links.',
+      docUrl: 'https://www.crossref.org/documentation/cited-by/',
+    });
+  }
+
+  if (dimensions.people.percentage < 80) {
+    const gain = Math.round((80 - dimensions.people.percentage) * 0.2);
+    tips.push({
+      dimension: 'People',
+      currentPercent: dimensions.people.percentage,
+      potentialGain: gain,
+      tip: 'Include ORCID iDs for authors. Encourage authors to authenticate their ORCID during submission.',
+      docUrl: 'https://www.crossref.org/documentation/member-setup/orcid/',
+    });
+  }
+
+  if (dimensions.organizations.percentage < 80) {
+    const gain = Math.round((80 - dimensions.organizations.percentage) * 0.15);
+    tips.push({
+      dimension: 'Organizations',
+      currentPercent: dimensions.organizations.percentage,
+      potentialGain: gain,
+      tip: 'Add author affiliations with ROR IDs. The ROR API can help match institution names to IDs.',
+      docUrl: 'https://www.crossref.org/documentation/schema-library/markup-guide-metadata-segments/affiliations/',
+    });
+  }
+
+  if (dimensions.funding.percentage < 80) {
+    const gain = Math.round((80 - dimensions.funding.percentage) * 0.2);
+    tips.push({
+      dimension: 'Funding',
+      currentPercent: dimensions.funding.percentage,
+      potentialGain: gain,
+      tip: 'Include funder information using Open Funder Registry IDs and grant/award numbers.',
+      docUrl: 'https://www.crossref.org/documentation/funder-registry/',
+    });
+  }
+
+  if (dimensions.access.percentage < 80) {
+    const gain = Math.round((80 - dimensions.access.percentage) * 0.2);
+    tips.push({
+      dimension: 'Access',
+      currentPercent: dimensions.access.percentage,
+      potentialGain: gain,
+      tip: 'Add abstracts, license URLs (using SPDX identifiers), and full-text links to your metadata.',
+      docUrl: 'https://www.crossref.org/documentation/schema-library/markup-guide-metadata-segments/abstracts/',
+    });
+  }
+
+  // Sort by potential gain (highest first)
+  tips.sort((a, b) => b.potentialGain - a.potentialGain);
+
+  return tips.slice(0, 3); // Return top 3
+}
+
+async function getMemberScore(id: string): Promise<NexusScore | null> {
+  try {
+    const member = await client.getMember(id);
+    return calculateMemberScore(member);
+  } catch (error) {
+    if (error instanceof CrossrefNotFoundError) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const score = await getMemberScore(id);
+
+  if (!score) {
+    return {
+      title: 'Member Not Found - Research Nexus Score',
+    };
+  }
+
+  return {
+    title: `${score.metadata.entityName} - Research Nexus Score`,
+    description: `Research Nexus Score: ${score.total}/100 (Grade ${score.grade}). View metadata quality breakdown and recommendations.`,
+    openGraph: {
+      title: `${score.metadata.entityName} - Research Nexus Score: ${score.total}`,
+      description: `Grade ${score.grade} - View metadata quality breakdown and improvement recommendations.`,
+    },
+  };
+}
+
+export default async function MemberPage({ params }: PageProps) {
+  const { id } = await params;
+  const score = await getMemberScore(id);
+
+  if (!score) {
+    notFound();
+  }
+
+  const rankingInfo = getRankingInfo(parseInt(id), score.total);
+  const improvementTips = getImprovementTips(score.dimensions);
+
+  return (
+    <div className="min-h-screen py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {score.metadata.entityName}
+            </h1>
+            <p className="mt-1 text-gray-500">
+              Member ID: {score.metadata.entityId} &middot;{' '}
+              {formatNumber(score.metadata.totalWorks)} total works
+            </p>
+          </div>
+          <MemberSearch
+            placeholder="Search another publisher..."
+            className="w-full sm:w-80"
+          />
+        </div>
+
+        {/* Ranking Banner */}
+        {rankingInfo && (
+          <div className="mt-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-sm">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-500">Global Rank</p>
+                  <p className="text-3xl font-bold text-blue-600">
+                    #{rankingInfo.rank.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    of {rankingInfo.totalPublishers.toLocaleString()}
+                  </p>
+                </div>
+                <div className="h-12 w-px bg-gray-200" />
+                <div className="text-center">
+                  <p className="text-sm font-medium text-gray-500">Percentile</p>
+                  <p
+                    className={cn(
+                      'text-3xl font-bold',
+                      rankingInfo.percentile >= 90
+                        ? 'text-green-600'
+                        : rankingInfo.percentile >= 70
+                          ? 'text-blue-600'
+                          : rankingInfo.percentile >= 50
+                            ? 'text-yellow-600'
+                            : 'text-gray-600'
+                    )}
+                  >
+                    Top {100 - rankingInfo.percentile}%
+                  </p>
+                  <p className="text-xs text-gray-500">of all publishers</p>
+                </div>
+                {rankingInfo.topGap !== null && rankingInfo.topGap > 0 && (
+                  <>
+                    <div className="hidden h-12 w-px bg-gray-200 sm:block" />
+                    <div className="hidden text-center sm:block">
+                      <p className="text-sm font-medium text-gray-500">
+                        To Reach Top 10%
+                      </p>
+                      <p className="text-3xl font-bold text-indigo-600">
+                        +{rankingInfo.topGap}
+                      </p>
+                      <p className="text-xs text-gray-500">points needed</p>
+                    </div>
+                  </>
+                )}
+              </div>
+              <Link
+                href="/leaderboard"
+                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+              >
+                View Full Leaderboard
+              </Link>
+            </div>
+
+            {/* Nearby Publishers */}
+            {rankingInfo.nearbyPublishers.length > 0 && (
+              <div className="mt-6 border-t border-gray-200 pt-4">
+                <p className="mb-3 text-sm font-medium text-gray-600">
+                  Nearby in Rankings:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {rankingInfo.nearbyPublishers.map((pub) => (
+                    <Link
+                      key={pub.id}
+                      href={`/member/${pub.id}`}
+                      className={cn(
+                        'inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm transition-colors',
+                        pub.rank < rankingInfo.rank
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      )}
+                    >
+                      <span className="font-medium">#{pub.rank}</span>
+                      <span className="max-w-[150px] truncate">{pub.name}</span>
+                      <span className="text-xs">({pub.score} pts)</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Main Content */}
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          {/* Left Column - Score and Dimensions */}
+          <div className="space-y-6 lg:col-span-2">
+            <ScoreCard
+              score={score.total}
+              grade={score.grade}
+              trend={score.trend.direction}
+              change={score.trend.change}
+            />
+            <DimensionChart dimensions={score.dimensions} />
+            <MetricsTable dimensions={score.dimensions} />
+
+            {/* Improvement Tips CTA */}
+            {improvementTips.length > 0 && (
+              <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-6">
+                <h3 className="flex items-center gap-2 text-lg font-semibold text-blue-900">
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                    />
+                  </svg>
+                  Quick Wins to Improve Your Ranking
+                </h3>
+                <p className="mt-2 text-sm text-blue-700">
+                  Small metadata improvements can significantly boost your score.
+                  Here are the highest-impact changes you can make:
+                </p>
+                <div className="mt-4 space-y-4">
+                  {improvementTips.map((tip, index) => (
+                    <div
+                      key={tip.dimension}
+                      className="rounded-lg bg-white p-4 shadow-sm"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
+                              {index + 1}
+                            </span>
+                            <h4 className="font-semibold text-gray-900">
+                              Improve {tip.dimension}
+                            </h4>
+                            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                              +{tip.potentialGain} pts potential
+                            </span>
+                          </div>
+                          <p className="mt-2 text-sm text-gray-600">{tip.tip}</p>
+                          <div className="mt-2 flex items-center gap-4">
+                            <span className="text-xs text-gray-500">
+                              Current: {tip.currentPercent}% coverage
+                            </span>
+                            <a
+                              href={tip.docUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-blue-600 hover:underline"
+                            >
+                              View Crossref Documentation &rarr;
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 rounded-lg bg-blue-100 p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Pro Tip:</strong> Focus on your current (recent)
+                    publications first. Improving metadata on new deposits is easier
+                    than updating backfiles, and it will immediately improve your
+                    &quot;current&quot; coverage scores.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Column - Recommendations */}
+          <div>
+            <RecommendationsList recommendations={score.recommendations} limit={5} />
+
+            {/* Additional Info */}
+            <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900">About This Score</h3>
+              <dl className="mt-4 space-y-3 text-sm">
+                <div>
+                  <dt className="text-gray-500">Current Works (last 2 years)</dt>
+                  <dd className="font-medium text-gray-900">
+                    {formatNumber(score.metadata.currentWorks)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Backfile Works</dt>
+                  <dd className="font-medium text-gray-900">
+                    {formatNumber(score.metadata.backfileWorks)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Current Score</dt>
+                  <dd className="font-medium text-gray-900">
+                    {score.trend.currentScore} points
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Backfile Score</dt>
+                  <dd className="font-medium text-gray-900">
+                    {score.trend.backfileScore} points
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Data Source</dt>
+                  <dd className="font-medium text-gray-900">
+                    Crossref /members API
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Last Updated</dt>
+                  <dd className="font-medium text-gray-900">
+                    {new Date(score.metadata.calculatedAt).toLocaleDateString()}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+
+            {/* Share Section */}
+            <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900">Share Results</h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Share your Research Nexus Score with stakeholders or use it in reports.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <CopyLinkButton />
+                <a
+                  href={`https://api.crossref.org/members/${id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-center text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  View API Data
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
