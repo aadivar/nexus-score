@@ -92,7 +92,7 @@ export default function AboutPage() {
         {/* Grades */}
         <section className="mt-12">
           <h2 className="text-2xl font-semibold text-gray-900">Grading Scale</h2>
-          <div className="mt-6 overflow-hidden rounded-lg border bg-white shadow-sm">
+          <div className="mt-6 overflow-x-auto rounded-lg border bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>

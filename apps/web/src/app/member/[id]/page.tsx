@@ -276,24 +276,24 @@ export default async function MemberPage({ params }: PageProps) {
 
         {/* Ranking Banner */}
         {rankingInfo && (
-          <div className="mt-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-sm">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-6">
+          <div className="mt-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 shadow-sm">
+            <div className="flex flex-col gap-4 sm:gap-6">
+              <div className="grid grid-cols-2 gap-4 sm:flex sm:items-center sm:gap-6">
                 <div className="text-center">
-                  <p className="text-sm font-medium text-gray-500">Global Rank</p>
-                  <p className="text-3xl font-bold text-blue-600">
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Global Rank</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-blue-600">
                     #{rankingInfo.rank.toLocaleString()}
                   </p>
                   <p className="text-xs text-gray-500">
                     of {rankingInfo.totalPublishers.toLocaleString()}
                   </p>
                 </div>
-                <div className="h-12 w-px bg-gray-200" />
+                <div className="hidden sm:block h-12 w-px bg-gray-200" />
                 <div className="text-center">
-                  <p className="text-sm font-medium text-gray-500">Percentile</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-500">Percentile</p>
                   <p
                     className={cn(
-                      'text-3xl font-bold',
+                      'text-2xl sm:text-3xl font-bold',
                       rankingInfo.percentile >= 90
                         ? 'text-green-600'
                         : rankingInfo.percentile >= 70
@@ -309,8 +309,8 @@ export default async function MemberPage({ params }: PageProps) {
                 </div>
                 {rankingInfo.topGap !== null && rankingInfo.topGap > 0 && (
                   <>
-                    <div className="hidden h-12 w-px bg-gray-200 sm:block" />
-                    <div className="hidden text-center sm:block">
+                    <div className="hidden md:block h-12 w-px bg-gray-200" />
+                    <div className="hidden md:block text-center">
                       <p className="text-sm font-medium text-gray-500">
                         To Reach Top 10%
                       </p>
@@ -324,7 +324,7 @@ export default async function MemberPage({ params }: PageProps) {
               </div>
               <Link
                 href="/leaderboard"
-                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 w-full sm:w-auto sm:self-end"
               >
                 View Full Leaderboard
               </Link>

@@ -36,18 +36,18 @@ export function ScoreCard({ score, grade, trend, change, className }: ScoreCardP
   const TrendIcon = trendIcons[trend];
 
   return (
-    <div className={cn('rounded-xl border bg-white p-6 shadow-sm', className)}>
+    <div className={cn('rounded-xl border bg-white p-4 sm:p-6 shadow-sm', className)}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-gray-500">Nexus Score</p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-5xl font-bold text-gray-900">{score}</span>
-            <span className="text-lg text-gray-400">/ 100</span>
+            <span className="text-4xl sm:text-5xl font-bold text-gray-900">{score}</span>
+            <span className="text-base sm:text-lg text-gray-400">/ 100</span>
           </div>
         </div>
         <div
           className={cn(
-            'flex h-20 w-20 items-center justify-center rounded-full border-4 text-4xl font-bold',
+            'flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full border-4 text-3xl sm:text-4xl font-bold',
             gradeColors[grade]
           )}
         >
