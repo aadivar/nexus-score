@@ -317,6 +317,8 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
               {searchQuery && ` for "${searchQuery}"`}
               {gradeFilter !== 'all' && ` with grade ${gradeFilter}`}
             </>
+          ) : viewMode === 'progress' ? (
+            <>Showing all {publishersWithBackfile.toLocaleString()} publishers with historical data</>
           ) : (
             <>Showing all {totalWithWorks.toLocaleString()} publishers</>
           )}
