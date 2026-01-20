@@ -2,7 +2,7 @@
 
 **Recover missing metadata from Crossref Participation Reports using open data sources.**
 
-Gap Fixer takes the CSV gap reports from [Crossref Participation Reports](https://www.crossref.org/documentation/reports/participation-reports/) and attempts to recover missing metadata by querying authoritative open data sources like OpenAlex, ORCID, and ROR.
+Gap Fixer takes the CSV gap reports from [Crossref Participation Reports](https://www.crossref.org/documentation/reports/participation-reports/) and attempts to recover missing metadata by querying authoritative open data sources like OpenAlex, ORCID, ROR, and extracting directly from PDFs using Reducto.
 
 ## The Problem
 
@@ -25,16 +25,16 @@ Gap Fixer automates metadata recovery:
 
 ## Supported Gap Types
 
-| Gap Type | Recovery Source | Notes |
-|----------|-----------------|-------|
-| Abstracts | OpenAlex | Reconstructed from inverted index |
-| References | OpenAlex | Linked to DOIs where available |
-| ORCID iDs | OpenAlex, ORCID | Cross-validated when possible |
-| Affiliations | OpenAlex | Author institution names |
+| Gap Type | Recovery Sources | Notes |
+|----------|------------------|-------|
+| Abstracts | OpenAlex, Reducto | OpenAlex inverted index or PDF extraction |
+| References | OpenAlex, Reducto | Linked to DOIs where available |
+| ORCID iDs | OpenAlex, ORCID, Reducto | Cross-validated across sources |
+| Affiliations | OpenAlex, Reducto | Author institution names |
 | ROR IDs | OpenAlex, ROR | Institutional identifiers |
-| Funder Registry IDs | OpenAlex | Crossref Funder Registry DOIs |
-| Funding Award Numbers | OpenAlex | Grant/award identifiers |
-| License URLs | OpenAlex | Open access license information |
+| Funder Registry IDs | OpenAlex, Reducto | Crossref Funder Registry DOIs |
+| Funding Award Numbers | OpenAlex, Reducto | Grant/award identifiers |
+| License URLs | OpenAlex, Reducto | Open access license information |
 
 **Note:** Crossmark enablement is a publisher policy setting and cannot be recovered from external sources.
 
@@ -77,6 +77,7 @@ Gap Fixer uses a multi-source confidence algorithm:
 │    Enrichment       │────▶│   OpenAlex   │
 │      Engine         │────▶│    ORCID     │
 │                     │────▶│     ROR      │
+│                     │────▶│   Reducto    │──▶ PDF via Unpaywall
 └──────────┬──────────┘     └──────────────┘
            │
            ▼
@@ -128,7 +129,8 @@ gap-fixer/
 │       │   ├── types.ts        # Common enrichment types
 │       │   ├── openalex.ts     # OpenAlex API client
 │       │   ├── orcid.ts        # ORCID API client
-│       │   └── ror.ts          # ROR API client
+│       │   ├── ror.ts          # ROR API client
+│       │   └── reducto.ts      # Reducto PDF extraction
 │       ├── parsers/
 │       │   └── gap-report.ts   # CSV parser
 │       └── scoring/
@@ -168,6 +170,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 # Optional: for polite API access
 OPENALEX_EMAIL=your-email@example.com
+
+# Reducto (for PDF extraction)
+REDUCTO_API_KEY=your-reducto-api-key
 ```
 
 ### Database Setup
@@ -209,6 +214,14 @@ Direct ORCID API queries for author verification and additional metadata.
 ### ROR
 
 Research Organization Registry API for institutional identifier validation.
+
+### Reducto
+
+[Reducto](https://reducto.ai/) provides intelligent PDF extraction for scholarly articles:
+- Uses structured extraction with JSON schema to pull metadata directly from PDFs
+- Retrieves PDF URLs via [Unpaywall](https://unpaywall.org/) API
+- Extracts: abstracts, authors (with ORCIDs), affiliations, references (with DOIs), funding acknowledgments, licenses
+- Particularly valuable when metadata exists in the PDF but wasn't deposited with Crossref
 
 ## Database Schema
 

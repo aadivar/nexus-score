@@ -235,7 +235,7 @@ Once you know what metadata is missing, Gap Fixer helps you recover it.
 ### How It Works
 
 1. **Upload** your [Crossref Participation Report](https://www.crossref.org/documentation/reports/participation-reports/) gap CSV
-2. **Enrich** each DOI using OpenAlex, ORCID, and ROR APIs
+2. **Enrich** each DOI using OpenAlex, ORCID, ROR APIs + Reducto PDF extraction
 3. **Score** recovered data with multi-source confidence levels
 4. **Export** high-confidence recoveries formatted for Crossref submission
 
@@ -243,14 +243,14 @@ Once you know what metadata is missing, Gap Fixer helps you recover it.
 
 | Gap Type | Sources | Confidence |
 |----------|---------|------------|
-| Abstracts | OpenAlex | Up to 80% |
-| References | OpenAlex | Up to 80% |
-| ORCID iDs | OpenAlex, ORCID | Up to 95% |
-| Affiliations | OpenAlex | Up to 80% |
+| Abstracts | OpenAlex, Reducto | Up to 95% |
+| References | OpenAlex, Reducto | Up to 95% |
+| ORCID iDs | OpenAlex, ORCID, Reducto | Up to 100% |
+| Affiliations | OpenAlex, Reducto | Up to 95% |
 | ROR IDs | OpenAlex, ROR | Up to 95% |
-| Funder IDs | OpenAlex | Up to 80% |
-| Award Numbers | OpenAlex | Up to 80% |
-| Licenses | OpenAlex | Up to 80% |
+| Funder IDs | OpenAlex, Reducto | Up to 95% |
+| Award Numbers | OpenAlex, Reducto | Up to 95% |
+| Licenses | OpenAlex, Reducto | Up to 95% |
 
 See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentation.
 
