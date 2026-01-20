@@ -33,6 +33,7 @@ Built to support [Crossref's Research Nexus](https://www.crossref.org/documentat
 - **Trend Analysis**: Compare current metadata practices vs historical (backfile)
 - **Actionable Recommendations**: Improvement suggestions with links to Crossref documentation
 - **Global Rankings**: See where any publisher stands among all Crossref members
+- **Gap Fixer**: Recover missing metadata from Crossref Participation Reports using open data sources
 - **MCP Server**: Integrate with Claude Desktop or other AI assistants
 - **Core Library**: Use scoring logic in your own applications
 
@@ -100,10 +101,10 @@ console.log(score.recommendations[0].title);     // 'Increase ORCID Coverage'
 | Grade | Score Range | Description |
 |-------|-------------|-------------|
 | **A** | 80-100 | Excellent metadata coverage |
-| **B** | 60-79 | Good coverage with room for improvement |
-| **C** | 40-59 | Adequate coverage but with significant gaps |
-| **D** | 20-39 | Needs substantial work across multiple dimensions |
-| **F** | 0-19 | Poor metadata coverage requiring attention |
+| **B** | 65-79 | Good coverage with room for improvement |
+| **C** | 50-64 | Adequate coverage but with significant gaps |
+| **D** | 35-49 | Needs substantial work across multiple dimensions |
+| **F** | 0-34 | Poor metadata coverage requiring attention |
 
 ### Data Source
 
@@ -117,12 +118,20 @@ Scores use pre-computed coverage statistics from the [Crossref /members API](htt
 ```
 nexus-score/
 ├── apps/
-│   └── web/                  # Next.js 16 web application
+│   ├── web/                  # Next.js 16 web application
+│   │   ├── src/
+│   │   │   ├── app/          # App router pages
+│   │   │   └── components/   # React components
+│   │   ├── scripts/          # Leaderboard generation scripts
+│   │   └── data/             # Cached leaderboard data (27,830 publishers)
+│   └── gap-fixer/            # Metadata recovery tool
 │       ├── src/
-│       │   ├── app/          # App router pages
-│       │   └── components/   # React components
-│       ├── scripts/          # Leaderboard generation scripts
-│       └── data/             # Cached leaderboard data (27,830 publishers)
+│       │   ├── lib/
+│       │   │   ├── enrichers/  # OpenAlex, ORCID, ROR clients
+│       │   │   ├── parsers/    # Gap report CSV parser
+│       │   │   └── scoring/    # Confidence scoring
+│       │   └── components/   # Upload & analysis UI
+│       └── README.md
 ├── packages/
 │   ├── core/                 # Scoring library (@nexus-score/core)
 │   │   ├── src/
@@ -218,6 +227,32 @@ Research Nexus Score supports the [Barcelona Declaration on Open Research Inform
 - Encouraging adoption of persistent identifiers (ORCID, ROR)
 - Promoting transparency in funding acknowledgements
 - Supporting FAIR principles for metadata
+
+## Gap Fixer
+
+Once you know what metadata is missing, Gap Fixer helps you recover it.
+
+### How It Works
+
+1. **Upload** your [Crossref Participation Report](https://www.crossref.org/documentation/reports/participation-reports/) gap CSV
+2. **Enrich** each DOI using OpenAlex, ORCID, and ROR APIs
+3. **Score** recovered data with multi-source confidence levels
+4. **Export** high-confidence recoveries formatted for Crossref submission
+
+### Supported Recovery
+
+| Gap Type | Sources | Confidence |
+|----------|---------|------------|
+| Abstracts | OpenAlex | Up to 80% |
+| References | OpenAlex | Up to 80% |
+| ORCID iDs | OpenAlex, ORCID | Up to 95% |
+| Affiliations | OpenAlex | Up to 80% |
+| ROR IDs | OpenAlex, ROR | Up to 95% |
+| Funder IDs | OpenAlex | Up to 80% |
+| Award Numbers | OpenAlex | Up to 80% |
+| Licenses | OpenAlex | Up to 80% |
+
+See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentation.
 
 ## Tech Stack
 
