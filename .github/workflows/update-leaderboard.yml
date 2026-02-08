@@ -8,6 +8,9 @@ on:
   # Allow manual trigger
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update-leaderboard:
     runs-on: ubuntu-latest
@@ -37,7 +40,7 @@ jobs:
         run: pnpm --filter @nexus-score/core build
 
       - name: Generate leaderboard
-        run: pnpm tsx apps/web/scripts/generate-leaderboard.ts
+        run: pnpm --filter @nexus-score/web generate-leaderboard
         env:
           CROSSREF_MAILTO: ${{ secrets.CROSSREF_MAILTO || 'varma2friend@gmail.com' }}
 
