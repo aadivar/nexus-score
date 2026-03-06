@@ -108,4 +108,99 @@ The scholarly metadata ecosystem is thin. The largest publishers are improving, 
 
 ---
 
+---
+
+# Current Era Insights: What Changes When You Drop the Backfile
+
+*The [overall leaderboard](/leaderboard) averages current and backfile metadata — meaning publishers with large historical catalogs (some dating back centuries) get dragged down by old content they can't retroactively fix. The [current era leaderboard](/leaderboard/current) ranks purely on current-era content (last 2 years per Crossref), showing who's doing the best work right now.*
+
+## The Industry Is Better Than It Looks
+
+When you strip away historical backfiles and rank publishers on current content only, the picture improves meaningfully:
+
+| Metric | Overall | Current Era | Change |
+|--------|---------|-------------|--------|
+| Average score | 19 | 23 | **+4** |
+| Grade A publishers | 2 | 11 | **+9** |
+| Grade B publishers | 41 | 251 | **+210** |
+| Grade C publishers | 602 | 1,210 | **+608** |
+| Grade F publishers | 19,547 | 17,665 | **-1,882** |
+
+**2,844 publishers** (12.4%) earn a higher grade on current content than overall. The industry *is* improving — it's just buried under decades of legacy metadata.
+
+## The Biggest Transformations Among Large Publishers
+
+These publishers look completely different when judged on recent work:
+
+| Publisher | Works | Overall | Current | Jump |
+|-----------|-------|---------|---------|------|
+| American Physical Society | 802K | 58 (C) | **81 (A)** | C→A |
+| American Society for Microbiology | 312K | 67 (B) | **86 (A)** | B→A |
+| American Chemical Society | 2.2M | 48 (D) | **70 (B)** | D→B |
+| American Meteorological Society | 129K | 41 (D) | **66 (B)** | D→B |
+| IEEE | 5.9M | 34 (F) | **41 (D)** | F→D |
+| SAGE Publications | 3.7M | 48 (D) | **61 (C)** | D→C |
+| BMJ | 1.0M | 33 (F) | **47 (D)** | F→D |
+| Wolters Kluwer | 2.9M | 26 (F) | **35 (D)** | F→D |
+
+**APS** is the standout — a C-overall publisher that's producing **A-grade metadata** right now (score 81, #6 among all active publishers). **ASM** jumps from B to A (#3 in current era, score 86).
+
+## The "American Societies" Are Quietly Leading
+
+US-based scholarly societies dominate the current-era large publisher rankings:
+
+| Rank | Publisher | Current Score |
+|------|-----------|---------------|
+| #3 | American Society for Microbiology | 86 (A) |
+| #6 | American Physical Society | 81 (A) |
+| #17 | American Astronomical Society | 78 (B) |
+| #45 | Proceedings of the National Academy of Sciences | 74 (B) |
+| #56 | American Geophysical Union | 73 (B) |
+| #111 | American Chemical Society | 70 (B) |
+
+These societies — not the commercial giants — are setting the standard for metadata quality at scale.
+
+## Commercial Publishers: Improved, But Still D's
+
+| Publisher | Works | Current Score | Current Grade |
+|-----------|-------|---------------|---------------|
+| MDPI | 2.0M | 68 | B |
+| SAGE | 3.7M | 61 | C |
+| IOP Publishing | 1.3M | 55 | C |
+| Wiley | 11.9M | 48 | D |
+| Springer Nature | 18.3M | 47 | D |
+| Elsevier | 24.6M | 42 | D |
+| IEEE | 5.9M | 41 | D |
+| OUP | 7.5M | 29 | F |
+
+MDPI remains the only commercial-scale publisher to earn a B. **OUP is the worst performer among major publishers even on current content** — still an F at 29. Elsevier, Springer, and Wiley all remain D's.
+
+## Only 135 Publishers Got Worse
+
+Just **135 publishers** (0.6%) score lower on current content than overall. The most notable: **eLife** dropped from D (39) to F (31) — surprising for an open-access pioneer. Most downgrades are small regional publishers.
+
+## South Korea Still Dominates
+
+**33 of the top 50** current-era publishers are South Korean. The pattern holds regardless of how you measure.
+
+## Organizations and Funding Are Still the Gap
+
+Even on current content, the weakest dimensions remain:
+
+| Dimension | Average (current era) |
+|-----------|-----------------------|
+| Access | 47 |
+| People | 28 |
+| Provenance | 25 |
+| Organizations | 7 |
+| Funding | 2 |
+
+The industry has made progress on provenance and ORCIDs, but institutional identifiers and funding metadata remain nearly empty.
+
+## The Current Era Bottom Line
+
+The current-era view reveals a more optimistic story. The industry *is* getting better — 2,844 publishers earn a higher grade on recent content. American scholarly societies are producing A and B-grade metadata at scale. But the commercial giants (Elsevier, Springer, Wiley) are stuck in D territory even on their newest content, and two entire dimensions (organizations, funding) remain essentially absent across the board.
+
+---
+
 *Generated from [Nexus Score](https://nexus-score.vercel.app) leaderboard data. Last updated: March 2026.*

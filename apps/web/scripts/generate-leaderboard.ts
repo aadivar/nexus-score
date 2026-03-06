@@ -63,6 +63,14 @@ interface CrossrefMember {
   };
 }
 
+interface DimensionScores {
+  provenance: number;
+  people: number;
+  organizations: number;
+  funding: number;
+  access: number;
+}
+
 interface LeaderboardEntry {
   rank: number;
   id: number;
@@ -74,13 +82,8 @@ interface LeaderboardEntry {
   currentScore: number;
   backfileScore: number | null; // null if no backfile content
   improvement: number | null; // null if no backfile to compare against
-  dimensions: {
-    provenance: number;
-    people: number;
-    organizations: number;
-    funding: number;
-    access: number;
-  };
+  dimensions: DimensionScores;
+  currentDimensions: DimensionScores;
 }
 
 interface LeaderboardData {
@@ -105,7 +108,8 @@ function calculateScore(member: CrossrefMember): {
   currentScore: number;
   backfileScore: number | null;
   improvement: number | null;
-  dimensions: LeaderboardEntry['dimensions'];
+  dimensions: DimensionScores;
+  currentDimensions: DimensionScores;
 } {
   const coverage = member.coverage || {};
   const hasBackfile = (member.counts?.['backfile-dois'] || 0) > 0;
@@ -212,6 +216,13 @@ function calculateScore(member: CrossrefMember): {
     backfileScore,
     improvement,
     dimensions: { provenance, people, organizations, funding, access },
+    currentDimensions: {
+      provenance: currentProvenance,
+      people: currentPeople,
+      organizations: currentOrganizations,
+      funding: currentFunding,
+      access: currentAccess,
+    },
   };
 }
 
@@ -285,10 +296,12 @@ async function main() {
       score: score.total,
       grade: score.grade,
       totalWorks: member.counts['total-dois'],
+      currentWorks: member.counts['current-dois'],
       currentScore: score.currentScore,
       backfileScore: score.backfileScore,
       improvement: score.improvement,
       dimensions: score.dimensions,
+      currentDimensions: score.currentDimensions,
     };
   });
 
@@ -309,12 +322,56 @@ async function main() {
     leaderboard,
   };
 
-  // Write to file
+  // Write main leaderboard file
   const outputPath = join(__dirname, '..', 'data', 'leaderboard.json');
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, JSON.stringify(data, null, 2));
 
   console.log(`\n💾 Saved to: ${outputPath}`);
+
+  // Generate current-era leaderboard (ranked by currentScore, only active publishers)
+  console.log('\n📊 Generating current-era leaderboard...');
+
+  const currentEra = scored
+    .filter((entry) => entry.currentWorks > 0)
+    .sort((a, b) => b.currentScore - a.currentScore)
+    .map((entry, index) => {
+      let currentGrade: string;
+      if (entry.currentScore >= 80) currentGrade = 'A';
+      else if (entry.currentScore >= 65) currentGrade = 'B';
+      else if (entry.currentScore >= 50) currentGrade = 'C';
+      else if (entry.currentScore >= 35) currentGrade = 'D';
+      else currentGrade = 'F';
+
+      return {
+        rank: index + 1,
+        id: entry.id,
+        name: entry.name,
+        location: entry.location,
+        score: entry.currentScore,
+        grade: currentGrade,
+        totalWorks: entry.totalWorks,
+        currentWorks: entry.currentWorks,
+        overallScore: entry.score,
+        overallGrade: entry.grade,
+        improvement: entry.improvement,
+        dimensions: entry.currentDimensions,
+      };
+    });
+
+  const currentData = {
+    generatedAt: new Date().toISOString(),
+    totalMembers: allMembers.length,
+    totalActive: currentEra.length,
+    leaderboard: currentEra,
+  };
+
+  const currentOutputPath = join(__dirname, '..', 'data', 'current-leaderboard.json');
+  writeFileSync(currentOutputPath, JSON.stringify(currentData, null, 2));
+
+  console.log(`💾 Saved current-era leaderboard to: ${currentOutputPath}`);
+  console.log(`   Active publishers: ${currentEra.length}`);
+  console.log(`   Top scorer: ${currentEra[0]?.name} (${currentEra[0]?.score} points, Grade ${currentEra[0]?.grade})`);
   console.log(`\n📈 Leaderboard Stats:`);
   console.log(`   Total members: ${data.totalMembers}`);
   console.log(`   Members with works: ${data.totalWithWorks}`);

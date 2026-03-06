@@ -34,5 +34,8 @@ pnpm-debug.log*
 coverage/
 .nyc_output/
 
+# Internal research
+sage.md
+
 # Misc
 *.tsbuildinfo
