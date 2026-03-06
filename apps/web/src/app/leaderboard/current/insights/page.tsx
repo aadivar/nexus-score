@@ -101,7 +101,7 @@ export default function CurrentEraInsightsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Publisher</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-700">Works</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-700">Current Works</th>
                   <th className="px-4 py-3 text-center font-medium text-gray-700">Overall</th>
                   <th className="px-4 py-3 text-center font-medium text-emerald-700">Current</th>
                   <th className="px-4 py-3 text-center font-medium text-gray-700">Jump</th>
@@ -109,14 +109,14 @@ export default function CurrentEraInsightsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {[
-                  ['American Physical Society', '802K', '58 (C)', '81 (A)', 'C→A'],
-                  ['American Society for Microbiology', '312K', '67 (B)', '86 (A)', 'B→A'],
-                  ['American Chemical Society', '2.2M', '48 (D)', '70 (B)', 'D→B'],
-                  ['American Meteorological Society', '129K', '41 (D)', '66 (B)', 'D→B'],
-                  ['IEEE', '5.9M', '34 (F)', '41 (D)', 'F→D'],
-                  ['SAGE Publications', '3.7M', '48 (D)', '61 (C)', 'D→C'],
-                  ['BMJ', '1.0M', '33 (F)', '47 (D)', 'F→D'],
-                  ['Wolters Kluwer', '2.9M', '26 (F)', '35 (D)', 'F→D'],
+                  ['American Physical Society', '55K', '58 (C)', '81 (A)', 'C→A'],
+                  ['American Society for Microbiology', '15K', '67 (B)', '86 (A)', 'B→A'],
+                  ['American Chemical Society', '210K', '48 (D)', '70 (B)', 'D→B'],
+                  ['American Meteorological Society', '4K', '41 (D)', '66 (B)', 'D→B'],
+                  ['IEEE', '883K', '34 (F)', '41 (D)', 'F→D'],
+                  ['SAGE Publications', '234K', '48 (D)', '61 (C)', 'D→C'],
+                  ['BMJ', '64K', '33 (F)', '47 (D)', 'F→D'],
+                  ['Wolters Kluwer', '237K', '26 (F)', '35 (D)', 'F→D'],
                 ].map(([name, works, overall, current, jump]) => (
                   <tr key={name}>
                     <td className="px-4 py-3 font-medium">{name}</td>
@@ -155,21 +155,21 @@ export default function CurrentEraInsightsPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Publisher</th>
-                  <th className="px-4 py-3 text-right font-medium text-gray-700">Works</th>
+                  <th className="px-4 py-3 text-right font-medium text-gray-700">Current Works</th>
                   <th className="px-4 py-3 text-center font-medium text-emerald-700">Current Score</th>
                   <th className="px-4 py-3 text-center font-medium text-emerald-700">Grade</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {[
-                  ['MDPI', '2.0M', '68', 'B', 'bg-blue-100 text-blue-800'],
-                  ['SAGE', '3.7M', '61', 'C', 'bg-yellow-100 text-yellow-800'],
-                  ['IOP Publishing', '1.3M', '55', 'C', 'bg-yellow-100 text-yellow-800'],
-                  ['Wiley', '11.9M', '48', 'D', 'bg-orange-100 text-orange-800'],
-                  ['Springer Nature', '18.3M', '47', 'D', 'bg-orange-100 text-orange-800'],
-                  ['Elsevier', '24.6M', '42', 'D', 'bg-orange-100 text-orange-800'],
-                  ['IEEE', '5.9M', '41', 'D', 'bg-orange-100 text-orange-800'],
-                  ['OUP', '7.5M', '29', 'F', 'bg-red-100 text-red-800'],
+                  ['MDPI', '632K', '68', 'B', 'bg-blue-100 text-blue-800'],
+                  ['SAGE', '234K', '61', 'C', 'bg-yellow-100 text-yellow-800'],
+                  ['IOP Publishing', '117K', '55', 'C', 'bg-yellow-100 text-yellow-800'],
+                  ['Wiley', '895K', '48', 'D', 'bg-orange-100 text-orange-800'],
+                  ['Springer Nature', '2.0M', '47', 'D', 'bg-orange-100 text-orange-800'],
+                  ['Elsevier', '3.0M', '42', 'D', 'bg-orange-100 text-orange-800'],
+                  ['IEEE', '883K', '41', 'D', 'bg-orange-100 text-orange-800'],
+                  ['OUP', '451K', '29', 'F', 'bg-red-100 text-red-800'],
                 ].map(([name, works, score, grade, color]) => (
                   <tr key={name}>
                     <td className="px-4 py-3 font-medium">{name}</td>

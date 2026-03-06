@@ -132,16 +132,16 @@ When you strip away historical backfiles and rank publishers on current content 
 
 These publishers look completely different when judged on recent work:
 
-| Publisher | Works | Overall | Current | Jump |
-|-----------|-------|---------|---------|------|
-| American Physical Society | 802K | 58 (C) | **81 (A)** | C→A |
-| American Society for Microbiology | 312K | 67 (B) | **86 (A)** | B→A |
-| American Chemical Society | 2.2M | 48 (D) | **70 (B)** | D→B |
-| American Meteorological Society | 129K | 41 (D) | **66 (B)** | D→B |
-| IEEE | 5.9M | 34 (F) | **41 (D)** | F→D |
-| SAGE Publications | 3.7M | 48 (D) | **61 (C)** | D→C |
-| BMJ | 1.0M | 33 (F) | **47 (D)** | F→D |
-| Wolters Kluwer | 2.9M | 26 (F) | **35 (D)** | F→D |
+| Publisher | Current Works | Overall | Current | Jump |
+|-----------|---------------|---------|---------|------|
+| American Physical Society | 55K | 58 (C) | **81 (A)** | C→A |
+| American Society for Microbiology | 15K | 67 (B) | **86 (A)** | B→A |
+| American Chemical Society | 210K | 48 (D) | **70 (B)** | D→B |
+| American Meteorological Society | 4K | 41 (D) | **66 (B)** | D→B |
+| IEEE | 883K | 34 (F) | **41 (D)** | F→D |
+| SAGE Publications | 234K | 48 (D) | **61 (C)** | D→C |
+| BMJ | 64K | 33 (F) | **47 (D)** | F→D |
+| Wolters Kluwer | 237K | 26 (F) | **35 (D)** | F→D |
 
 **APS** is the standout — a C-overall publisher that's producing **A-grade metadata** right now (score 81, #6 among all active publishers). **ASM** jumps from B to A (#3 in current era, score 86).
 
@@ -162,16 +162,16 @@ These societies — not the commercial giants — are setting the standard for m
 
 ## Commercial Publishers: Improved, But Still D's
 
-| Publisher | Works | Current Score | Current Grade |
-|-----------|-------|---------------|---------------|
-| MDPI | 2.0M | 68 | B |
-| SAGE | 3.7M | 61 | C |
-| IOP Publishing | 1.3M | 55 | C |
-| Wiley | 11.9M | 48 | D |
-| Springer Nature | 18.3M | 47 | D |
-| Elsevier | 24.6M | 42 | D |
-| IEEE | 5.9M | 41 | D |
-| OUP | 7.5M | 29 | F |
+| Publisher | Current Works | Current Score | Current Grade |
+|-----------|---------------|---------------|---------------|
+| MDPI | 632K | 68 | B |
+| SAGE | 234K | 61 | C |
+| IOP Publishing | 117K | 55 | C |
+| Wiley | 895K | 48 | D |
+| Springer Nature | 2.0M | 47 | D |
+| Elsevier | 3.0M | 42 | D |
+| IEEE | 883K | 41 | D |
+| OUP | 451K | 29 | F |
 
 MDPI remains the only commercial-scale publisher to earn a B. **OUP is the worst performer among major publishers even on current content** — still an F at 29. Elsevier, Springer, and Wiley all remain D's.
 
