@@ -79,6 +79,17 @@ export default function RootLayout({
                 <span className="hidden sm:inline">Current Era</span>
               </Link>
               <Link
+                href="/leaderboard/current/insights"
+                className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="16" x2="12" y2="12"/>
+                  <line x1="12" y1="8" x2="12.01" y2="8"/>
+                </svg>
+                <span className="hidden sm:inline">Insights</span>
+              </Link>
+              <Link
                 href="/about"
                 className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"
               >
