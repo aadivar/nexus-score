@@ -16,6 +16,7 @@
   <a href="#features">Features</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#scoring-methodology">Methodology</a> •
+  <a href="INSIGHTS.md">Insights</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
