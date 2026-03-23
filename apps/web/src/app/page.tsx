@@ -8,7 +8,7 @@ const featuredPublishers = [
   { id: 78, name: 'Elsevier' },
   { id: 297, name: 'Springer Nature' },
   { id: 340, name: 'Public Library of Science (PLOS)' },
-  { id: 301, name: 'Cambridge University Press' },
+  { id: 56, name: 'Cambridge University Press' },
 ];
 
 export default function HomePage() {
