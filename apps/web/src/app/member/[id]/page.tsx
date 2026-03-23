@@ -17,6 +17,9 @@ import { MemberSearch } from '@/components/member-search';
 import { CopyLinkButton } from '@/components/copy-link-button';
 import { formatNumber, cn } from '@/lib/utils';
 
+// Revalidate every 24 hours — keeps scores fresh between 15-day leaderboard refreshes
+export const revalidate = 86400;
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -25,10 +28,22 @@ interface LeaderboardEntry {
   rank: number;
   id: number;
   name: string;
+  location?: string;
   score: number;
   grade: string;
   totalWorks: number;
+  currentWorks?: number;
+  currentScore?: number;
+  backfileScore?: number | null;
+  improvement?: number | null;
   dimensions: {
+    provenance: number;
+    people: number;
+    organizations: number;
+    funding: number;
+    access: number;
+  };
+  currentDimensions?: {
     provenance: number;
     people: number;
     organizations: number;
@@ -52,6 +67,25 @@ interface RankingInfo {
   topGap: number | null; // points needed to reach top 10%
 }
 
+interface CurrentLeaderboardEntry {
+  rank: number;
+  id: number;
+  name: string;
+  score: number;
+}
+
+interface CurrentLeaderboardData {
+  totalActive: number;
+  leaderboard: CurrentLeaderboardEntry[];
+}
+
+interface EraRanking {
+  overallRank: number | null;
+  overallTotal: number;
+  currentRank: number | null;
+  currentTotal: number;
+}
+
 const client = new CrossrefClient({
   mailto: process.env.CROSSREF_MAILTO || 'varma2friend@gmail.com',
 });
@@ -65,6 +99,33 @@ function getLeaderboardData(): LeaderboardData | null {
   } catch {
     return null;
   }
+}
+
+function getCurrentLeaderboardData(): CurrentLeaderboardData | null {
+  const dataPath = join(process.cwd(), 'data', 'current-leaderboard.json');
+  if (!existsSync(dataPath)) return null;
+  try {
+    const content = readFileSync(dataPath, 'utf-8');
+    return JSON.parse(content) as CurrentLeaderboardData;
+  } catch {
+    return null;
+  }
+}
+
+function getEraRanking(memberId: number): EraRanking | null {
+  const overallData = getLeaderboardData();
+  const currentData = getCurrentLeaderboardData();
+  if (!overallData && !currentData) return null;
+
+  const overallEntry = overallData?.leaderboard.find((e) => e.id === memberId);
+  const currentEntry = currentData?.leaderboard.find((e) => e.id === memberId);
+
+  return {
+    overallRank: overallEntry?.rank ?? null,
+    overallTotal: overallData?.totalWithWorks ?? 0,
+    currentRank: currentEntry?.rank ?? null,
+    currentTotal: currentData?.totalActive ?? 0,
+  };
 }
 
 function getRankingInfo(memberId: number, score: number): RankingInfo | null {
@@ -199,6 +260,50 @@ function getImprovementTips(dimensions: NexusScore['dimensions']): {
   return tips.slice(0, 3); // Return top 3
 }
 
+function scoreToGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
+  if (score >= 80) return 'A';
+  if (score >= 65) return 'B';
+  if (score >= 50) return 'C';
+  if (score >= 35) return 'D';
+  return 'F';
+}
+
+function buildScoreFromLeaderboard(entry: LeaderboardEntry): NexusScore {
+  const currentScore = entry.currentScore ?? entry.score;
+  const backfileScore = entry.backfileScore ?? entry.score;
+  const change = currentScore - backfileScore;
+
+  return {
+    total: entry.score,
+    grade: scoreToGrade(entry.score),
+    dimensions: {
+      provenance: { score: Math.round(entry.dimensions.provenance * 25 / 100), maxScore: 25, percentage: entry.dimensions.provenance, metrics: [] },
+      people: { score: Math.round(entry.dimensions.people * 20 / 100), maxScore: 20, percentage: entry.dimensions.people, metrics: [] },
+      organizations: { score: Math.round(entry.dimensions.organizations * 15 / 100), maxScore: 15, percentage: entry.dimensions.organizations, metrics: [] },
+      funding: { score: Math.round(entry.dimensions.funding * 20 / 100), maxScore: 20, percentage: entry.dimensions.funding, metrics: [] },
+      access: { score: Math.round(entry.dimensions.access * 20 / 100), maxScore: 20, percentage: entry.dimensions.access, metrics: [] },
+    },
+    trend: {
+      direction: change > 2 ? 'up' : change < -2 ? 'down' : 'stable',
+      change: Math.round(change),
+      currentScore,
+      backfileScore,
+    },
+    recommendations: [],
+    metadata: {
+      entityId: entry.id,
+      entityType: 'member',
+      entityName: entry.name,
+      location: entry.location,
+      calculatedAt: getLeaderboardData()?.generatedAt || new Date().toISOString(),
+      totalWorks: entry.totalWorks,
+      currentWorks: entry.currentWorks ?? 0,
+      backfileWorks: entry.totalWorks - (entry.currentWorks ?? 0),
+      dataSource: 'leaderboard-cache',
+    },
+  };
+}
+
 async function getMemberScore(id: string): Promise<NexusScore | null> {
   try {
     const member = await client.getMember(id);
@@ -207,8 +312,29 @@ async function getMemberScore(id: string): Promise<NexusScore | null> {
     if (error instanceof CrossrefNotFoundError) {
       return null;
     }
+
+    // Fallback to cached leaderboard data on network/API errors
+    const data = getLeaderboardData();
+    if (data) {
+      const entry = data.leaderboard.find((e) => e.id === parseInt(id));
+      if (entry) {
+        return buildScoreFromLeaderboard(entry);
+      }
+    }
+
     throw error;
   }
+}
+
+// Pre-generate top publishers at build time for fast initial loads
+export async function generateStaticParams() {
+  const data = getLeaderboardData();
+  if (!data) return [];
+
+  // Pre-render top 100 publishers — most likely to be visited
+  return data.leaderboard.slice(0, 100).map((entry) => ({
+    id: entry.id.toString(),
+  }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -241,6 +367,8 @@ export default async function MemberPage({ params }: PageProps) {
 
   const rankingInfo = getRankingInfo(parseInt(id), score.total);
   const improvementTips = getImprovementTips(score.dimensions);
+  const isCachedData = score.metadata.dataSource === 'leaderboard-cache';
+  const eraRanking = getEraRanking(parseInt(id));
 
   return (
     <div className="min-h-screen py-8">
@@ -273,6 +401,22 @@ export default async function MemberPage({ params }: PageProps) {
             className="w-full sm:w-80"
           />
         </div>
+
+        {/* Cached Data Notice */}
+        {isCachedData && (
+          <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <p>
+              Showing cached data from{' '}
+              {new Date(score.metadata.calculatedAt).toLocaleDateString()}.
+              Live data from Crossref is temporarily unavailable. Detailed metrics and recommendations are not available in cached mode.
+            </p>
+          </div>
+        )}
 
         {/* Ranking Banner */}
         {rankingInfo && (
@@ -369,11 +513,117 @@ export default async function MemberPage({ params }: PageProps) {
               trend={score.trend.direction}
               change={score.trend.change}
             />
+
+            {/* Current vs Backfile Breakdown */}
+            <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
+              <h3 className="text-sm font-medium text-gray-500 mb-4">Score Breakdown by Era</h3>
+              <div className="grid grid-cols-2 gap-4">
+                {/* Current Era */}
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Current</p>
+                      <p className="text-xs text-gray-500 mb-2">Last 2 years</p>
+                    </div>
+                    {eraRanking?.currentRank && (
+                      <Link
+                        href="/leaderboard/current"
+                        className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 hover:bg-blue-200 transition-colors"
+                        title={`Rank #${eraRanking.currentRank.toLocaleString()} of ${eraRanking.currentTotal.toLocaleString()} active publishers`}
+                      >
+                        #{eraRanking.currentRank.toLocaleString()}
+                      </Link>
+                    )}
+                  </div>
+                  <p className="text-3xl font-bold text-blue-700">{score.trend.currentScore}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formatNumber(score.metadata.currentWorks)} works
+                  </p>
+                </div>
+
+                {/* Backfile Era */}
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Backfile</p>
+                      <p className="text-xs text-gray-500 mb-2">Older than 2 years</p>
+                    </div>
+                    {eraRanking?.overallRank && (
+                      <Link
+                        href="/leaderboard"
+                        className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600 hover:bg-gray-300 transition-colors"
+                        title={`Overall rank #${eraRanking.overallRank.toLocaleString()} of ${eraRanking.overallTotal.toLocaleString()} publishers`}
+                      >
+                        #{eraRanking.overallRank.toLocaleString()}
+                      </Link>
+                    )}
+                  </div>
+                  <p className="text-3xl font-bold text-gray-700">{score.trend.backfileScore}</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {formatNumber(score.metadata.backfileWorks)} works
+                  </p>
+                </div>
+              </div>
+
+              {/* Rank comparison insight */}
+              {eraRanking?.currentRank && eraRanking?.overallRank && eraRanking.currentRank !== eraRanking.overallRank && (
+                <div className={cn(
+                  'mt-3 flex items-center gap-1.5 text-sm rounded-lg px-3 py-2',
+                  eraRanking.currentRank < eraRanking.overallRank
+                    ? 'bg-green-50 text-green-700'
+                    : 'bg-amber-50 text-amber-700'
+                )}>
+                  {eraRanking.currentRank < eraRanking.overallRank ? (
+                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                      <polyline points="16 7 22 7 22 13" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
+                      <polyline points="16 17 22 17 22 11" />
+                    </svg>
+                  )}
+                  <span>
+                    Ranked <strong>#{eraRanking.currentRank.toLocaleString()}</strong> for recent publications vs <strong>#{eraRanking.overallRank.toLocaleString()}</strong> overall
+                    {eraRanking.currentRank < eraRanking.overallRank
+                      ? ' — improving with recent work'
+                      : ' — recent work trailing historical performance'}
+                  </span>
+                </div>
+              )}
+
+              {/* Score trend indicator (when ranks aren't available or are equal) */}
+              {(!eraRanking?.currentRank || !eraRanking?.overallRank || eraRanking.currentRank === eraRanking.overallRank) && score.trend.direction !== 'stable' && (
+                <div className={cn(
+                  'mt-3 flex items-center gap-1.5 text-sm rounded-lg px-3 py-2',
+                  score.trend.direction === 'up'
+                    ? 'bg-green-50 text-green-700'
+                    : 'bg-red-50 text-red-700'
+                )}>
+                  {score.trend.direction === 'up' ? (
+                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                      <polyline points="16 7 22 7 22 13" />
+                    </svg>
+                  ) : (
+                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
+                      <polyline points="16 17 22 17 22 11" />
+                    </svg>
+                  )}
+                  <span>
+                    Recent publications score <strong>{Math.abs(score.trend.change)} points {score.trend.direction === 'up' ? 'higher' : 'lower'}</strong> than historical average
+                  </span>
+                </div>
+              )}
+            </div>
+
             <DimensionChart dimensions={score.dimensions} />
-            <MetricsTable dimensions={score.dimensions} />
+            {!isCachedData && <MetricsTable dimensions={score.dimensions} />}
 
             {/* Improvement Tips CTA */}
-            {improvementTips.length > 0 && (
+            {!isCachedData && improvementTips.length > 0 && (
               <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-6">
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-blue-900">
                   <svg
@@ -447,40 +697,16 @@ export default async function MemberPage({ params }: PageProps) {
 
           {/* Right Column - Recommendations */}
           <div>
-            <RecommendationsList recommendations={score.recommendations} limit={5} />
+            {!isCachedData && <RecommendationsList recommendations={score.recommendations} limit={5} />}
 
             {/* Additional Info */}
             <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900">About This Score</h3>
               <dl className="mt-4 space-y-3 text-sm">
                 <div>
-                  <dt className="text-gray-500">Current Works (last 2 years)</dt>
-                  <dd className="font-medium text-gray-900">
-                    {formatNumber(score.metadata.currentWorks)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-500">Backfile Works</dt>
-                  <dd className="font-medium text-gray-900">
-                    {formatNumber(score.metadata.backfileWorks)}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-500">Current Score</dt>
-                  <dd className="font-medium text-gray-900">
-                    {score.trend.currentScore} points
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-500">Backfile Score</dt>
-                  <dd className="font-medium text-gray-900">
-                    {score.trend.backfileScore} points
-                  </dd>
-                </div>
-                <div>
                   <dt className="text-gray-500">Data Source</dt>
                   <dd className="font-medium text-gray-900">
-                    Crossref /members API
+                    {isCachedData ? 'Cached leaderboard data' : 'Crossref /members API'}
                   </dd>
                 </div>
                 <div>

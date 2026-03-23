@@ -6,7 +6,7 @@ export type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
 export type MetricStatus = 'excellent' | 'good' | 'needs-work' | 'poor';
 export type TrendDirection = 'up' | 'down' | 'stable';
 export type Priority = 'high' | 'medium' | 'low';
-export type DataSource = 'api-coverage' | 'sample-analysis';
+export type DataSource = 'api-coverage' | 'sample-analysis' | 'leaderboard-cache';
 
 export interface NexusScore {
   /** Total score out of 100 */

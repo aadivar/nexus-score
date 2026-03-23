@@ -31,8 +31,13 @@ import { generateRecommendations } from '../recommendations/engine.js';
 export function calculateMemberScore(member: CrossrefMember): NexusScore {
   const coverage = member.coverage;
 
-  // Calculate each dimension
-  const dimensions = calculateDimensions(coverage);
+  // Calculate current and backfile dimensions separately, then average
+  const currentDimensions = calculateDimensions(coverage, 'current');
+  const backfileDimensions = calculateDimensions(coverage, 'backfile');
+  const hasBackfile = member.counts['backfile-dois'] > 0;
+
+  // Average current and backfile to get overall dimensions (matching leaderboard logic)
+  const dimensions = averageDimensions(currentDimensions, backfileDimensions, hasBackfile);
 
   // Sum total score
   const total = Math.round(
@@ -71,8 +76,13 @@ export function calculateMemberScore(member: CrossrefMember): NexusScore {
 export function calculateJournalScore(journal: CrossrefJournal): NexusScore {
   const coverage = journal.coverage;
 
-  // Calculate each dimension
-  const dimensions = calculateDimensions(coverage);
+  // Calculate current and backfile dimensions separately, then average
+  const currentDimensions = calculateDimensions(coverage, 'current');
+  const backfileDimensions = calculateDimensions(coverage, 'backfile');
+  const hasBackfile = journal.counts['backfile-dois'] > 0;
+
+  // Average current and backfile to get overall dimensions (matching leaderboard logic)
+  const dimensions = averageDimensions(currentDimensions, backfileDimensions, hasBackfile);
 
   // Sum total score
   const total = Math.round(
@@ -105,30 +115,57 @@ export function calculateJournalScore(journal: CrossrefJournal): NexusScore {
 }
 
 /**
- * Calculate all dimension scores
+ * Calculate all dimension scores for a specific period
  */
-function calculateDimensions(coverage: MemberCoverage): DimensionScores {
+function calculateDimensions(coverage: MemberCoverage, period: 'current' | 'backfile'): DimensionScores {
   return {
-    provenance: calculateDimension('provenance', coverage),
-    people: calculateDimension('people', coverage),
-    organizations: calculateDimension('organizations', coverage),
-    funding: calculateDimension('funding', coverage),
-    access: calculateDimension('access', coverage),
+    provenance: calculateDimension('provenance', coverage, period),
+    people: calculateDimension('people', coverage, period),
+    organizations: calculateDimension('organizations', coverage, period),
+    funding: calculateDimension('funding', coverage, period),
+    access: calculateDimension('access', coverage, period),
   };
 }
 
 /**
- * Calculate a single dimension score
+ * Average current and backfile dimensions to produce overall scores.
+ * If the publisher has no backfile works, use current dimensions only.
+ */
+function averageDimensions(
+  current: DimensionScores,
+  backfile: DimensionScores,
+  hasBackfile: boolean
+): DimensionScores {
+  if (!hasBackfile) return current;
+
+  const result: Partial<DimensionScores> = {};
+  for (const key of Object.keys(current) as DimensionName[]) {
+    const cur = current[key];
+    const back = backfile[key];
+    const avgScore = round((cur.score + back.score) / 2);
+    result[key] = {
+      score: avgScore,
+      maxScore: cur.maxScore,
+      percentage: Math.round((avgScore / cur.maxScore) * 100),
+      metrics: cur.metrics, // Show current-era metric details for actionability
+    };
+  }
+  return result as DimensionScores;
+}
+
+/**
+ * Calculate a single dimension score for a specific period
  */
 function calculateDimension(
   dimension: DimensionName,
-  coverage: MemberCoverage
+  coverage: MemberCoverage,
+  period: 'current' | 'backfile'
 ): DimensionDetail {
   const metrics = METRICS_BY_DIMENSION[dimension];
   const maxScore = DIMENSION_WEIGHTS[dimension];
 
   const metricDetails = metrics.map((metric) =>
-    calculateMetric(metric, coverage)
+    calculateMetric(metric, coverage, period)
   );
 
   const score = metricDetails.reduce((sum, m) => sum + m.contribution, 0);
@@ -142,13 +179,15 @@ function calculateDimension(
 }
 
 /**
- * Calculate a single metric
+ * Calculate a single metric for a specific period
  */
 function calculateMetric(
   metric: MetricWeight,
-  coverage: MemberCoverage
+  coverage: MemberCoverage,
+  period: 'current' | 'backfile'
 ): MetricDetail {
-  const value = (coverage[metric.key as keyof MemberCoverage] as number) || 0;
+  const key = metric.key.replace('-current', `-${period}`) as keyof MemberCoverage;
+  const value = (coverage[key] as number) || 0;
   const contribution = value * metric.weight;
 
   return {
