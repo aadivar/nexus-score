@@ -748,6 +748,18 @@ export default async function MemberPage({ params }: PageProps) {
             {/* Improvement Tips CTA */}
             {!isCachedData && improvementTips.length > 0 && (
               <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-6">
+                {/* Context note when primary content type scores much higher than aggregate */}
+                {contentTypeScores && contentTypeScores.length > 1 && contentTypeScores[0].score - score.total >= 15 && (
+                  <div className="mb-4 flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
+                    <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                      <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                    <span>
+                      Your <strong>{contentTypeScores[0].label.toLowerCase()}</strong> score <strong>{contentTypeScores[0].score}</strong> (Grade {contentTypeScores[0].grade}) — strong work on your primary research outputs! The tips below reflect your aggregate coverage across all content types, where there&apos;s still room to grow.
+                    </span>
+                  </div>
+                )}
                 <h3 className="flex items-center gap-2 text-lg font-semibold text-blue-900">
                   <svg
                     className="h-5 w-5"
