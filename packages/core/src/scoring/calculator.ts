@@ -13,6 +13,8 @@ import type {
   TrendInfo,
   Grade,
   DimensionName,
+  ContentTypeCoverage,
+  ContentTypeScore,
 } from './types.js';
 import {
   METRICS_BY_DIMENSION,
@@ -287,4 +289,127 @@ export function calculateScoreFromCoverage(coverage: Partial<MemberCoverage>): n
   }
 
   return Math.round(total);
+}
+
+// ============ CONTENT-TYPE SCORING ============
+
+const CONTENT_TYPE_LABELS: Record<string, string> = {
+  'journal-article': 'Journal Articles',
+  'posted-content': 'Posted Content',
+  'book-chapter': 'Book Chapters',
+  'proceedings-article': 'Proceedings',
+  'peer-review': 'Peer Reviews',
+  'component': 'Components',
+  'book': 'Books',
+  'dataset': 'Datasets',
+  'monograph': 'Monographs',
+  'edited-book': 'Edited Books',
+  'book-section': 'Book Sections',
+  'reference-book': 'Reference Books',
+  'report': 'Reports',
+  'journal': 'Journals',
+  'journal-issue': 'Journal Issues',
+  'journal-volume': 'Journal Volumes',
+  'book-part': 'Book Parts',
+  'book-series': 'Book Series',
+  'book-set': 'Book Sets',
+  'dissertation': 'Dissertations',
+  'standard': 'Standards',
+  'other': 'Other',
+};
+
+/**
+ * Map simplified coverage-type field names to the metric weight keys.
+ * coverage-type entries use names like "abstracts" while our weights use "abstracts-current".
+ */
+const SIMPLIFIED_FIELD_MAP: Record<string, string> = {
+  'references': 'references',
+  'update-policies': 'update-policies',
+  'similarity-checking': 'similarity-checking',
+  'orcids': 'orcids',
+  'affiliations': 'affiliations',
+  'ror-ids': 'ror-ids',
+  'funders': 'funders',
+  'award-numbers': 'award-numbers',
+  'licenses': 'licenses',
+  'resource-links': 'resource-links',
+  'abstracts': 'abstracts',
+};
+
+/**
+ * Calculate a score from simplified coverage-type fields using the same weight system.
+ */
+function scoreFromSimplifiedCoverage(coverage: Record<string, number>): {
+  score: number;
+  dimensions: { provenance: number; people: number; organizations: number; funding: number; access: number };
+} {
+  // Calculate each dimension percentage
+  const refVal = coverage['references'] || 0;
+  const upVal = coverage['update-policies'] || 0;
+  const simVal = coverage['similarity-checking'] || 0;
+  const provenance = Math.round((refVal * 15 + upVal * 5 + simVal * 5) / 25 * 100);
+
+  const people = Math.round((coverage['orcids'] || 0) * 100);
+
+  const affVal = coverage['affiliations'] || 0;
+  const rorVal = coverage['ror-ids'] || 0;
+  const organizations = Math.round((affVal * 5 + rorVal * 10) / 15 * 100);
+
+  const funVal = coverage['funders'] || 0;
+  const awardVal = coverage['award-numbers'] || 0;
+  const funding = Math.round((funVal * 10 + awardVal * 10) / 20 * 100);
+
+  const licVal = coverage['licenses'] || 0;
+  const linkVal = coverage['resource-links'] || 0;
+  const absVal = coverage['abstracts'] || 0;
+  const access = Math.round((licVal * 7 + linkVal * 7 + absVal * 6) / 20 * 100);
+
+  const score = Math.round(
+    (provenance * DIMENSION_WEIGHTS.provenance +
+      people * DIMENSION_WEIGHTS.people +
+      organizations * DIMENSION_WEIGHTS.organizations +
+      funding * DIMENSION_WEIGHTS.funding +
+      access * DIMENSION_WEIGHTS.access) / 100
+  );
+
+  return { score, dimensions: { provenance, people, organizations, funding, access } };
+}
+
+/**
+ * Calculate scores for each content type from Crossref coverage-type data.
+ * Uses the "all" period to give an overall per-type score.
+ */
+export function calculateContentTypeScores(
+  coverageType: CrossrefMember['coverage-type'] | undefined
+): ContentTypeScore[] {
+  if (!coverageType?.all) return [];
+
+  const results: ContentTypeScore[] = [];
+
+  for (const [type, coverage] of Object.entries(coverageType.all)) {
+    if (!coverage || typeof coverage !== 'object') continue;
+
+    // coverage-type entries use simplified field names (e.g., "abstracts" not "abstracts-current")
+    // which don't match MemberCoverage's era-suffixed keys, so we cast through unknown
+    const cov = coverage as unknown as Record<string, number>;
+    // Skip types with no meaningful coverage data
+    const hasAnyData = Object.keys(SIMPLIFIED_FIELD_MAP).some(
+      (key) => typeof cov[key] === 'number' && cov[key] > 0
+    );
+    if (!hasAnyData) continue;
+
+    const { score, dimensions } = scoreFromSimplifiedCoverage(cov);
+
+    results.push({
+      type,
+      label: CONTENT_TYPE_LABELS[type] || type.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+      score,
+      grade: scoreToGrade(score),
+      dimensions,
+    });
+  }
+
+  // Sort by score descending
+  results.sort((a, b) => b.score - a.score);
+  return results;
 }

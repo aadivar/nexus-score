@@ -6,8 +6,10 @@ import { join } from 'path';
 import {
   CrossrefClient,
   calculateMemberScore,
+  calculateContentTypeScores,
   CrossrefNotFoundError,
   type NexusScore,
+  type ContentTypeScore,
 } from '@nexus-score/core';
 import { ScoreCard } from '@/components/score-card';
 import { DimensionChart } from '@/components/dimension-chart';
@@ -304,10 +306,15 @@ function buildScoreFromLeaderboard(entry: LeaderboardEntry): NexusScore {
   };
 }
 
-async function getMemberScore(id: string): Promise<NexusScore | null> {
+async function getMemberData(id: string): Promise<{
+  score: NexusScore;
+  contentTypeScores: ContentTypeScore[] | null;
+} | null> {
   try {
     const member = await client.getMember(id);
-    return calculateMemberScore(member);
+    const score = calculateMemberScore(member);
+    const contentTypeScores = calculateContentTypeScores(member['coverage-type']);
+    return { score, contentTypeScores };
   } catch (error) {
     if (error instanceof CrossrefNotFoundError) {
       return null;
@@ -318,7 +325,7 @@ async function getMemberScore(id: string): Promise<NexusScore | null> {
     if (data) {
       const entry = data.leaderboard.find((e) => e.id === parseInt(id));
       if (entry) {
-        return buildScoreFromLeaderboard(entry);
+        return { score: buildScoreFromLeaderboard(entry), contentTypeScores: null };
       }
     }
 
@@ -339,7 +346,8 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const score = await getMemberScore(id);
+  const result = await getMemberData(id);
+  const score = result?.score;
 
   if (!score) {
     return {
@@ -359,12 +367,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function MemberPage({ params }: PageProps) {
   const { id } = await params;
-  const score = await getMemberScore(id);
+  const result = await getMemberData(id);
 
-  if (!score) {
+  if (!result) {
     notFound();
   }
 
+  const { score, contentTypeScores } = result;
   const rankingInfo = getRankingInfo(parseInt(id), score.total);
   const improvementTips = getImprovementTips(score.dimensions);
   const isCachedData = score.metadata.dataSource === 'leaderboard-cache';
@@ -620,6 +629,120 @@ export default async function MemberPage({ params }: PageProps) {
             </div>
 
             <DimensionChart dimensions={score.dimensions} />
+
+            {/* Content Type Breakdown */}
+            {contentTypeScores && contentTypeScores.length > 0 && (
+              <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Score by Content Type</h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {contentTypeScores.length === 1
+                        ? `All works are ${contentTypeScores[0].label.toLowerCase()} \u2014 the aggregate score above is accurate.`
+                        : 'Scores calculated separately for each content type registered with Crossref. The aggregate score above includes all types.'}
+                    </p>
+                  </div>
+                </div>
+
+                {contentTypeScores.length > 1 && (
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
+                          <th className="pb-2 pr-4">Content Type</th>
+                          <th className="pb-2 pr-4 text-center">Score</th>
+                          <th className="pb-2 pr-4 text-center">Grade</th>
+                          <th className="hidden pb-2 pr-2 text-center sm:table-cell">Prov</th>
+                          <th className="hidden pb-2 pr-2 text-center sm:table-cell">People</th>
+                          <th className="hidden pb-2 pr-2 text-center sm:table-cell">Orgs</th>
+                          <th className="hidden pb-2 pr-2 text-center sm:table-cell">Fund</th>
+                          <th className="hidden pb-2 text-center sm:table-cell">Access</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contentTypeScores.map((ct, idx) => (
+                          <tr
+                            key={ct.type}
+                            className={cn(
+                              'border-b last:border-0',
+                              idx === 0 && 'bg-blue-50/50'
+                            )}
+                          >
+                            <td className="py-2.5 pr-4 font-medium text-gray-900">
+                              {ct.label}
+                              {idx === 0 && contentTypeScores.length > 1 && (
+                                <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                                  TOP
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2.5 pr-4 text-center font-semibold text-gray-900">
+                              {ct.score}
+                            </td>
+                            <td className="py-2.5 pr-4 text-center">
+                              <span
+                                className={cn(
+                                  'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
+                                  ct.grade === 'A' && 'bg-green-100 text-green-700',
+                                  ct.grade === 'B' && 'bg-blue-100 text-blue-700',
+                                  ct.grade === 'C' && 'bg-yellow-100 text-yellow-700',
+                                  ct.grade === 'D' && 'bg-orange-100 text-orange-700',
+                                  ct.grade === 'F' && 'bg-red-100 text-red-700'
+                                )}
+                              >
+                                {ct.grade}
+                              </span>
+                            </td>
+                            <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
+                              {ct.dimensions.provenance}%
+                            </td>
+                            <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
+                              {ct.dimensions.people}%
+                            </td>
+                            <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
+                              {ct.dimensions.organizations}%
+                            </td>
+                            <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
+                              {ct.dimensions.funding}%
+                            </td>
+                            <td className="hidden py-2.5 text-center text-gray-600 sm:table-cell">
+                              {ct.dimensions.access}%
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {contentTypeScores.length > 1 && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                      <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      <span>
+                        Non-article content types (reviews, components, corrections) typically have lower metadata coverage, which can reduce the aggregate score above.
+                      </span>
+                    </div>
+                    <div className="flex items-start gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-500">
+                      <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                      </svg>
+                      <span>
+                        <strong className="text-gray-600">Why doesn&apos;t the leaderboard use per-type scores?</strong>{' '}
+                        Deciding which content types count as &quot;primary research&quot; is subjective and varies by discipline and publisher model. The leaderboard uses Crossref&apos;s aggregate coverage to ensure a consistent, comparable baseline across all 27,000+ publishers. This per-type breakdown lets you see the full picture for any individual publisher.
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {!isCachedData && <MetricsTable dimensions={score.dimensions} />}
 
             {/* Improvement Tips CTA */}

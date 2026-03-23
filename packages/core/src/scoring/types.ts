@@ -115,3 +115,43 @@ export interface ScoreMetadata {
   /** How the score was calculated */
   dataSource: DataSource;
 }
+
+/**
+ * Coverage fields as returned within coverage-type entries.
+ * Uses simplified names (no era suffix).
+ */
+export interface ContentTypeCoverage {
+  abstracts: number;
+  affiliations: number;
+  orcids: number;
+  licenses: number;
+  references: number;
+  funders: number;
+  'similarity-checking': number;
+  'award-numbers': number;
+  'ror-ids': number;
+  'update-policies': number;
+  'resource-links': number;
+}
+
+/**
+ * Score calculated for a single content type (e.g., journal-article).
+ */
+export interface ContentTypeScore {
+  /** Crossref content type key, e.g. 'journal-article' */
+  type: string;
+  /** Human-readable label, e.g. 'Journal Articles' */
+  label: string;
+  /** Weighted score 0-100 */
+  score: number;
+  /** Letter grade */
+  grade: Grade;
+  /** Per-dimension percentages (0-100) */
+  dimensions: {
+    provenance: number;
+    people: number;
+    organizations: number;
+    funding: number;
+    access: number;
+  };
+}

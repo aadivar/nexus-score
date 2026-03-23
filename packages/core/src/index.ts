@@ -42,6 +42,7 @@ export {
   calculateMemberScore,
   calculateJournalScore,
   calculateScoreFromCoverage,
+  calculateContentTypeScores,
   getMaxScore,
 } from './scoring/calculator.js';
 
@@ -73,6 +74,8 @@ export type {
   ScoreMetadata,
   Grade,
   DataSource,
+  ContentTypeCoverage,
+  ContentTypeScore,
 } from './scoring/types.js';
 
 // Recommendations

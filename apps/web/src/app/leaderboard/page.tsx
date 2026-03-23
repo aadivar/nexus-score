@@ -127,6 +127,19 @@ export default function LeaderboardPage() {
           </p>
         </div>
 
+        {/* Content Type Note */}
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-600">
+          <svg className="h-4 w-4 flex-shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <p>
+            Scores aggregate across all content types registered with Crossref. Publishers registering non-article content (reviews, components, corrections) may show lower scores.{' '}
+            <span className="text-gray-500">View individual publisher pages for per-content-type breakdowns.</span>
+          </p>
+        </div>
+
         {/* CTA to Current Era */}
         <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex items-start gap-3">
