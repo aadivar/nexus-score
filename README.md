@@ -1,11 +1,8 @@
 # Research Nexus Score
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-16-black?style=flat-square&logo=next.js" alt="Next.js 16" />
-  <img src="https://img.shields.io/badge/TypeScript-5.9-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Turborepo-2.7-purple?style=flat-square&logo=turborepo" alt="Turborepo" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" />
-  <a href="https://doi.org/10.5281/zenodo.19217246"><img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19217246.svg" alt="DOI" /></a>
+  <a href="https://doi.org/10.5281/zenodo.19217246"><img src="https://img.shields.io/doi/10.5281/zenodo.19217246?style=flat-square" alt="DOI" /></a>
 </p>
 
 <p align="center">
