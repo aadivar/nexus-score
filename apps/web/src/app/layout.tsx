@@ -185,7 +185,15 @@ export default function RootLayout({
                 >
                   cite this project
                 </a>
-                .
+                {' '}— DOI:{' '}
+                <a
+                  href="https://doi.org/10.5281/zenodo.19217246"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  10.5281/zenodo.19217246
+                </a>
               </p>
             </div>
           </div>
