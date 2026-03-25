@@ -187,12 +187,12 @@ export default function RootLayout({
                 </a>
                 {' '}— DOI:{' '}
                 <a
-                  href="https://doi.org/10.5281/zenodo.19217246"
+                  href="https://doi.org/10.5281/zenodo.19217245"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 hover:underline"
                 >
-                  10.5281/zenodo.19217246
+                  10.5281/zenodo.19217245
                 </a>
               </p>
             </div>

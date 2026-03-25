@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" />
-  <a href="https://doi.org/10.5281/zenodo.19217246"><img src="https://img.shields.io/doi/10.5281/zenodo.19217246?style=flat-square" alt="DOI" /></a>
+  <a href="https://doi.org/10.5281/zenodo.19217245"><img src="https://zenodo.org/badge/1135634479.svg" alt="DOI" /></a>
 </p>
 
 <p align="center">
@@ -294,15 +294,15 @@ If you use or mention Research Nexus Score in your work, please cite it as:
   author       = {Varma D., Aadinarayana},
   title        = {Research Nexus Score: Metadata Coverage Scoring for Crossref Members},
   year         = {2025},
-  doi          = {10.5281/zenodo.19217246},
-  url          = {https://doi.org/10.5281/zenodo.19217246},
+  doi          = {10.5281/zenodo.19217245},
+  url          = {https://doi.org/10.5281/zenodo.19217245},
   note         = {Open-source tool for evaluating publisher metadata quality}
 }
 ```
 
 Or in text:
 
-> Varma D., A. (2025). *Research Nexus Score: Metadata Coverage Scoring for Crossref Members*. https://doi.org/10.5281/zenodo.19217246
+> Varma D., A. (2025). *Research Nexus Score: Metadata Coverage Scoring for Crossref Members*. https://doi.org/10.5281/zenodo.19217245
 
 ## Author
 
