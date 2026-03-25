@@ -17,7 +17,8 @@
   <a href="#quick-start">Quick Start</a> •
   <a href="#scoring-methodology">Methodology</a> •
   <a href="INSIGHTS.md">Insights</a> •
-  <a href="#contributing">Contributing</a>
+  <a href="#contributing">Contributing</a> •
+  <a href="#citation">Citation</a>
 </p>
 
 ---
@@ -285,6 +286,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Crossref](https://www.crossref.org/) for the REST API and metadata standards
 - [Model Context Protocol](https://modelcontextprotocol.io/) for the MCP SDK
 - The scholarly communication community for feedback and inspiration
+
+## Citation
+
+If you use or mention Research Nexus Score in your work, please cite it as:
+
+```bibtex
+@software{nexus_score,
+  author       = {Varma D., Aadinarayana},
+  title        = {Research Nexus Score: Metadata Coverage Scoring for Crossref Members},
+  year         = {2025},
+  url          = {https://github.com/aadivar/nexus-score},
+  note         = {Open-source tool for evaluating publisher metadata quality}
+}
+```
+
+Or in text:
+
+> Varma D., A. (2025). *Research Nexus Score: Metadata Coverage Scoring for Crossref Members*. https://github.com/aadivar/nexus-score
 
 ## Author
 

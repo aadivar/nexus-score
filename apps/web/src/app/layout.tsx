@@ -175,6 +175,18 @@ export default function RootLayout({
                 </a>
                 . Not affiliated with Crossref.
               </p>
+              <p className="text-center text-xs text-gray-400">
+                If you use or mention Research Nexus Score, please{' '}
+                <a
+                  href="https://github.com/aadivar/nexus-score#citation"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  cite this project
+                </a>
+                .
+              </p>
             </div>
           </div>
         </footer>
