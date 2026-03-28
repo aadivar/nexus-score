@@ -15,6 +15,7 @@
   <a href="#quick-start">Quick Start</a> •
   <a href="#scoring-methodology">Methodology</a> •
   <a href="INSIGHTS.md">Insights</a> •
+  <a href="#roadmap">Roadmap</a> •
   <a href="#contributing">Contributing</a> •
   <a href="#citation">Citation</a>
 </p>
@@ -253,6 +254,40 @@ Once you know what metadata is missing, Gap Fixer helps you recover it.
 | Licenses | OpenAlex, Reducto | Up to 95% |
 
 See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentation.
+
+## Roadmap
+
+| Phase | What | Status |
+|-------|------|--------|
+| **Scoring** | Publisher leaderboard with 27,830+ members, composite scoring, grading | Done |
+| **Gap Fixer** | Recover missing metadata from OpenAlex, ORCID, ROR, and PDF extraction | Done |
+| **Journal Nexus** | Journal-level article analysis with enrichment projections and gap recovery | In progress |
+| **Pluggable Enrichers** | Swap in your own extraction backends — see below | In progress |
+| **Publisher API** | REST API for programmatic access to scores and gap reports | Planned |
+| **Batch Recovery** | Bulk metadata recovery with Crossref-ready export files | Planned |
+| **Trend Tracking** | Historical score tracking — see improvement over time per publisher | Planned |
+| **Community Benchmarks** | Peer group comparisons by size, discipline, and region | Planned |
+
+### Pluggable Architecture
+
+Gap Fixer is designed to be extensible. The enrichment pipeline is modular — each source is an independent enricher that can be swapped, combined, or replaced. Want to use a different OCR/extraction backend? Add your own enricher.
+
+**Built-in enrichers:**
+- [OpenAlex](https://openalex.org/) — ORCIDs, ROR IDs, affiliations, references, abstracts, funders
+
+**Planned enrichers:**
+- [ORCID API](https://info.orcid.org/documentation/api-tutorials/) — Author identity validation
+- [ROR API](https://ror.org/about/) — Organization identifier matching
+
+**Current PDF extraction:**
+- [Reducto](https://reducto.ai/) — AI-powered structured extraction from scholarly PDFs (abstracts, authors, affiliations, funding, references) — currently running on free API credits
+
+**On the radar:**
+- DeepSeek, Google Gemini, AWS Textract, Azure Document Intelligence, Mistral, LlamaParse
+
+The goal is a pluggable enricher architecture so anyone can swap in the extraction backend that fits their needs. Everything is open source and MIT-licensed — contributions and sponsors welcome.
+
+Have ideas? [Open an issue](https://github.com/aadivar/nexus-score/issues) or jump into the conversation on [LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7441758924527222784/).
 
 ## Tech Stack
 
