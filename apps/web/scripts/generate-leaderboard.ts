@@ -57,9 +57,9 @@ interface CrossrefMember {
     'award-numbers-backfile': number;
   };
   'coverage-type'?: {
-    all?: {
-      'last-status-check-time'?: number;
-    };
+    all?: Record<string, Record<string, number>>;
+    current?: Record<string, Record<string, number>>;
+    backfile?: Record<string, Record<string, number>>;
   };
 }
 
@@ -69,6 +69,13 @@ interface DimensionScores {
   organizations: number;
   funding: number;
   access: number;
+}
+
+interface ContentTypeEntry {
+  type: string;
+  label: string;
+  score: number;
+  grade: string;
 }
 
 interface LeaderboardEntry {
@@ -84,12 +91,14 @@ interface LeaderboardEntry {
   improvement: number | null; // null if no backfile to compare against
   dimensions: DimensionScores;
   currentDimensions: DimensionScores;
+  contentTypes?: ContentTypeEntry[];
 }
 
 interface LeaderboardData {
   generatedAt: string;
   totalMembers: number;
   totalWithWorks: number;
+  availableContentTypes: { type: string; label: string; count: number }[];
   leaderboard: LeaderboardEntry[];
 }
 
@@ -101,6 +110,94 @@ const WEIGHTS = {
   funding: 20,
   access: 20,
 };
+
+const CONTENT_TYPE_LABELS: Record<string, string> = {
+  'journal-article': 'Journal Articles',
+  'posted-content': 'Posted Content',
+  'book-chapter': 'Book Chapters',
+  'proceedings-article': 'Proceedings',
+  'peer-review': 'Peer Reviews',
+  'component': 'Components',
+  'book': 'Books',
+  'dataset': 'Datasets',
+  'monograph': 'Monographs',
+  'edited-book': 'Edited Books',
+  'book-section': 'Book Sections',
+  'reference-book': 'Reference Books',
+  'report': 'Reports',
+  'dissertation': 'Dissertations',
+  'standard': 'Standards',
+  'other': 'Other',
+};
+
+function scoreContentType(cov: Record<string, number>): number {
+  const refVal = cov['references'] || 0;
+  const upVal = cov['update-policies'] || 0;
+  const simVal = cov['similarity-checking'] || 0;
+  const provenance = Math.round((refVal * 15 + upVal * 5 + simVal * 5) / 25 * 100);
+
+  const people = Math.round((cov['orcids'] || 0) * 100);
+
+  const affVal = cov['affiliations'] || 0;
+  const rorVal = cov['ror-ids'] || 0;
+  const organizations = Math.round((affVal * 5 + rorVal * 10) / 15 * 100);
+
+  const funVal = cov['funders'] || 0;
+  const awardVal = cov['award-numbers'] || 0;
+  const funding = Math.round((funVal * 10 + awardVal * 10) / 20 * 100);
+
+  const licVal = cov['licenses'] || 0;
+  const linkVal = cov['resource-links'] || 0;
+  const absVal = cov['abstracts'] || 0;
+  const access = Math.round((licVal * 7 + linkVal * 7 + absVal * 6) / 20 * 100);
+
+  return Math.round(
+    (provenance * WEIGHTS.provenance +
+      people * WEIGHTS.people +
+      organizations * WEIGHTS.organizations +
+      funding * WEIGHTS.funding +
+      access * WEIGHTS.access) / 100
+  );
+}
+
+function toGrade(score: number): string {
+  if (score >= 80) return 'A';
+  if (score >= 65) return 'B';
+  if (score >= 50) return 'C';
+  if (score >= 35) return 'D';
+  return 'F';
+}
+
+function calculateContentTypes(
+  coverageType: Record<string, Record<string, number>> | undefined
+): ContentTypeEntry[] {
+  if (!coverageType) return [];
+
+  const results: ContentTypeEntry[] = [];
+
+  for (const [type, coverage] of Object.entries(coverageType)) {
+    if (!coverage || typeof coverage !== 'object') continue;
+
+    // Skip types with no meaningful coverage data
+    const hasAnyData = ['references', 'update-policies', 'similarity-checking',
+      'orcids', 'affiliations', 'ror-ids', 'funders', 'award-numbers',
+      'licenses', 'resource-links', 'abstracts'].some(
+      (key) => typeof coverage[key] === 'number' && coverage[key] > 0
+    );
+    if (!hasAnyData) continue;
+
+    const score = scoreContentType(coverage);
+    results.push({
+      type,
+      label: CONTENT_TYPE_LABELS[type] || type.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+      score,
+      grade: toGrade(score),
+    });
+  }
+
+  results.sort((a, b) => b.score - a.score);
+  return results;
+}
 
 function calculateScore(member: CrossrefMember): {
   total: number;
@@ -289,6 +386,7 @@ async function main() {
 
   const scored = membersWithWorks.map((member) => {
     const score = calculateScore(member);
+    const contentTypes = calculateContentTypes(member['coverage-type']?.all);
     return {
       id: member.id,
       name: member['primary-name'],
@@ -302,6 +400,8 @@ async function main() {
       improvement: score.improvement,
       dimensions: score.dimensions,
       currentDimensions: score.currentDimensions,
+      contentTypes: contentTypes.length > 0 ? contentTypes : undefined,
+      currentContentTypes: calculateContentTypes(member['coverage-type']?.current),
     };
   });
 
@@ -314,11 +414,30 @@ async function main() {
     ...entry,
   }));
 
+  // Collect available content types across all publishers
+  const contentTypeCounts = new Map<string, { label: string; count: number }>();
+  for (const entry of leaderboard) {
+    if (entry.contentTypes) {
+      for (const ct of entry.contentTypes) {
+        const existing = contentTypeCounts.get(ct.type);
+        if (existing) {
+          existing.count++;
+        } else {
+          contentTypeCounts.set(ct.type, { label: ct.label, count: 1 });
+        }
+      }
+    }
+  }
+  const availableContentTypes = Array.from(contentTypeCounts.entries())
+    .map(([type, { label, count }]) => ({ type, label, count }))
+    .sort((a, b) => b.count - a.count);
+
   // Prepare output data
   const data: LeaderboardData = {
     generatedAt: new Date().toISOString(),
     totalMembers: allMembers.length,
     totalWithWorks: membersWithWorks.length,
+    availableContentTypes,
     leaderboard,
   };
 
@@ -343,6 +462,7 @@ async function main() {
       else if (entry.currentScore >= 35) currentGrade = 'D';
       else currentGrade = 'F';
 
+      const currentCT = (entry as any).currentContentTypes as ContentTypeEntry[] | undefined;
       return {
         rank: index + 1,
         id: entry.id,
@@ -356,13 +476,33 @@ async function main() {
         overallGrade: entry.grade,
         improvement: entry.improvement,
         dimensions: entry.currentDimensions,
+        contentTypes: currentCT && currentCT.length > 0 ? currentCT : undefined,
       };
     });
+
+  // Collect current-era content type counts
+  const currentContentTypeCounts = new Map<string, { label: string; count: number }>();
+  for (const entry of currentEra) {
+    if (entry.contentTypes) {
+      for (const ct of entry.contentTypes) {
+        const existing = currentContentTypeCounts.get(ct.type);
+        if (existing) {
+          existing.count++;
+        } else {
+          currentContentTypeCounts.set(ct.type, { label: ct.label, count: 1 });
+        }
+      }
+    }
+  }
+  const currentAvailableContentTypes = Array.from(currentContentTypeCounts.entries())
+    .map(([type, { label, count }]) => ({ type, label, count }))
+    .sort((a, b) => b.count - a.count);
 
   const currentData = {
     generatedAt: new Date().toISOString(),
     totalMembers: allMembers.length,
     totalActive: currentEra.length,
+    availableContentTypes: currentAvailableContentTypes,
     leaderboard: currentEra,
   };
 

@@ -12,6 +12,13 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600;
 
+interface ContentTypeEntry {
+  type: string;
+  label: string;
+  score: number;
+  grade: string;
+}
+
 interface CurrentLeaderboardEntry {
   rank: number;
   id: number;
@@ -31,12 +38,14 @@ interface CurrentLeaderboardEntry {
     funding: number;
     access: number;
   };
+  contentTypes?: ContentTypeEntry[];
 }
 
 interface CurrentLeaderboardData {
   generatedAt: string;
   totalMembers: number;
   totalActive: number;
+  availableContentTypes?: { type: string; label: string; count: number }[];
   leaderboard: CurrentLeaderboardEntry[];
 }
 
@@ -86,7 +95,7 @@ export default function CurrentLeaderboardPage() {
     );
   }
 
-  const { leaderboard, generatedAt, totalMembers, totalActive } = data;
+  const { leaderboard, generatedAt, totalMembers, totalActive, availableContentTypes } = data;
 
   const gradeDistribution = leaderboard.reduce(
     (acc, entry) => {
@@ -138,8 +147,8 @@ export default function CurrentLeaderboardPage() {
             <line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
           <p>
-            Scores aggregate across all content types registered with Crossref. Publishers registering non-article content (reviews, components, corrections) may show lower scores.{' '}
-            <span className="text-gray-500">View individual publisher pages for per-content-type breakdowns.</span>
+            Default scores aggregate across all content types. Publishers registering non-article content (reviews, components, corrections) may show lower aggregate scores.{' '}
+            <span className="text-gray-500">Use the Content Type filter below to rank publishers by specific types like Journal Articles, Proceedings, or Books.</span>
           </p>
         </div>
 
@@ -254,7 +263,7 @@ export default function CurrentLeaderboardPage() {
 
         {/* Table */}
         <div className="mt-8">
-          <CurrentLeaderboardTable leaderboard={leaderboard} totalActive={totalActive} />
+          <CurrentLeaderboardTable leaderboard={leaderboard} totalActive={totalActive} availableContentTypes={availableContentTypes || []} />
         </div>
 
         {/* Footer note */}
