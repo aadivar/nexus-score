@@ -6,6 +6,13 @@ import { cn } from '@/lib/utils';
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
 
+interface ContentTypeEntry {
+  type: string;
+  label: string;
+  score: number;
+  grade: string;
+}
+
 interface LeaderboardEntry {
   rank: number;
   id: number;
@@ -24,11 +31,13 @@ interface LeaderboardEntry {
     funding: number;
     access: number;
   };
+  contentTypes?: ContentTypeEntry[];
 }
 
 interface LeaderboardTableProps {
   leaderboard: LeaderboardEntry[];
   totalWithWorks: number;
+  availableContentTypes: { type: string; label: string; count: number }[];
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -51,13 +60,14 @@ type SortField = 'default' | 'score' | 'works' | 'improvement';
 type SortDirection = 'desc' | 'asc';
 type ViewMode = 'overall' | 'progress';
 
-export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTableProps) {
+export function LeaderboardTable({ leaderboard, totalWithWorks, availableContentTypes }: LeaderboardTableProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('default');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [viewMode, setViewMode] = useState<ViewMode>('overall');
+  const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
 
   // Check if improvement data is available (non-null values with meaningful backfile scores)
   const hasImprovementData = leaderboard.some(e =>
@@ -72,9 +82,29 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
     [leaderboard]
   );
 
+  // Helper to get content-type score for an entry
+  const getCtScore = (entry: LeaderboardEntry): number | null => {
+    if (contentTypeFilter === 'all') return null;
+    const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
+    return ct ? ct.score : null;
+  };
+
+  const getCtGrade = (entry: LeaderboardEntry): string | null => {
+    if (contentTypeFilter === 'all') return null;
+    const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
+    return ct ? ct.grade : null;
+  };
+
   // Filter and sort leaderboard
   const filteredLeaderboard = useMemo(() => {
     let filtered = leaderboard;
+
+    // Content type filter: only show publishers that have this content type
+    if (contentTypeFilter !== 'all') {
+      filtered = filtered.filter((entry) =>
+        entry.contentTypes?.some((c) => c.type === contentTypeFilter)
+      );
+    }
 
     // In progress view, only show publishers with meaningful backfile data (score > 0)
     if (viewMode === 'progress') {
@@ -91,7 +121,23 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
     }
 
     if (gradeFilter !== 'all') {
-      filtered = filtered.filter((entry) => entry.grade === gradeFilter);
+      const gradeForEntry = (entry: LeaderboardEntry) => {
+        if (contentTypeFilter !== 'all') {
+          const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
+          return ct?.grade || entry.grade;
+        }
+        return entry.grade;
+      };
+      filtered = filtered.filter((entry) => gradeForEntry(entry) === gradeFilter);
+    }
+
+    // When content type is selected, default sort by that type's score
+    if (contentTypeFilter !== 'all' && sortField === 'default') {
+      filtered = [...filtered].sort((a, b) => {
+        const aScore = a.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0;
+        const bScore = b.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0;
+        return bScore - aScore;
+      });
     }
 
     // Apply sorting
@@ -100,9 +146,15 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
         sortDirection === 'desc' ? b.totalWorks - a.totalWorks : a.totalWorks - b.totalWorks
       );
     } else if (sortField === 'score') {
-      filtered = [...filtered].sort((a, b) =>
-        sortDirection === 'desc' ? b.score - a.score : a.score - b.score
-      );
+      filtered = [...filtered].sort((a, b) => {
+        const aScore = contentTypeFilter !== 'all'
+          ? (a.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0)
+          : a.score;
+        const bScore = contentTypeFilter !== 'all'
+          ? (b.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0)
+          : b.score;
+        return sortDirection === 'desc' ? bScore - aScore : aScore - bScore;
+      });
     } else if (sortField === 'improvement') {
       filtered = [...filtered].sort((a, b) =>
         sortDirection === 'desc'
@@ -112,12 +164,12 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
     }
 
     // In progress view, default sort by improvement
-    if (viewMode === 'progress' && sortField === 'default') {
+    if (viewMode === 'progress' && sortField === 'default' && contentTypeFilter === 'all') {
       filtered = [...filtered].sort((a, b) => (b.improvement ?? 0) - (a.improvement ?? 0));
     }
 
     return filtered;
-  }, [leaderboard, searchQuery, gradeFilter, sortField, sortDirection, viewMode]);
+  }, [leaderboard, searchQuery, gradeFilter, sortField, sortDirection, viewMode, contentTypeFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredLeaderboard.length / ITEMS_PER_PAGE);
@@ -135,6 +187,13 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
 
   const handleGradeFilterChange = (value: string) => {
     setGradeFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleContentTypeChange = (value: string) => {
+    setContentTypeFilter(value);
+    setSortField('default');
+    setSortDirection('desc');
     setCurrentPage(1);
   };
 
@@ -291,7 +350,26 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {availableContentTypes.length > 0 && (
+            <>
+              <label className="text-sm text-gray-600">Content:</label>
+              <select
+                value={contentTypeFilter}
+                onChange={(e) => handleContentTypeChange(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="all">All Content Types</option>
+                {availableContentTypes
+                  .filter((ct) => ct.count >= 100)
+                  .map((ct) => (
+                    <option key={ct.type} value={ct.type}>
+                      {ct.label} ({ct.count.toLocaleString()})
+                    </option>
+                  ))}
+              </select>
+            </>
+          )}
           <label className="text-sm text-gray-600">Grade:</label>
           <select
             value={gradeFilter}
@@ -311,10 +389,11 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
       {/* Results count */}
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-600">
         <span>
-          {searchQuery || gradeFilter !== 'all' ? (
+          {searchQuery || gradeFilter !== 'all' || contentTypeFilter !== 'all' ? (
             <>
               Showing {filteredLeaderboard.length.toLocaleString()} results
-              {searchQuery && ` for "${searchQuery}"`}
+              {contentTypeFilter !== 'all' && ` for ${availableContentTypes.find(ct => ct.type === contentTypeFilter)?.label || contentTypeFilter}`}
+              {searchQuery && ` matching "${searchQuery}"`}
               {gradeFilter !== 'all' && ` with grade ${gradeFilter}`}
             </>
           ) : viewMode === 'progress' ? (
@@ -421,7 +500,10 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
                 </td>
               </tr>
             ) : (
-              paginatedLeaderboard.map((entry, index) => (
+              paginatedLeaderboard.map((entry, index) => {
+                const useOriginalRank = contentTypeFilter === 'all' && sortField === 'default' && !searchQuery && gradeFilter === 'all';
+                const displayRank = useOriginalRank ? entry.rank : startIndex + index + 1;
+                return (
                 <tr key={entry.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-4 py-4">
                     {viewMode === 'progress' ? (
@@ -432,17 +514,17 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
                       <span
                         className={cn(
                           'text-lg font-bold',
-                          rankStyles[entry.rank] || 'text-gray-400'
+                          useOriginalRank ? (rankStyles[displayRank] || 'text-gray-400') : 'text-gray-400'
                         )}
                       >
-                        {entry.rank <= 3 ? (
+                        {useOriginalRank && displayRank <= 3 ? (
                           <>
-                            {entry.rank === 1 && '🥇'}
-                            {entry.rank === 2 && '🥈'}
-                            {entry.rank === 3 && '🥉'}
+                            {displayRank === 1 && '🥇'}
+                            {displayRank === 2 && '🥈'}
+                            {displayRank === 3 && '🥉'}
                           </>
                         ) : (
-                          `#${entry.rank.toLocaleString()}`
+                          `#${displayRank.toLocaleString()}`
                         )}
                       </span>
                     )}
@@ -495,17 +577,17 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
                     <>
                       <td className="whitespace-nowrap px-4 py-4 text-center">
                         <span className="text-lg font-bold text-gray-900">
-                          {entry.score}
+                          {getCtScore(entry) ?? entry.score}
                         </span>
                       </td>
                       <td className="whitespace-nowrap px-4 py-4 text-center">
                         <span
                           className={cn(
                             'inline-flex rounded-full px-2 py-1 text-xs font-bold',
-                            gradeColors[entry.grade as Grade] || 'bg-gray-100 text-gray-800'
+                            gradeColors[(getCtGrade(entry) ?? entry.grade) as Grade] || 'bg-gray-100 text-gray-800'
                           )}
                         >
-                          {entry.grade}
+                          {getCtGrade(entry) ?? entry.grade}
                         </span>
                       </td>
                       <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 md:table-cell">
@@ -529,7 +611,8 @@ export function LeaderboardTable({ leaderboard, totalWithWorks }: LeaderboardTab
                     {entry.totalWorks.toLocaleString()}
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
