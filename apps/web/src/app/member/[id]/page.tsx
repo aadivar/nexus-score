@@ -734,8 +734,8 @@ export default async function MemberPage({ params }: PageProps) {
                         <line x1="12" y1="17" x2="12.01" y2="17"/>
                       </svg>
                       <span>
-                        <strong className="text-gray-600">Why doesn&apos;t the leaderboard use per-type scores?</strong>{' '}
-                        Deciding which content types count as &quot;primary research&quot; is subjective and varies by discipline and publisher model. The leaderboard uses Crossref&apos;s aggregate coverage to ensure a consistent, comparable baseline across all 27,000+ publishers. This per-type breakdown lets you see the full picture for any individual publisher.
+                        <strong className="text-gray-600">Want to compare by content type?</strong>{' '}
+                        The <Link href="/leaderboard/current" className="text-blue-600 hover:underline">leaderboard</Link> supports filtering by content type — use it to see how publishers rank for journal articles, peer reviews, or other types individually.
                       </span>
                     </div>
                   </div>
