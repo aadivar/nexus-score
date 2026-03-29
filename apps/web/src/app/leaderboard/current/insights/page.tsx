@@ -189,11 +189,15 @@ export default function CurrentEraInsightsPage() {
             performer among major publishers even on current content</strong> — still an F at 29.
           </p>
 
-          <h2>Only 135 Publishers Got Worse</h2>
+          <h2>Only 135 Publishers Got Worse — But Context Matters</h2>
           <p>
             Just <strong>135 publishers</strong> (0.6%) score lower on current content than overall.
-            The most notable: <strong>eLife</strong> dropped from D (39) to F (31) — surprising for
-            an open-access pioneer. Most downgrades are small regional publishers.
+            The most notable: <strong>eLife</strong> dropped from D (39) to F (31). But this is
+            misleading — use the{' '}
+            <Link href="/leaderboard/current" className="font-medium underline">content-type filter</Link> and
+            the picture changes completely. eLife&apos;s <strong>journal articles score 97/A</strong>.
+            The aggregate is dragged down by peer reviews (13/F) — content that by design doesn&apos;t
+            carry abstracts or funding metadata.
           </p>
 
           <h2>South Korea Still Dominates</h2>
@@ -235,6 +239,48 @@ export default function CurrentEraInsightsPage() {
           <p>
             The industry has made progress on provenance and ORCIDs, but institutional identifiers
             and funding metadata remain nearly empty across the board.
+          </p>
+
+          <h2>Content Types Tell a Different Story</h2>
+          <p>
+            Aggregate scores mix content types with fundamentally different metadata expectations.
+            The new{' '}
+            <Link href="/leaderboard/current" className="font-medium underline">content-type filter</Link> lets
+            you rank publishers by specific types — and the rankings shift dramatically.
+          </p>
+
+          <div className="not-prose my-6 overflow-hidden rounded-lg border">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium text-gray-700">Publisher</th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-700">Aggregate</th>
+                  <th className="px-4 py-3 text-center font-medium text-emerald-700">Journal Articles</th>
+                  <th className="px-4 py-3 text-center font-medium text-gray-700">Other Types</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {[
+                  ['eLife', '31 (F)', '97 (A)', 'Peer Reviews: 13 (F)'],
+                  ['APS', '81 (A)', '81 (A)', 'Proceedings: 7 (F)'],
+                  ['MDPI', '68 (B)', '71 (B)', 'Consistent across types'],
+                ].map(([name, aggregate, ja, other]) => (
+                  <tr key={name}>
+                    <td className="px-4 py-3 font-medium">{name}</td>
+                    <td className="px-4 py-3 text-center text-gray-500">{aggregate}</td>
+                    <td className="px-4 py-3 text-center font-semibold text-emerald-700">{ja}</td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-500">{other}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p>
+            The finding is consistent: <strong>metadata quality is driven by the deposit pipeline per content type</strong>,
+            not by discipline. When a publisher invests in their journal article pipeline, it shows immediately.
+            Their proceedings or peer review pipeline may still be untouched. The content-type filter
+            on both leaderboards now makes this visible.
           </p>
 
           <h2>The Bottom Line</h2>
