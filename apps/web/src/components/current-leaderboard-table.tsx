@@ -345,6 +345,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
               <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                 Grade
               </th>
+              {contentTypeFilter === 'all' && (
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 sm:table-cell">
                 <button
                   onClick={() => handleSortToggle('overall')}
@@ -354,6 +355,8 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                   {getSortIcon('overall')}
                 </button>
               </th>
+              )}
+              {contentTypeFilter === 'all' && (
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
                 <button
                   onClick={() => handleSortToggle('improvement')}
@@ -363,6 +366,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                   {getSortIcon('improvement')}
                 </button>
               </th>
+              )}
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
                 Prov.
               </th>
@@ -392,7 +396,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
           <tbody className="divide-y divide-gray-200">
             {paginatedLeaderboard.length === 0 ? (
               <tr>
-                <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={contentTypeFilter === 'all' ? 12 : 10} className="px-4 py-8 text-center text-gray-500">
                   No publishers found matching your search.
                 </td>
               </tr>
@@ -442,17 +446,18 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                       >
                         {getCtGrade(entry) ?? entry.grade}
                       </span>
-                      {gradeUpgrade && (
+                      {contentTypeFilter === 'all' && gradeUpgrade && (
                         <span className="ml-1 text-xs text-emerald-600" title={`Overall: ${entry.overallGrade}`}>
                           ↑
                         </span>
                       )}
-                      {gradeDowngrade && (
+                      {contentTypeFilter === 'all' && gradeDowngrade && (
                         <span className="ml-1 text-xs text-red-500" title={`Overall: ${entry.overallGrade}`}>
                           ↓
                         </span>
                       )}
                     </td>
+                    {contentTypeFilter === 'all' && (
                     <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-500 sm:table-cell">
                       <span
                         className={cn(
@@ -463,6 +468,8 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                         {entry.overallScore} ({entry.overallGrade})
                       </span>
                     </td>
+                    )}
+                    {contentTypeFilter === 'all' && (
                     <td className="hidden whitespace-nowrap px-4 py-4 text-center md:table-cell">
                       {entry.improvement !== null && (
                         <span
@@ -490,6 +497,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                         </span>
                       )}
                     </td>
+                    )}
                     <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
                       {entry.dimensions.provenance}%
                     </td>

@@ -195,6 +195,10 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
     setSortField('default');
     setSortDirection('desc');
     setCurrentPage(1);
+    // Reset to overall view when content-type filter is active — improvement data is aggregate only
+    if (value !== 'all' && viewMode === 'progress') {
+      setViewMode('overall');
+    }
   };
 
   const handleSortToggle = (field: 'score' | 'works' | 'improvement') => {
@@ -295,10 +299,14 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
             </button>
             <button
               onClick={() => handleViewModeChange('progress')}
+              disabled={contentTypeFilter !== 'all'}
+              title={contentTypeFilter !== 'all' ? 'Improvement data is only available for aggregate scores' : undefined}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 viewMode === 'progress'
                   ? 'bg-green-600 text-white'
+                  : contentTypeFilter !== 'all'
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               )}
             >
