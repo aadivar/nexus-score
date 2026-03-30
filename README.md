@@ -15,6 +15,7 @@
   <a href="#quick-start">Quick Start</a> •
   <a href="#scoring-methodology">Methodology</a> •
   <a href="INSIGHTS.md">Insights</a> •
+  <a href="#architecture--vision">Architecture</a> •
   <a href="#roadmap">Roadmap</a> •
   <a href="#contributing">Contributing</a> •
   <a href="#citation">Citation</a>
@@ -254,6 +255,77 @@ Once you know what metadata is missing, Gap Fixer helps you recover it.
 | Licenses | OpenAlex, Reducto | Up to 95% |
 
 See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentation.
+
+## Architecture & Vision
+
+```mermaid
+graph TB
+    subgraph DATA ["Data Sources"]
+        CR["Crossref API<br/><i>31,000+ members</i>"]
+        OA["OpenAlex"]
+        ORCID["ORCID API"]
+        ROR["ROR API"]
+        PDF["PDF Extraction<br/><i>Reducto / AI backends</i>"]
+    end
+
+    subgraph CORE ["@nexus-score/core"]
+        SCORE["Scoring Engine<br/><i>5 dimensions, 100 pts</i>"]
+        GRADE["Grading & Recommendations"]
+    end
+
+    subgraph APPS ["Applications"]
+        WEB["Web App<br/><i>Leaderboard · Insights · Content-Type Filters</i>"]
+        GF["Gap Fixer<br/><i>Upload gap CSV → recover metadata</i>"]
+        MCP["MCP Server<br/><i>AI assistant integration</i>"]
+    end
+
+    subgraph ENRICHERS ["Pluggable Enrichers 🔌"]
+        direction LR
+        E1["OpenAlex<br/>Enricher"]
+        E2["ORCID<br/>Enricher"]
+        E3["ROR<br/>Enricher"]
+        E4["PDF<br/>Enricher"]
+        E5["Your Own<br/>Enricher"]
+    end
+
+    subgraph PLANNED ["Planned"]
+        API["Publisher API<br/><i>REST access to scores</i>"]
+        BATCH["Batch Recovery<br/><i>Bulk Crossref-ready exports</i>"]
+        TREND["Trend Tracking<br/><i>Score history over time</i>"]
+        BENCH["Community Benchmarks<br/><i>Peer group comparisons</i>"]
+    end
+
+    CR --> SCORE
+    SCORE --> GRADE
+    GRADE --> WEB
+    GRADE --> MCP
+    GRADE --> API
+
+    CR -->|"Gap Reports"| GF
+    GF --> ENRICHERS
+    OA --> E1
+    ORCID --> E2
+    ROR --> E3
+    PDF --> E4
+    ENRICHERS -->|"Recovered metadata"| GF
+
+    SCORE --> TREND
+    WEB --> BENCH
+    GF --> BATCH
+
+    style DATA fill:#e8f4f8,stroke:#2980b9,color:#000
+    style CORE fill:#eafaf1,stroke:#27ae60,color:#000
+    style APPS fill:#fef9e7,stroke:#f39c12,color:#000
+    style ENRICHERS fill:#f4ecf7,stroke:#8e44ad,color:#000
+    style PLANNED fill:#fbeee6,stroke:#e67e22,color:#000
+    style E5 stroke-dasharray: 5 5
+    style API stroke-dasharray: 5 5
+    style BATCH stroke-dasharray: 5 5
+    style TREND stroke-dasharray: 5 5
+    style BENCH stroke-dasharray: 5 5
+```
+
+> **Solid boxes** = shipped. **Dashed boxes** = planned. The pluggable enricher layer (purple) is the key extensibility point — anyone can add their own metadata source.
 
 ## Roadmap
 
