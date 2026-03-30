@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900">Privacy Policy</h1>
-        <p className="mt-2 text-sm text-gray-500">Last updated: January 2026</p>
+        <p className="mt-2 text-sm text-gray-500">Last updated: March 2026</p>
 
         <div className="mt-8 rounded-lg border-2 border-blue-200 bg-blue-50 p-6">
           <div className="flex items-center gap-3">
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
             </svg>
             <div>
               <h2 className="text-lg font-semibold text-blue-900">Minimal Data Collection</h2>
-              <p className="text-blue-700">We use Google Analytics to understand how the site is used. No personal data is collected or stored by us.</p>
+              <p className="text-blue-700">We use Vercel Analytics to understand how the site is used. No personal data is collected or stored by us.</p>
             </div>
           </div>
         </div>
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
               Research Nexus Score:
             </p>
             <ul className="mt-3 list-inside list-disc space-y-2">
-              <li><strong>Uses Google Analytics</strong> - To understand site usage and improve the service</li>
+              <li><strong>Uses Vercel Analytics</strong> - Privacy-friendly, first-party analytics to understand site usage</li>
               <li><strong>Does not collect personal information</strong> directly</li>
               <li><strong>Does not sell or share data</strong></li>
               <li><strong>Does not require an account</strong> to use</li>
@@ -43,7 +43,16 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">Analytics</h2>
             <p className="mt-3">
-              We use Google Analytics to understand how visitors use Research Nexus Score. This helps us improve the site. Google Analytics may collect:
+              We use{' '}
+              <a
+                href="https://vercel.com/docs/analytics"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline"
+              >
+                Vercel Analytics
+              </a>
+              {' '}to understand how visitors use Research Nexus Score. This helps us improve the site. Vercel Analytics is privacy-friendly and first-party — it does not use cookies or track visitors across sites. It may collect:
             </p>
             <ul className="mt-3 list-inside list-disc space-y-1">
               <li>Pages visited and time spent</li>
@@ -52,14 +61,14 @@ export default function PrivacyPage() {
               <li>Referral sources</li>
             </ul>
             <p className="mt-3">
-              This data is aggregated and anonymized. You can opt out of Google Analytics by using browser extensions like{' '}
+              This data is aggregated and anonymized. No personally identifiable information is collected. Learn more in{' '}
               <a
-                href="https://tools.google.com/dlpage/gaoptout"
+                href="https://vercel.com/legal/privacy-policy"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-600 hover:underline"
               >
-                Google Analytics Opt-out Browser Add-on
+                Vercel&apos;s Privacy Policy
               </a>
               .
             </p>
@@ -94,14 +103,14 @@ export default function PrivacyPage() {
             </p>
             <ul className="mt-3 space-y-3">
               <li>
-                <strong>Google Analytics</strong> - For usage analytics.{' '}
+                <strong>Vercel Analytics</strong> - For privacy-friendly usage analytics.{' '}
                 <a
-                  href="https://policies.google.com/privacy"
+                  href="https://vercel.com/docs/analytics"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 hover:underline"
                 >
-                  Google&apos;s Privacy Policy
+                  Vercel Analytics Docs
                 </a>
               </li>
               <li>
