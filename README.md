@@ -262,6 +262,7 @@ See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentat
 | **Scoring** | Publisher leaderboard with 27,830+ members, composite scoring, grading | Done |
 | **Gap Fixer** | Recover missing metadata from OpenAlex, ORCID, ROR, and PDF extraction | Done |
 | **Journal Nexus** | Journal-level article analysis with enrichment projections and gap recovery | In progress |
+| **Content-Type Filtering** | Filter leaderboard and insights by content type (journal-article, book-chapter, etc.) | Done |
 | **Pluggable Enrichers** | Swap in your own extraction backends — see below | In progress |
 | **Publisher API** | REST API for programmatic access to scores and gap reports | Planned |
 | **Batch Recovery** | Bulk metadata recovery with Crossref-ready export files | Planned |
