@@ -347,13 +347,11 @@ Gap Fixer recovers missing metadata (ORCIDs, funders, affiliations, abstracts, r
 
 **Built-in enrichers:**
 - [OpenAlex](https://openalex.org/) — ORCIDs, ROR IDs, affiliations, references, abstracts, funders
+- [Reducto](https://reducto.ai/) — AI-powered structured extraction from scholarly PDFs (abstracts, authors, affiliations, funding, references)
 
-**Planned enrichers:**
-- [ORCID API](https://info.orcid.org/documentation/api-tutorials/) — Author identity validation
-- [ROR API](https://ror.org/about/) — Organization identifier matching
-
-**Current PDF extraction:**
-- [Reducto](https://reducto.ai/) — AI-powered structured extraction from scholarly PDFs (abstracts, authors, affiliations, funding, references) — currently running on free API credits
+**In progress:**
+- [ORCID API](https://info.orcid.org/documentation/api-tutorials/) — Author identity validation (enricher built, integration in progress)
+- [ROR API](https://ror.org/about/) — Organization identifier matching (enricher built, integration in progress)
 
 **On the radar:**
 - DeepSeek, Google Gemini, AWS Textract, Azure Document Intelligence, Mistral, LlamaParse
