@@ -263,7 +263,7 @@ See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentat
 | **Gap Fixer** | Recover missing metadata from OpenAlex, ORCID, ROR, and PDF extraction | Done |
 | **Journal Nexus** | Journal-level article analysis with enrichment projections and gap recovery | In progress |
 | **Content-Type Filtering** | Filter leaderboard and insights by content type (journal-article, book-chapter, etc.) | Done |
-| **Pluggable Enrichers** | Swap in your own extraction backends — see below | In progress |
+| **Pluggable Enrichers** | Modular metadata recovery — plug in any source (OpenAlex, ORCID, ROR, PDF extraction, or your own) to fill gaps your way | In progress |
 | **Publisher API** | REST API for programmatic access to scores and gap reports | Planned |
 | **Batch Recovery** | Bulk metadata recovery with Crossref-ready export files | Planned |
 | **Trend Tracking** | Historical score tracking — see improvement over time per publisher | Planned |
@@ -271,7 +271,7 @@ See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentat
 
 ### Pluggable Architecture
 
-Gap Fixer is designed to be extensible. The enrichment pipeline is modular — each source is an independent enricher that can be swapped, combined, or replaced. Want to use a different OCR/extraction backend? Add your own enricher.
+Gap Fixer recovers missing metadata (ORCIDs, funders, affiliations, abstracts, references) by pulling from multiple sources — OpenAlex, ORCID, ROR, and PDF extraction. Each source is an independent enricher module. Publishers and infrastructure providers can plug in their own sources or swap extraction backends to fit their workflow — no lock-in to any single provider.
 
 **Built-in enrichers:**
 - [OpenAlex](https://openalex.org/) — ORCIDs, ROR IDs, affiliations, references, abstracts, funders
@@ -286,7 +286,7 @@ Gap Fixer is designed to be extensible. The enrichment pipeline is modular — e
 **On the radar:**
 - DeepSeek, Google Gemini, AWS Textract, Azure Document Intelligence, Mistral, LlamaParse
 
-The goal is a pluggable enricher architecture so anyone can swap in the extraction backend that fits their needs. Everything is open source and MIT-licensed — contributions and sponsors welcome.
+The goal: metadata gaps are a pipeline problem, not a discipline problem. With pluggable enrichers, anyone can recover what's missing using the sources that work best for them. Everything is open source and MIT-licensed — contributions and sponsors welcome.
 
 Have ideas? [Open an issue](https://github.com/aadivar/nexus-score/issues) or jump into the conversation on [LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7441758924527222784/).
 
