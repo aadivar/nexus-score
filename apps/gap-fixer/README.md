@@ -89,9 +89,9 @@ Gap Fixer uses a multi-source confidence algorithm:
            │
            ▼
 ┌─────────────────────┐
-│  Supabase Storage   │
-│  Jobs, Articles,    │
-│  Gaps, Recoveries   │
+│  In-Browser Results │
+│  Side-by-side       │
+│  comparison view    │
 └──────────┬──────────┘
            │
            ▼
@@ -104,10 +104,10 @@ Gap Fixer uses a multi-source confidence algorithm:
 ## Tech Stack
 
 - **Framework:** Next.js 16 with App Router
-- **Database:** Supabase (PostgreSQL)
 - **Styling:** Tailwind CSS 4
 - **Language:** TypeScript 5
 - **CSV Parsing:** PapaParse
+- **Storage:** In-browser (no database required — all processing happens client-side and via API routes)
 
 ## Project Structure
 
@@ -122,8 +122,7 @@ gap-fixer/
 │   │   └── analysis-summary.tsx # Results display
 │   └── lib/
 │       ├── db/
-│       │   ├── supabase.ts     # Database client
-│       │   ├── schema.sql      # Database schema
+│       │   ├── schema.sql      # Database schema (for future persistent storage)
 │       │   └── types.ts        # TypeScript types
 │       ├── enrichers/
 │       │   ├── types.ts        # Common enrichment types
@@ -146,7 +145,6 @@ gap-fixer/
 
 - Node.js 18+
 - pnpm 10+
-- Supabase account (for production)
 
 ### Setup
 
@@ -164,25 +162,11 @@ cp .env.local.example .env.local
 ### Environment Variables
 
 ```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-
 # Optional: for polite API access
 OPENALEX_EMAIL=your-email@example.com
 
 # Reducto (for PDF extraction)
 REDUCTO_API_KEY=your-reducto-api-key
-```
-
-### Database Setup
-
-Run the schema in Supabase SQL editor:
-
-```bash
-# Copy contents of src/lib/db/schema.sql
-# Paste into Supabase SQL Editor
-# Execute
 ```
 
 ### Development
@@ -223,7 +207,9 @@ Research Organization Registry API for institutional identifier validation.
 - Extracts: abstracts, authors (with ORCIDs), affiliations, references (with DOIs), funding acknowledgments, licenses
 - Particularly valuable when metadata exists in the PDF but wasn't deposited with Crossref
 
-## Database Schema
+## Data Model
+
+> Currently all processing happens in-browser and via API routes. The schema below describes the data structures used internally and is the basis for future persistent storage.
 
 ### Jobs
 
