@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { PublisherRadar } from './publisher-radar';
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
 
@@ -56,7 +57,8 @@ const rankStyles: Record<number, string> = {
   3: 'text-amber-600',
 };
 
-type SortField = 'default' | 'score' | 'works' | 'improvement';
+type DimensionKey = 'provenance' | 'people' | 'organizations' | 'funding' | 'access';
+type SortField = 'default' | 'score' | 'works' | 'improvement' | DimensionKey;
 type SortDirection = 'desc' | 'asc';
 type ViewMode = 'overall' | 'progress';
 
@@ -68,6 +70,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [viewMode, setViewMode] = useState<ViewMode>('overall');
   const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
+  const [radarEntry, setRadarEntry] = useState<LeaderboardEntry | null>(null);
 
   // Check if improvement data is available (non-null values with meaningful backfile scores)
   const hasImprovementData = leaderboard.some(e =>
@@ -161,6 +164,13 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
           ? (b.improvement ?? 0) - (a.improvement ?? 0)
           : (a.improvement ?? 0) - (b.improvement ?? 0)
       );
+    } else if (['provenance', 'people', 'organizations', 'funding', 'access'].includes(sortField)) {
+      const dim = sortField as DimensionKey;
+      filtered = [...filtered].sort((a, b) =>
+        sortDirection === 'desc'
+          ? b.dimensions[dim] - a.dimensions[dim]
+          : a.dimensions[dim] - b.dimensions[dim]
+      );
     }
 
     // In progress view, default sort by improvement
@@ -201,7 +211,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
     }
   };
 
-  const handleSortToggle = (field: 'score' | 'works' | 'improvement') => {
+  const handleSortToggle = (field: 'score' | 'works' | 'improvement' | DimensionKey) => {
     if (sortField === field) {
       // Toggle direction or reset to default
       if (sortDirection === 'desc') {
@@ -225,7 +235,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
     setCurrentPage(1);
   };
 
-  const getSortIcon = (field: 'score' | 'works' | 'improvement') => {
+  const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
       return (
         <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -412,7 +422,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
         </span>
         {sortField !== 'default' && (
           <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-            Sorted by {sortField} {sortDirection === 'desc' ? '(high to low)' : '(low to high)'}
+            Sorted by {sortField === 'organizations' ? 'orgs' : sortField} {sortDirection === 'desc' ? '(high to low)' : '(low to high)'}
             <button
               onClick={() => {
                 setSortField('default');
@@ -473,19 +483,29 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
                     Grade
                   </th>
                   <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                    Provenance
+                    <button onClick={() => handleSortToggle('provenance')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                      Provenance{getSortIcon('provenance')}
+                    </button>
                   </th>
                   <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                    People
+                    <button onClick={() => handleSortToggle('people')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                      People{getSortIcon('people')}
+                    </button>
                   </th>
                   <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                    Orgs
+                    <button onClick={() => handleSortToggle('organizations')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                      Orgs{getSortIcon('organizations')}
+                    </button>
                   </th>
                   <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                    Funding
+                    <button onClick={() => handleSortToggle('funding')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                      Funding{getSortIcon('funding')}
+                    </button>
                   </th>
                   <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                    Access
+                    <button onClick={() => handleSortToggle('access')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                      Access{getSortIcon('access')}
+                    </button>
                   </th>
                 </>
               )}
@@ -512,7 +532,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
                 const useOriginalRank = contentTypeFilter === 'all' && sortField === 'default' && !searchQuery && gradeFilter === 'all';
                 const displayRank = useOriginalRank ? entry.rank : startIndex + index + 1;
                 return (
-                <tr key={entry.id} className="hover:bg-gray-50">
+                <tr key={entry.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setRadarEntry(entry)}>
                   <td className="whitespace-nowrap px-4 py-4">
                     {viewMode === 'progress' ? (
                       <span className="text-lg font-bold text-gray-400">
@@ -541,6 +561,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
                     <Link
                       href={`/member/${entry.id}`}
                       className="font-medium text-gray-900 hover:text-blue-600"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {entry.name}
                     </Link>
@@ -694,6 +715,20 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
             </button>
           </div>
         </div>
+      )}
+      {radarEntry && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setRadarEntry(null)} />
+          <PublisherRadar
+            id={radarEntry.id}
+            name={radarEntry.name}
+            score={getCtScore(radarEntry) ?? radarEntry.score}
+            grade={(getCtGrade(radarEntry) ?? radarEntry.grade)}
+            dimensions={radarEntry.dimensions}
+            contentTypeFilter={contentTypeFilter}
+            onClose={() => setRadarEntry(null)}
+          />
+        </>
       )}
     </div>
   );

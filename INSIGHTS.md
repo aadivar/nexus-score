@@ -203,4 +203,42 @@ The current-era view reveals a more optimistic story. The industry *is* getting 
 
 ---
 
+---
+
+# What the Composite Score Hides: A Per-Dimension View
+
+*Composite scores generate interest, but per-dimension coverage is where the actionable insight lives. Different publishers have different priorities and contexts. The leaderboard now supports sorting by individual dimensions and a radar chart profile for each publisher.*
+
+## The Same Score, Completely Different Profiles
+
+Two publishers can score a 50 and look nothing alike:
+
+| Dimension | Publisher A (Access-strong) | Publisher B (People-strong) |
+|-----------|---------------------------|----------------------------|
+| Provenance | 30% | 60% |
+| People | 20% | 90% |
+| Organizations | 10% | 5% |
+| Funding | 15% | 10% |
+| Access | 90% | 40% |
+| **Composite** | **~50** | **~50** |
+
+The composite score treats these as equivalent. They're not. Publisher A has prioritized open access metadata (licenses, abstracts, full-text links). Publisher B has invested in author identification (ORCIDs). Both have legitimate strategies — the radar chart makes this visible.
+
+## Dimension Leaders Don't Always Lead Overall
+
+When you sort the leaderboard by individual dimensions, the top 10 changes dramatically:
+
+- **Sort by People (ORCID)**: Publishers like PLoS (94% current), APS (98%), and ASM (99%) rise — they've invested heavily in author identification even if their overall scores are mid-range.
+- **Sort by Funding**: Almost everyone drops. The median is 0%. The few publishers with meaningful funder metadata stand out starkly.
+- **Sort by Organizations (ROR)**: Life Science Alliance (86%) is essentially alone at the top. Even MDPI — a B-grade publisher overall — has 0% ROR coverage.
+- **Sort by Access**: Many publishers score well here (licenses + abstracts), which inflates their composite but masks gaps elsewhere.
+
+## The Practical Takeaway
+
+A publisher scoring an F overall but 90%+ on a single dimension isn't failing — they've made a strategic investment that the composite score doesn't reward. Per-dimension sorting lets the community recognize these efforts and helps publishers decide where to invest next based on what matters most to their stakeholders.
+
+This is why the leaderboard now lets you click any dimension column to re-rank, and click any publisher to see their full radar profile.
+
+---
+
 *Generated from [Nexus Score](https://nexus-score.vercel.app) leaderboard data. Last updated: March 2026.*

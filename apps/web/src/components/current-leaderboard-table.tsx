@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { PublisherRadar } from './publisher-radar';
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
 
@@ -51,7 +52,8 @@ const gradeColors: Record<Grade, string> = {
   F: 'bg-red-100 text-red-800',
 };
 
-type SortField = 'default' | 'score' | 'works' | 'improvement' | 'overall';
+type DimensionKey = 'provenance' | 'people' | 'organizations' | 'funding' | 'access';
+type SortField = 'default' | 'score' | 'works' | 'improvement' | 'overall' | DimensionKey;
 type SortDirection = 'desc' | 'asc';
 
 export function CurrentLeaderboardTable({ leaderboard, totalActive, availableContentTypes }: Props) {
@@ -61,6 +63,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
   const [sortField, setSortField] = useState<SortField>('default');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
+  const [radarEntry, setRadarEntry] = useState<CurrentLeaderboardEntry | null>(null);
 
   const getCtScore = (entry: CurrentLeaderboardEntry): number | null => {
     if (contentTypeFilter === 'all') return null;
@@ -134,6 +137,13 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
     } else if (sortField === 'overall') {
       filtered = [...filtered].sort((a, b) =>
         sortDirection === 'desc' ? b.overallScore - a.overallScore : a.overallScore - b.overallScore
+      );
+    } else if (['provenance', 'people', 'organizations', 'funding', 'access'].includes(sortField)) {
+      const dim = sortField as DimensionKey;
+      filtered = [...filtered].sort((a, b) =>
+        sortDirection === 'desc'
+          ? b.dimensions[dim] - a.dimensions[dim]
+          : a.dimensions[dim] - b.dimensions[dim]
       );
     }
 
@@ -305,7 +315,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
         </span>
         {sortField !== 'default' && (
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
-            Sorted by {sortField} {sortDirection === 'desc' ? '(high to low)' : '(low to high)'}
+            Sorted by {sortField === 'organizations' ? 'orgs' : sortField} {sortDirection === 'desc' ? '(high to low)' : '(low to high)'}
             <button
               onClick={() => {
                 setSortField('default');
@@ -368,19 +378,29 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
               </th>
               )}
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                Prov.
+                <button onClick={() => handleSortToggle('provenance')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                  Prov.{getSortIcon('provenance')}
+                </button>
               </th>
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                People
+                <button onClick={() => handleSortToggle('people')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                  People{getSortIcon('people')}
+                </button>
               </th>
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 xl:table-cell">
-                Orgs
+                <button onClick={() => handleSortToggle('organizations')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                  Orgs{getSortIcon('organizations')}
+                </button>
               </th>
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 xl:table-cell">
-                Funding
+                <button onClick={() => handleSortToggle('funding')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                  Funding{getSortIcon('funding')}
+                </button>
               </th>
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 xl:table-cell">
-                Access
+                <button onClick={() => handleSortToggle('access')} className="inline-flex items-center gap-1 hover:text-gray-700">
+                  Access{getSortIcon('access')}
+                </button>
               </th>
               <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
                 <button
@@ -409,7 +429,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                 const gradeDowngrade = gradeOrder[displayGrade] < gradeOrder[entry.overallGrade];
 
                 return (
-                  <tr key={entry.id} className="hover:bg-gray-50">
+                  <tr key={entry.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setRadarEntry(entry)}>
                     <td className="whitespace-nowrap px-4 py-4">
                       <span className="text-lg font-bold text-gray-400">
                         {useOriginalRank && displayRank <= 3 ? (
@@ -427,6 +447,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                       <Link
                         href={`/member/${entry.id}`}
                         className="font-medium text-gray-900 hover:text-emerald-600"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         {entry.name}
                       </Link>
@@ -592,6 +613,20 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
             </button>
           </div>
         </div>
+      )}
+      {radarEntry && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setRadarEntry(null)} />
+          <PublisherRadar
+            id={radarEntry.id}
+            name={radarEntry.name}
+            score={getCtScore(radarEntry) ?? radarEntry.score}
+            grade={(getCtGrade(radarEntry) ?? radarEntry.grade)}
+            dimensions={radarEntry.dimensions}
+            contentTypeFilter={contentTypeFilter}
+            onClose={() => setRadarEntry(null)}
+          />
+        </>
       )}
     </div>
   );
