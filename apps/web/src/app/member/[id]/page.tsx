@@ -13,6 +13,7 @@ import {
 } from '@nexus-score/core';
 import { ScoreCard } from '@/components/score-card';
 import { DimensionChart } from '@/components/dimension-chart';
+import { DimensionRadar } from '@/components/dimension-radar';
 import { MetricsTable } from '@/components/metrics-table';
 import { RecommendationsList } from '@/components/recommendations-list';
 import { MemberSearch } from '@/components/member-search';
@@ -628,7 +629,16 @@ export default async function MemberPage({ params }: PageProps) {
               )}
             </div>
 
-            <DimensionChart dimensions={score.dimensions} />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <DimensionChart dimensions={score.dimensions} />
+              <DimensionRadar dimensions={{
+                provenance: score.dimensions.provenance.percentage,
+                people: score.dimensions.people.percentage,
+                organizations: score.dimensions.organizations.percentage,
+                funding: score.dimensions.funding.percentage,
+                access: score.dimensions.access.percentage,
+              }} />
+            </div>
 
             {/* Content Type Breakdown */}
             {contentTypeScores && contentTypeScores.length > 0 && (
