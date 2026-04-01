@@ -36,6 +36,7 @@ Built to support [Crossref's Research Nexus](https://www.crossref.org/documentat
 - **Actionable Recommendations**: Improvement suggestions with links to Crossref documentation
 - **Global Rankings**: See where any publisher stands among all Crossref members
 - **Gap Fixer**: Recover missing metadata from Crossref Participation Reports using open data sources
+- **Journal Nexus**: Journal-level deep analysis — article-by-article metadata coverage, OpenAlex reconciliation, PDF extraction, and metadata trend tracking
 - **MCP Server**: Integrate with Claude Desktop or other AI assistants
 - **Core Library**: Use scoring logic in your own applications
 
@@ -126,14 +127,19 @@ nexus-score/
 │   │   │   └── components/   # React components
 │   │   ├── scripts/          # Leaderboard generation scripts
 │   │   └── data/             # Cached leaderboard data (27,830 publishers)
-│   └── gap-fixer/            # Metadata recovery tool
-│       ├── src/
-│       │   ├── lib/
-│       │   │   ├── enrichers/  # OpenAlex, ORCID, ROR clients
-│       │   │   ├── parsers/    # Gap report CSV parser
-│       │   │   └── scoring/    # Confidence scoring
-│       │   └── components/   # Upload & analysis UI
-│       └── README.md
+│   ├── gap-fixer/            # Metadata recovery tool
+│   │   ├── src/
+│   │   │   ├── lib/
+│   │   │   │   ├── enrichers/  # OpenAlex, ORCID, ROR clients
+│   │   │   │   ├── parsers/    # Gap report CSV parser
+│   │   │   │   └── scoring/    # Confidence scoring
+│   │   │   └── components/   # Upload & analysis UI
+│   │   └── README.md
+│   └── journal-nexus/        # Journal-level deep analysis
+│       └── src/
+│           ├── app/
+│           │   └── api/      # Enrich, trends, PDF extraction endpoints
+│           └── components/   # Score card, trends, reconciliation, PDF modal
 ├── packages/
 │   ├── core/                 # Scoring library (@nexus-score/core)
 │   │   ├── src/
@@ -230,6 +236,23 @@ Research Nexus Score supports the [Barcelona Declaration on Open Research Inform
 - Promoting transparency in funding acknowledgements
 - Supporting FAIR principles for metadata
 
+## Journal Nexus
+
+Journal Nexus goes deeper than the leaderboard — it analyzes a journal article-by-article to show exactly where metadata gaps are, what's recoverable, and how quality trends over time.
+
+### How It Works
+
+1. **Search** for any journal by ISSN or title
+2. **Score** — see the journal's Nexus Score with dimension breakdown and recommendations
+3. **Trends** — metadata coverage by month, broken down by content type, with automated insights
+4. **Article Analysis** — every article checked against Crossref, then reconciled with OpenAlex to show what's missing vs what's recoverable
+5. **PDF Extraction** — for articles with the biggest gaps, extract metadata directly from the PDF (authors, ORCIDs, affiliations, funding, references)
+6. **Impact Summary** — exportable report showing recovery potential and before/after score projections
+
+### Key Finding
+
+Most metadata gaps are **pipeline problems, not content problems**. The data exists upstream — in submission systems, in OpenAlex, in the PDFs themselves — it just doesn't make it into the Crossref deposit. Journal Nexus makes that visible at the article level.
+
 ## Gap Fixer
 
 Once you know what metadata is missing, Gap Fixer helps you recover it.
@@ -275,6 +298,7 @@ graph TB
 
     subgraph APPS ["Applications"]
         WEB["Web App<br/><i>Leaderboard · Insights · Content-Type Filters</i>"]
+        JN["Journal Nexus<br/><i>Article-level analysis · Trends · PDF extraction</i>"]
         GF["Gap Fixer<br/><i>Upload gap CSV → recover metadata</i>"]
         MCP["MCP Server<br/><i>AI assistant integration</i>"]
     end
@@ -298,10 +322,14 @@ graph TB
     CR --> SCORE
     SCORE --> GRADE
     GRADE --> WEB
+    GRADE --> JN
     GRADE --> MCP
     GRADE --> API
 
     CR -->|"Gap Reports"| GF
+    CR -->|"Per-journal works"| JN
+    OA -->|"Reconciliation"| JN
+    PDF -->|"Full-text extraction"| JN
     GF --> ENRICHERS
     OA --> E1
     ORCID --> E2
@@ -333,7 +361,7 @@ graph TB
 |-------|------|--------|
 | **Scoring** | Publisher leaderboard with 27,830+ members, composite scoring, grading | Done |
 | **Gap Fixer** | Recover missing metadata from OpenAlex, ORCID, ROR, and PDF extraction | Done |
-| **Journal Nexus** | Journal-level article analysis with enrichment projections and gap recovery | In progress |
+| **Journal Nexus** | Journal-level article analysis — article-by-article metadata coverage, OpenAlex reconciliation, metadata trends, and PDF full-text extraction | In progress — evaluating with publishers |
 | **Content-Type Filtering** | Filter leaderboard and insights by content type (journal-article, book-chapter, etc.) | Done |
 | **Pluggable Enrichers** | Modular metadata recovery — plug in any source (OpenAlex, ORCID, ROR, PDF extraction, or your own) to fill gaps your way | In progress |
 | **Publisher API** | REST API for programmatic access to scores and gap reports | Planned |
