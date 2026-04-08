@@ -1,7 +1,7 @@
 # Research Nexus Score
 
 <p align="center">
-  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License" />
+  <img src="https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square" alt="AGPL-3.0 License" />
   <a href="https://doi.org/10.5281/zenodo.19217245"><img src="https://zenodo.org/badge/1135634479.svg" alt="DOI" /></a>
 </p>
 
@@ -384,7 +384,7 @@ Gap Fixer recovers missing metadata (ORCIDs, funders, affiliations, abstracts, r
 **On the radar:**
 - DeepSeek, Google Gemini, AWS Textract, Azure Document Intelligence, Mistral, LlamaParse
 
-The goal: metadata gaps are a pipeline problem, not a discipline problem. With pluggable enrichers, anyone can recover what's missing using the sources that work best for them. Everything is open source and MIT-licensed — contributions and sponsors welcome.
+The goal: metadata gaps are a pipeline problem, not a discipline problem. With pluggable enrichers, anyone can recover what's missing using the sources that work best for them. Everything is open source and AGPL-3.0-licensed — contributions and sponsors welcome.
 
 Have ideas? [Open an issue](https://github.com/aadivar/nexus-score/issues) or jump into the conversation on [LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7441758924527222784/).
 
@@ -411,7 +411,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 

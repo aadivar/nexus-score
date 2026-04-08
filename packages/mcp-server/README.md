@@ -96,4 +96,4 @@ Access the scoring methodology documentation.
 
 ## License
 
-MIT
+AGPL-3.0
