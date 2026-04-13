@@ -117,7 +117,9 @@ export const PUBLISHER_MAP: Record<string, PublisherInfo> = {
   // PNAS (341)
   'https://openalex.org/P4310320052': { crossrefId: 341, name: 'PNAS' },
 
-  // De Gruyter (374)
+  // De Gruyter / Brill (374) — Brill merged into De Gruyter; Brill's DOI
+  // prefix 10.1163 now deposits under Crossref member 374. The standalone
+  // "Brill" member (50) holds 0 DOIs post-merger.
   'https://openalex.org/P4310313990': { crossrefId: 374, name: 'De Gruyter' },
 
   // Emerald (140)
@@ -135,8 +137,9 @@ export const PUBLISHER_MAP: Record<string, PublisherInfo> = {
   // Princeton University Press (10341)
   'https://openalex.org/P4310316492': { crossrefId: 10341, name: 'Princeton University Press' },
 
-  // Brill (50)
-  'https://openalex.org/P4310320561': { crossrefId: 50, name: 'Brill' },
+  // Brill — now deposits under De Gruyter post-merger; Crossref member 50
+  // holds 0 DOIs. Route Brill's OpenAlex entity to De Gruyter's member (374).
+  'https://openalex.org/P4310320561': { crossrefId: 374, name: 'De Gruyter / Brill' },
 
   // American Society for Microbiology (235)
   'https://openalex.org/P4310320263': { crossrefId: 235, name: 'ASM' },
