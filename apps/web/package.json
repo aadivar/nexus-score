@@ -1,13 +1,14 @@
 {
   "name": "@nexus-score/web",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate-leaderboard": "tsx scripts/generate-leaderboard.ts"
+    "generate-leaderboard": "tsx scripts/generate-leaderboard.ts",
+    "analyze:institution": "tsx scripts/analyze-institution.ts"
   },
   "dependencies": {
     "@nexus-score/core": "workspace:*",
