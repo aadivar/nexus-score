@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { InstitutionReport } from '../../../lib/publisher-map';
 import { PublisherGapTable, GapSummaryTable } from '../../../components/publisher-gap-table';
 import { StakeholderImpact } from '../../../components/stakeholder-impact';
@@ -12,13 +13,43 @@ interface SearchResult {
   country: string;
 }
 
-export default function InstitutionAnalysisPage() {
+function InstitutionAnalysisPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlRor = searchParams.get('ror');
+
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [report, setReport] = useState<InstitutionReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
+  const analyzedRorRef = useRef<string | null>(null);
+
+  // Run analysis when ?ror=... is in the URL. This gives each analyzed
+  // institution a unique, shareable URL and makes pageviews show up
+  // per-institution in Vercel Analytics.
+  useEffect(() => {
+    if (!urlRor || urlRor === analyzedRorRef.current) return;
+    analyzedRorRef.current = urlRor;
+    (async () => {
+      setLoading(true);
+      setError('');
+      setSearchResults([]);
+      try {
+        const res = await fetch(`/api/analyze-institution?ror=${urlRor}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || `Analysis failed (HTTP ${res.status})`);
+        }
+        const data: InstitutionReport = await res.json();
+        setReport(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Analysis failed.');
+      }
+      setLoading(false);
+    })();
+  }, [urlRor]);
 
   async function handleSearch() {
     if (!query.trim()) return;
@@ -36,22 +67,11 @@ export default function InstitutionAnalysisPage() {
     setSearching(false);
   }
 
-  async function handleAnalyze(ror: string) {
-    setLoading(true);
-    setError('');
-    setSearchResults([]);
-    try {
-      const res = await fetch(`/api/analyze-institution?ror=${ror}`);
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || `Analysis failed (HTTP ${res.status})`);
-      }
-      const data: InstitutionReport = await res.json();
-      setReport(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Analysis failed.');
-    }
-    setLoading(false);
+  function handleAnalyze(ror: string) {
+    // Push to URL — the useEffect above will kick off the analysis. This
+    // makes each institution a distinct page view and supports sharing.
+    const params = new URLSearchParams({ ror });
+    router.push(`/analysis/institution?${params.toString()}`, { scroll: false });
   }
 
   return (
@@ -405,5 +425,14 @@ function StatCard({
       <p className={`text-sm font-medium ${sub}`}>{label}</p>
       <p className="mt-1 text-xs text-gray-500">{sublabel}</p>
     </div>
+  );
+}
+
+// useSearchParams needs a Suspense boundary in Next.js App Router.
+export default function InstitutionAnalysisPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <InstitutionAnalysisPageInner />
+    </Suspense>
   );
 }
