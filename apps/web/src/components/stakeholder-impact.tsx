@@ -259,7 +259,7 @@ export function StakeholderImpact({ report }: { report: InstitutionReport }) {
                 Where incomplete deposits create friction
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                Each stakeholder hits the same missing publisher-deposited metadata in a different workflow. Article counts are <strong>observed</strong> for {report.institution.name} across measured publishers — not projections.
+                Each stakeholder hits the same missing publisher-deposited metadata in a different workflow. Article counts are <strong>observed</strong> for {report.institution.name} across <strong>{report.measuredArticles.toLocaleString()} measured articles</strong> (of {report.totalArticles.toLocaleString()} total in the 90-day window) — not projections.
               </p>
             </div>
             {hasRates && (

@@ -294,17 +294,10 @@ export default function InstitutionAnalysisPage() {
           <div className="space-y-8">
             <div className="rounded-lg border bg-white p-6 shadow-sm">
               <h2 className="text-2xl font-bold text-gray-900">{report.institution.name}</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                {report.dateRange}
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                <strong>{report.totalArticles.toLocaleString()}</strong> journal articles total &middot;{' '}
-                <strong>{report.trackedArticles.toLocaleString()}</strong> at publishers mapped to Crossref &middot;{' '}
-                <strong>{report.measuredArticles.toLocaleString()}</strong> measured
-                {report.unmappedPublishers.length > 0 && (
-                  <> &middot; {report.unmappedPublishers.reduce((s, u) => s + u.articles, 0).toLocaleString()} at unmapped publishers</>
-                )}
-              </p>
+              <p className="mt-1 text-sm text-gray-500">{report.dateRange}</p>
+
+              <ScopeStrip report={report} />
+
 
               <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <StatCard
@@ -342,6 +335,7 @@ export default function InstitutionAnalysisPage() {
                 <p className="mt-1 text-sm text-gray-500">
                   Percentages are observed from each publisher&apos;s actual Crossref deposits for this institution&apos;s articles. Click column headers to sort. <strong>Inst. ROR</strong> = this institution&apos;s specific ROR deposited on the paper.
                 </p>
+                <ScopeStrip report={report} variant="compact" />
               </div>
               <PublisherGapTable publishers={report.publishers} />
             </div>
@@ -352,11 +346,12 @@ export default function InstitutionAnalysisPage() {
                 <p className="mt-1 text-sm text-gray-500">
                   Articles missing key metadata, sorted by largest institutional-ROR gap. Only measured publishers shown.
                 </p>
+                <ScopeStrip report={report} variant="compact" />
               </div>
               <GapSummaryTable publishers={report.publishers} />
               <div className="border-t bg-gray-50 px-6 py-4">
                 <p className="text-sm text-gray-700">
-                  <span className="font-semibold">{(100 - report.totals.institutionalRorPercent).toFixed(1)}%</span> of measured articles were deposited by publishers without a ROR linking them to {report.institution.name}. The affiliation signal exists — OpenAlex confirms it — but it didn&apos;t make it into the deposit.
+                  <span className="font-semibold">{(100 - report.totals.institutionalRorPercent).toFixed(1)}%</span> of the {report.measuredArticles.toLocaleString()} measured articles were deposited by publishers without a ROR linking them to {report.institution.name}. The affiliation signal exists — OpenAlex confirms it — but it didn&apos;t make it into the deposit.
                 </p>
               </div>
             </div>
@@ -392,6 +387,7 @@ export default function InstitutionAnalysisPage() {
                     <p className="mt-1 text-sm text-gray-500">
                       Of the {report.totalArticles.toLocaleString()} articles OpenAlex attributed to {report.institution.name}, {totalUnmapped.toLocaleString()} couldn&apos;t be measured against Crossref deposits. Every reason below traces back to the same root — <strong>the publisher didn&apos;t deposit complete metadata to Crossref</strong> (or didn&apos;t deposit at all).
                     </p>
+                    <ScopeStrip report={report} variant="compact" />
                   </div>
                   <div className="divide-y divide-gray-100">
                     {rows.map((r) => (
@@ -423,6 +419,57 @@ export default function InstitutionAnalysisPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function ScopeStrip({
+  report,
+  variant = 'full',
+}: {
+  report: InstitutionReport;
+  variant?: 'full' | 'compact';
+}) {
+  const unmappedCount = report.unmappedPublishers.reduce((s, u) => s + u.articles, 0);
+  const items = [
+    { label: 'Journal articles total', value: report.totalArticles, tone: 'gray' },
+    { label: 'At publishers mapped to Crossref', value: report.trackedArticles, tone: 'blue' },
+    { label: 'Measured', value: report.measuredArticles, tone: 'emerald' },
+    { label: 'At unmapped publishers', value: unmappedCount, tone: 'amber' },
+  ];
+
+  const toneClasses: Record<string, { bg: string; text: string; value: string }> = {
+    gray: { bg: 'bg-gray-50 border-gray-200', text: 'text-gray-600', value: 'text-gray-900' },
+    blue: { bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700', value: 'text-blue-900' },
+    emerald: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700', value: 'text-emerald-900' },
+    amber: { bg: 'bg-amber-50 border-amber-200', text: 'text-amber-700', value: 'text-amber-900' },
+  };
+
+  if (variant === 'compact') {
+    return (
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+        {items.map((item, i) => (
+          <span key={item.label} className="flex items-center gap-1">
+            {i > 0 && <span className="text-gray-300">·</span>}
+            <span className={`font-semibold ${toneClasses[item.tone].value}`}>{item.value.toLocaleString()}</span>
+            <span>{item.label.toLowerCase()}</span>
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {items.map((item) => {
+        const t = toneClasses[item.tone];
+        return (
+          <div key={item.label} className={`rounded-lg border p-3 ${t.bg}`}>
+            <p className={`text-xl font-bold ${t.value}`}>{item.value.toLocaleString()}</p>
+            <p className={`mt-0.5 text-xs font-medium ${t.text}`}>{item.label}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }

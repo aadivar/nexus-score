@@ -550,7 +550,15 @@ export async function analyzeInstitution(
     })
     .sort((a, b) => b.articles - a.articles);
 
-  const trackedArticles = publishers.reduce((s, p) => s + p.articles, 0);
+  // trackedArticles = articles at mapped publishers per OpenAlex (pre-Crossref
+  // fetch). This ensures the top-line math reconciles: total = tracked +
+  // unmapped. Some of these may not come back from Crossref when we inspect
+  // them (e.g. the DOI exists but isn't typed as a journal-article in
+  // Crossref) — that shortfall is reflected in measuredArticles being lower.
+  const trackedArticles = Array.from(mapped.values()).reduce(
+    (s, info) => s + info.dois.length,
+    0
+  );
   const measured = publishers.filter((p) => p.measured);
   const measuredArticles = measured.reduce((s, p) => s + p.articles, 0);
 
