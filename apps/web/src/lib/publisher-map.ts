@@ -68,8 +68,8 @@ export const PUBLISHER_MAP: Record<string, PublisherInfo> = {
   // BMJ (239)
   'https://openalex.org/P4310319945': { crossrefId: 239, name: 'BMJ' },
 
-  // MDPI (3611)
-  'https://openalex.org/P4310310987': { crossrefId: 3611, name: 'MDPI' },
+  // MDPI AG (1968) — NOTE: 3611 is "Pro Pharma Communications", NOT MDPI.
+  'https://openalex.org/P4310310987': { crossrefId: 1968, name: 'MDPI' },
 
   // Frontiers (1965)
   'https://openalex.org/P4310320527': { crossrefId: 1965, name: 'Frontiers' },
