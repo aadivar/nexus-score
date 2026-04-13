@@ -1,6 +1,6 @@
 {
   "name": "@nexus-score/core",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Core scoring library for Crossref metadata coverage",
   "type": "module",
   "main": "./dist/index.js",

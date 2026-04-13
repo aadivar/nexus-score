@@ -40,7 +40,7 @@ async function fetchJson<T>(url: string, retries = 4): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const res = await fetch(url, {
-        headers: { 'User-Agent': `nexus-score/0.1.1 (mailto:${MAILTO})` },
+        headers: { 'User-Agent': `nexus-score/0.1.2 (mailto:${MAILTO})` },
       });
       if (res.status === 429 || res.status >= 500) {
         await sleep(Math.pow(2, attempt) * 500);
@@ -108,16 +108,42 @@ interface OpenAlexInstitutionSearch {
   results: OpenAlexInstitution[];
 }
 
-export async function searchInstitutions(
-  query: string
+async function openalexInstitutionSearch(
+  searchParam: string
 ): Promise<Array<{ name: string; ror: string; country: string }>> {
-  const url = `${OPENALEX_BASE}/institutions?search=${encodeURIComponent(query)}&per_page=10&mailto=${MAILTO}`;
+  const url = `${OPENALEX_BASE}/institutions?search=${encodeURIComponent(searchParam)}&per_page=10&mailto=${MAILTO}`;
   const data = await fetchJson<OpenAlexInstitutionSearch>(url);
   return data.results.map((inst) => ({
     name: inst.display_name,
     ror: normalizeRor(inst.ror || ''),
     country: inst.country_code || '',
   }));
+}
+
+export async function searchInstitutions(
+  query: string
+): Promise<Array<{ name: string; ror: string; country: string }>> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  // First: exact (stemmed) search — best ranking when the user typed the
+  // institution's name correctly.
+  const exact = await openalexInstitutionSearch(trimmed);
+  if (exact.length > 0) return exact;
+
+  // Fallback: apply OpenAlex's native Levenshtein fuzzy (~2) to each word of
+  // 3+ characters so typos like "IIT HYderbaad" or "Oxferd University" still
+  // resolve. https://developers.openalex.org/guides/searching
+  const fuzzy = trimmed
+    .split(/\s+/)
+    .map((word) => (word.length >= 3 ? `${word}~2` : word))
+    .join(' ');
+  if (fuzzy === trimmed) return [];
+  try {
+    return await openalexInstitutionSearch(fuzzy);
+  } catch {
+    return [];
+  }
 }
 
 async function getInstitutionInfo(
