@@ -40,7 +40,7 @@ async function fetchJson<T>(url: string, retries = 4): Promise<T> {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const res = await fetch(url, {
-        headers: { 'User-Agent': `nexus-score/0.2.0 (mailto:${MAILTO})` },
+        headers: { 'User-Agent': `nexus-score/0.1.1 (mailto:${MAILTO})` },
       });
       if (res.status === 429 || res.status >= 500) {
         await sleep(Math.pow(2, attempt) * 500);
