@@ -89,15 +89,25 @@ console.log(score.recommendations[0].title);     // 'Increase ORCID Coverage'
 
 ## Scoring Methodology
 
+### Why this matters in the AI era
+
+Every AI research tool — Consensus, Elicit, Semantic Scholar, OpenAlex, ChatGPT and Claude with search — reads the scholarly record through deposited metadata. A paper isn't "discoverable" in the abstract; it's discoverable through the specific fields a publisher chose to deposit. Missing fields aren't decoration gaps — they're the paper going silent in the one place AI looks.
+
+The five dimensions below aren't arbitrary. Each maps to something an AI system needs to do its job.
+
+The score measures what publishers deposit, not what exists. Most gaps are pipeline problems: the data is upstream — in manuscripts, submission systems, PDFs — but doesn't make it into the deposit. That makes these gaps **fixable**, not structural. The three-layer architecture (Score → Recommend → Gap Fixer) is built around that fact.
+
+**Not an Impact Factor.** Nexus Score is size-independent. A new journal can score A on day one. A three-person university press can outscore Elsevier. What you deposit is what you're judged on — not how much you publish, not how old you are, not who cites you.
+
 ### Dimensions (100 points total)
 
-| Dimension | Points | What It Measures |
-|-----------|--------|------------------|
-| **Provenance** | 25 | References (15), Update Policies (5), Similarity Check (5) |
-| **People** | 20 | ORCID iD Coverage (20) |
-| **Organizations** | 15 | Affiliations (5), ROR IDs (10) |
-| **Funding** | 20 | Funder Registry IDs (10), Award Numbers (10) |
-| **Access** | 20 | Licenses (7), Full-text Links (7), Abstracts (6) |
+| Dimension | Points | What It Measures | Why AI needs it | In plain English |
+|-----------|--------|------------------|-----------------|------------------|
+| **Provenance** | 25 | References (15), Update Policies (5), Similarity Check (5) | Trust and traceability of the claim | Where did this paper come from, and can we trust the trail? Did the publisher tell us when it was published, what version this is, what license it's under, and what it cites? Basically — is the paper's paperwork in order. |
+| **People** | 20 | ORCID iD Coverage (20) | Unambiguous author attribution | Do we actually know who wrote it? Are the authors real, identified humans with ORCIDs — or just names on a page that could belong to anyone? If two researchers share a name, can we tell them apart? |
+| **Organizations** | 15 | Affiliations (5), ROR IDs (10) | Machine-readable institutional links | Do we know where the authors work? Is the university or institution properly identified with a ROR ID, or is it a free-text string like "Dept of Bio, Univ" that no machine can match to anything? |
+| **Funding** | 20 | Funder Registry IDs (10), Award Numbers (10) | Investment traceability for funders | Who paid for this research, and can we follow the money? Is the funder identified with a registry ID? Is the grant number there? Without this, you can't answer basic questions like "what did the NIH's $40B actually produce?" |
+| **Access** | 20 | Licenses (7), Full-text Links (7), Abstracts (6) | Whether AI can legally read and ingest the work | Can anyone actually read it? Is the full text open, or paywalled? Is there a license that tells AI tools whether they're allowed to use it? If a paper exists but no one can access it, it may as well not exist for AI discovery. |
 
 ### Grading Scale
 
