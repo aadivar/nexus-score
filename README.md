@@ -37,6 +37,7 @@ Built to support [Crossref's Research Nexus](https://www.crossref.org/documentat
 - **Global Rankings**: See where any publisher stands among all Crossref members
 - **Gap Fixer**: Recover missing metadata from Crossref Participation Reports using open data sources
 - **Journal Nexus**: Journal-level deep analysis — article-by-article metadata coverage, OpenAlex reconciliation, PDF extraction, and metadata trend tracking
+- **Institutional Analysis**: Institution-level view of publisher deposit quality — reconciles an institution's output (via OpenAlex) against what reached Crossref, surfacing per-publisher deposit gaps and unmapped publishers
 - **MCP Server**: Integrate with Claude Desktop or other AI assistants
 - **Core Library**: Use scoring logic in your own applications
 
@@ -133,8 +134,13 @@ nexus-score/
 ├── apps/
 │   ├── web/                  # Next.js 16 web application
 │   │   ├── src/
-│   │   │   ├── app/          # App router pages
-│   │   │   └── components/   # React components
+│   │   │   ├── app/
+│   │   │   │   ├── leaderboard/        # 27,830-publisher rankings + filters
+│   │   │   │   ├── member/[id]/        # Per-publisher score card + radar
+│   │   │   │   ├── analysis/
+│   │   │   │   │   └── institution/    # Institutional deposit-gap analytics (v0.1.1)
+│   │   │   │   └── api/                # Search, member, leaderboard, analyze-institution
+│   │   │   └── components/             # Radar, score card, gap tables, blind spots
 │   │   ├── scripts/          # Leaderboard generation scripts
 │   │   └── data/             # Cached leaderboard data (27,830 publishers)
 │   ├── gap-fixer/            # Metadata recovery tool
