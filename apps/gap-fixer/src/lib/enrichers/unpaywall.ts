@@ -72,7 +72,11 @@ export async function findPdfUrl(doi: string): Promise<{
   source: string | null;
 }> {
   try {
-    const email = process.env.OPENALEX_EMAIL || 'test@example.com';
+    const email = process.env.CROSSREF_MAILTO || process.env.OPENALEX_EMAIL;
+    if (!email) {
+      console.warn('Unpaywall: CROSSREF_MAILTO not set — skipping enrichment');
+      return { pdfUrl: null, landingPage: null, license: null, source: null };
+    }
     const url = `${UNPAYWALL_BASE_URL}/${encodeURIComponent(doi)}?email=${email}`;
 
     const response = await fetch(url);

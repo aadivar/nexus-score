@@ -453,7 +453,11 @@ function extractFunding(chunks: ReductoParseResponse['result']): Funder[] {
  */
 export async function getPdfUrl(doi: string): Promise<string | null> {
   try {
-    const email = process.env.OPENALEX_EMAIL || 'test@example.com';
+    const email = process.env.CROSSREF_MAILTO || process.env.OPENALEX_EMAIL;
+    if (!email) {
+      console.warn('Reducto/Unpaywall: CROSSREF_MAILTO not set — skipping PDF lookup');
+      return null;
+    }
     const url = `https://api.unpaywall.org/v2/${doi}?email=${email}`;
 
     const response = await fetch(url);

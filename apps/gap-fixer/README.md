@@ -162,8 +162,9 @@ cp .env.local.example .env.local
 ### Environment Variables
 
 ```bash
-# Optional: for polite API access
-OPENALEX_EMAIL=your-email@example.com
+# Recommended: polite-pool email for Crossref, OpenAlex, and Unpaywall
+# (OPENALEX_EMAIL is still honored as a fallback for backward compatibility)
+CROSSREF_MAILTO=your-email@example.com
 
 # Reducto (for PDF extraction)
 REDUCTO_API_KEY=your-reducto-api-key

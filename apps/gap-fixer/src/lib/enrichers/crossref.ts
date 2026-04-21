@@ -84,12 +84,14 @@ export interface CrossrefMetadata {
  */
 export async function fetchCrossrefMetadata(doi: string): Promise<CrossrefMetadata | null> {
   try {
-    const email = process.env.OPENALEX_EMAIL || 'test@example.com';
-    const url = `${CROSSREF_BASE_URL}/works/${encodeURIComponent(doi)}?mailto=${email}`;
+    const email = process.env.CROSSREF_MAILTO || process.env.OPENALEX_EMAIL;
+    const url = email
+      ? `${CROSSREF_BASE_URL}/works/${encodeURIComponent(doi)}?mailto=${email}`
+      : `${CROSSREF_BASE_URL}/works/${encodeURIComponent(doi)}`;
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': `GapFixer/1.0 (mailto:${email})`,
+        'User-Agent': email ? `GapFixer/1.0 (mailto:${email})` : 'GapFixer/1.0',
       },
     });
 

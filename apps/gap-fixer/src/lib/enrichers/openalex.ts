@@ -86,7 +86,7 @@ async function fetchWorkById(openalexId: string, email?: string): Promise<OpenAl
  * Fetch enrichment data from OpenAlex by DOI
  */
 export async function enrichFromOpenAlex(doi: string): Promise<EnrichmentResult | null> {
-  const email = process.env.OPENALEX_EMAIL;
+  const email = process.env.CROSSREF_MAILTO || process.env.OPENALEX_EMAIL;
 
   try {
     const params = new URLSearchParams();
