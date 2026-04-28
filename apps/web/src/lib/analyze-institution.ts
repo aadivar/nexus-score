@@ -14,9 +14,13 @@
 import {
   PUBLISHER_MAP,
   type InstitutionReport,
+  type ProgressEvent,
   type PublisherGap,
   type UnmappedPublisher,
 } from './publisher-map';
+
+type ProgressFn = (event: ProgressEvent) => void;
+const noopProgress: ProgressFn = () => {};
 
 const OPENALEX_BASE = 'https://api.openalex.org';
 const CROSSREF_BASE = 'https://api.crossref.org';
@@ -25,10 +29,19 @@ const OPENALEX_API_KEY = process.env.OPENALEX_API_KEY || '';
 
 const WINDOW_DAYS = 90;
 const MIN_SAMPLE_SIZE = 10;
-const DOI_BATCH_SIZE = 40;
+// Smaller batches keep the Crossref filter URL short and individual responses
+// fast. Each batch is one /works request; 20 DOIs ~= 800-char URL.
+const DOI_BATCH_SIZE = 20;
 const CROSSREF_CONCURRENCY = 5;
 const OPENALEX_CONCURRENCY = 5;
 const OPENALEX_PAGE_SIZE = 200;
+// Per-request hard ceiling. Crossref usually answers in <2s; anything past 10s
+// is a stalled connection eating budget we need for the rest of the batches.
+const FETCH_TIMEOUT_MS = 10_000;
+// Statistical sampling cap per publisher. Coverage percentages stabilise long
+// before this; pulling tens of thousands of DOIs blows the serverless budget
+// without changing the conclusion.
+const MAX_DOIS_PER_PUBLISHER = 1000;
 const CONTENT_TYPE_FILTER = 'type:article'; // OpenAlex
 const CROSSREF_TYPE_FILTER = 'type:journal-article';
 
@@ -36,19 +49,32 @@ function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchJson<T>(url: string, retries = 4): Promise<T> {
+function randomSample<T>(items: T[], n: number): T[] {
+  if (items.length <= n) return items;
+  // Fisher-Yates partial shuffle — O(n) instead of O(items.length).
+  const arr = items.slice();
+  for (let i = 0; i < n; i++) {
+    const j = i + Math.floor(Math.random() * (arr.length - i));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, n);
+}
+
+async function fetchJson<T>(url: string, retries = 2): Promise<T> {
   // Premium key auth: append api_key to every OpenAlex request when configured.
-  // Bypasses the polite-pool 10 req/s cap so the institutional analysis fits
-  // inside the 60s serverless budget on large institutions.
+  // Bypasses the polite-pool 10 req/s cap.
   const finalUrl =
     OPENALEX_API_KEY && url.includes('api.openalex.org') && !url.includes('api_key=')
       ? `${url}${url.includes('?') ? '&' : '?'}api_key=${encodeURIComponent(OPENALEX_API_KEY)}`
       : url;
   let lastError: unknown = null;
   for (let attempt = 0; attempt < retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
     try {
       const res = await fetch(finalUrl, {
         headers: { 'User-Agent': `nexus-score/0.1.2 (mailto:${MAILTO})` },
+        signal: controller.signal,
       });
       if (res.status === 429 || res.status >= 500) {
         await sleep(Math.pow(2, attempt) * 500);
@@ -56,11 +82,13 @@ async function fetchJson<T>(url: string, retries = 4): Promise<T> {
         continue;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status} ${finalUrl.slice(0, 120)}`);
-      return res.json() as Promise<T>;
+      return (await res.json()) as T;
     } catch (err) {
-      // network errors (connection reset, timeout) — retry with backoff
+      // Includes AbortError when the per-request timeout fires.
       lastError = err;
       await sleep(Math.pow(2, attempt) * 500);
+    } finally {
+      clearTimeout(timer);
     }
   }
   throw new Error(
@@ -211,7 +239,8 @@ interface OpenAlexGroupResponse {
  */
 async function fetchInstitutionDOIs(
   ror: string,
-  fromDate: string
+  fromDate: string,
+  onProgress: ProgressFn
 ): Promise<{
   totalArticles: number;
   mapped: Map<number, { name: string; dois: string[] }>;
@@ -276,12 +305,20 @@ async function fetchInstitutionDOIs(
     });
   }
 
+  onProgress({
+    type: 'openalex_groups',
+    totalArticles,
+    mappedPublishers: mappedGroups.size,
+    unmappedPublishers: unmapped.size,
+  });
+
   // Phase 2: parallel DOI fetch per mapped publisher
   const mapped = new Map<number, { name: string; dois: string[] }>();
   const mappedList = Array.from(mappedGroups.entries());
   await mapWithConcurrency(mappedList, OPENALEX_CONCURRENCY, async ([crossrefId, info]) => {
     const dois = await fetchPublisherDOIs(baseFilter, info.openalexIds);
     mapped.set(crossrefId, { name: info.name, dois });
+    onProgress({ type: 'openalex_dois', publisher: info.name, doisFetched: dois.length });
   });
 
   return { totalArticles, mapped, unmapped };
@@ -482,7 +519,15 @@ async function measurePublisher(
 ): Promise<PublisherGap> {
   if (dois.length < MIN_SAMPLE_SIZE) return emptyPublisherGap(name, crossrefId, dois.length);
 
-  const { foundInCrossref, tally } = await measurePublisherGaps(dois, institutionRor);
+  // Statistical cap: large-publisher samples (Elsevier, Springer Nature) easily
+  // exceed 5k DOIs in 90 days. Coverage percentages are stable far below that;
+  // we randomly sample to keep the Crossref fetch within the serverless budget.
+  const sample =
+    dois.length > MAX_DOIS_PER_PUBLISHER
+      ? randomSample(dois, MAX_DOIS_PER_PUBLISHER)
+      : dois;
+
+  const { foundInCrossref, tally } = await measurePublisherGaps(sample, institutionRor);
   if (foundInCrossref < MIN_SAMPLE_SIZE) return emptyPublisherGap(name, crossrefId, foundInCrossref);
 
   const pct = (n: number) => (n / foundInCrossref) * 100;
@@ -514,29 +559,64 @@ async function measurePublisher(
 
 export async function analyzeInstitution(
   rorRaw: string,
-  windowDays: number = WINDOW_DAYS
+  windowDays: number = WINDOW_DAYS,
+  onProgress: ProgressFn = noopProgress
 ): Promise<InstitutionReport> {
   const ror = normalizeRor(rorRaw);
 
   const t0 = Date.now();
+  onProgress({ type: 'phase', message: 'Looking up institution in OpenAlex…' });
   const [institution, { fromDate, dateLabel }] = [
     await getInstitutionInfo(ror),
     getDateWindow(windowDays),
   ];
+  onProgress({
+    type: 'institution',
+    name: institution.name,
+    ror,
+    country: institution.country,
+  });
   const t1 = Date.now();
 
   // Kick off cheap 1-year count in parallel with the DOI fetch — used for
   // annual extrapolation in cost estimates.
   const annualCountPromise = fetchAnnualArticleCount(ror);
 
-  const { totalArticles, mapped, unmapped } = await fetchInstitutionDOIs(ror, fromDate);
+  onProgress({
+    type: 'phase',
+    message: `Fetching ${windowDays}-day journal-article DOIs from OpenAlex…`,
+  });
+  const { totalArticles, mapped, unmapped } = await fetchInstitutionDOIs(
+    ror,
+    fromDate,
+    onProgress
+  );
   const t2 = Date.now();
 
   const mappedEntries = Array.from(mapped.entries());
+  const totalDois = Array.from(mapped.values()).reduce((s, info) => s + info.dois.length, 0);
+  onProgress({
+    type: 'crossref_start',
+    totalPublishers: mappedEntries.length,
+    totalDois,
+  });
+
+  let completed = 0;
   const publishers = await mapWithConcurrency(
     mappedEntries,
     CROSSREF_CONCURRENCY,
-    ([crossrefId, info]) => measurePublisher(crossrefId, info.name, info.dois, ror)
+    async ([crossrefId, info]) => {
+      const result = await measurePublisher(crossrefId, info.name, info.dois, ror);
+      completed += 1;
+      onProgress({
+        type: 'crossref_publisher',
+        publisher: info.name,
+        completed,
+        total: mappedEntries.length,
+        doisInspected: result.articles,
+      });
+      return result;
+    }
   );
   const t3 = Date.now();
 

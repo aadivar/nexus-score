@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { InstitutionReport } from '../../../lib/publisher-map';
+import type { InstitutionReport, ProgressEvent } from '../../../lib/publisher-map';
 import { PublisherGapTable, GapSummaryTable } from '../../../components/publisher-gap-table';
 import { StakeholderImpact } from '../../../components/stakeholder-impact';
 import { InstitutionalBlindSpots } from '../../../components/institutional-blind-spots';
@@ -12,6 +12,76 @@ interface SearchResult {
   country: string;
 }
 
+interface ProgressState {
+  phase: string;
+  institutionName: string;
+  totalArticles: number;
+  mappedPublishers: number;
+  unmappedPublishers: number;
+  doiCounts: Map<string, number>;
+  crossrefTotal: number;
+  crossrefCompleted: number;
+  crossrefPublisher: string;
+  doisInspected: number;
+  startedAt: number;
+}
+
+const initialProgress = (): ProgressState => ({
+  phase: 'Starting analysis…',
+  institutionName: '',
+  totalArticles: 0,
+  mappedPublishers: 0,
+  unmappedPublishers: 0,
+  doiCounts: new Map(),
+  crossrefTotal: 0,
+  crossrefCompleted: 0,
+  crossrefPublisher: '',
+  doisInspected: 0,
+  startedAt: Date.now(),
+});
+
+/**
+ * Stream the NDJSON analysis to the page. Each line is one ProgressEvent;
+ * the stream ends with `done` (carrying the report) or `error`.
+ */
+async function streamAnalysis(
+  ror: string,
+  onEvent: (event: ProgressEvent) => void
+): Promise<InstitutionReport> {
+  const res = await fetch(`/api/analyze-institution?stream=1&ror=${encodeURIComponent(ror)}`);
+  if (!res.ok || !res.body) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || `Analysis failed (HTTP ${res.status})`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let report: InstitutionReport | null = null;
+  let errorMessage: string | null = null;
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let nl;
+    while ((nl = buffer.indexOf('\n')) >= 0) {
+      const line = buffer.slice(0, nl).trim();
+      buffer = buffer.slice(nl + 1);
+      if (!line) continue;
+      try {
+        const event = JSON.parse(line) as ProgressEvent;
+        onEvent(event);
+        if (event.type === 'done') report = event.report;
+        else if (event.type === 'error') errorMessage = event.message;
+      } catch {
+        // ignore malformed line
+      }
+    }
+  }
+  if (errorMessage) throw new Error(errorMessage);
+  if (!report) throw new Error('Analysis ended without a result.');
+  return report;
+}
+
 export default function InstitutionAnalysisPage() {
   const [query, setQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -19,7 +89,57 @@ export default function InstitutionAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState('');
+  const [progress, setProgress] = useState<ProgressState>(initialProgress);
   const analyzedRorRef = useRef<string | null>(null);
+
+  function applyEvent(event: ProgressEvent) {
+    setProgress((prev) => {
+      const next = { ...prev, doiCounts: new Map(prev.doiCounts) };
+      switch (event.type) {
+        case 'phase':
+          next.phase = event.message;
+          break;
+        case 'institution':
+          next.institutionName = event.name;
+          break;
+        case 'openalex_groups':
+          next.totalArticles = event.totalArticles;
+          next.mappedPublishers = event.mappedPublishers;
+          next.unmappedPublishers = event.unmappedPublishers;
+          next.phase = `Found ${event.totalArticles.toLocaleString()} articles across ${event.mappedPublishers} mapped publishers — fetching DOIs…`;
+          break;
+        case 'openalex_dois':
+          next.doiCounts.set(event.publisher, event.doisFetched);
+          break;
+        case 'crossref_start':
+          next.crossrefTotal = event.totalPublishers;
+          next.crossrefCompleted = 0;
+          next.phase = `Inspecting Crossref deposits for ${event.totalDois.toLocaleString()} DOIs across ${event.totalPublishers} publishers…`;
+          break;
+        case 'crossref_publisher':
+          next.crossrefCompleted = event.completed;
+          next.crossrefPublisher = event.publisher;
+          next.doisInspected += event.doisInspected;
+          break;
+      }
+      return next;
+    });
+  }
+
+  async function runAnalysis(ror: string) {
+    setLoading(true);
+    setError('');
+    setSearchResults([]);
+    setReport(null);
+    setProgress(initialProgress());
+    try {
+      const data = await streamAnalysis(ror, applyEvent);
+      setReport(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Analysis failed.');
+    }
+    setLoading(false);
+  }
 
   // On mount + whenever the browser URL changes, if ?ror=... is present
   // kick off the analysis. Uses native browser APIs (no Next router hooks)
@@ -30,27 +150,13 @@ export default function InstitutionAnalysisPage() {
       const urlRor = new URLSearchParams(window.location.search).get('ror');
       if (!urlRor || urlRor === analyzedRorRef.current) return;
       analyzedRorRef.current = urlRor;
-      void (async () => {
-        setLoading(true);
-        setError('');
-        setSearchResults([]);
-        try {
-          const res = await fetch(`/api/analyze-institution?ror=${urlRor}`);
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            throw new Error(data.error || `Analysis failed (HTTP ${res.status})`);
-          }
-          const data: InstitutionReport = await res.json();
-          setReport(data);
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Analysis failed.');
-        }
-        setLoading(false);
-      })();
+      void runAnalysis(urlRor);
     }
     runFromUrl();
     window.addEventListener('popstate', runFromUrl);
     return () => window.removeEventListener('popstate', runFromUrl);
+    // runAnalysis is stable enough for our use; no need to memoise
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSearch() {
@@ -78,23 +184,7 @@ export default function InstitutionAnalysisPage() {
       window.history.pushState(null, '', newUrl);
     }
     analyzedRorRef.current = ror;
-    void (async () => {
-      setLoading(true);
-      setError('');
-      setSearchResults([]);
-      try {
-        const res = await fetch(`/api/analyze-institution?ror=${ror}`);
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || `Analysis failed (HTTP ${res.status})`);
-        }
-        const data: InstitutionReport = await res.json();
-        setReport(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Analysis failed.');
-      }
-      setLoading(false);
-    })();
+    void runAnalysis(ror);
   }
 
   return (
@@ -274,15 +364,7 @@ export default function InstitutionAnalysisPage() {
           )}
         </div>
 
-        {loading && (
-          <div className="rounded-lg border bg-white p-12 text-center shadow-sm">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
-            <p className="mt-4 text-gray-600">Fetching DOIs from OpenAlex and inspecting Crossref records...</p>
-            <p className="mt-1 text-sm text-gray-400">
-              This usually takes 20–60 seconds. Larger institutions take longer — every article is paginated through.
-            </p>
-          </div>
-        )}
+        {loading && <ProgressPanel progress={progress} />}
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -470,6 +552,111 @@ function ScopeStrip({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function ProgressPanel({ progress }: { progress: ProgressState }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const tick = () => setElapsed(Math.floor((Date.now() - progress.startedAt) / 1000));
+    tick();
+    const id = setInterval(tick, 500);
+    return () => clearInterval(id);
+  }, [progress.startedAt]);
+
+  const totalDois = Array.from(progress.doiCounts.values()).reduce((s, n) => s + n, 0);
+  const crossrefPct =
+    progress.crossrefTotal > 0
+      ? Math.round((progress.crossrefCompleted / progress.crossrefTotal) * 100)
+      : 0;
+  const topPublishers = Array.from(progress.doiCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  return (
+    <div className="rounded-lg border bg-white p-6 shadow-sm">
+      <div className="flex items-start gap-4">
+        <div className="mt-1 inline-block h-6 w-6 shrink-0 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="font-medium text-gray-900">
+              {progress.institutionName || 'Analysing…'}
+            </p>
+            <span className="shrink-0 text-xs tabular-nums text-gray-500">{elapsed}s elapsed</span>
+          </div>
+          <p className="mt-1 text-sm text-gray-600">{progress.phase}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <ProgressStat
+          label="Articles found"
+          value={progress.totalArticles ? progress.totalArticles.toLocaleString() : '—'}
+        />
+        <ProgressStat
+          label="Mapped publishers"
+          value={progress.mappedPublishers ? `${progress.mappedPublishers}` : '—'}
+        />
+        <ProgressStat
+          label="DOIs fetched"
+          value={totalDois ? totalDois.toLocaleString() : '—'}
+        />
+        <ProgressStat
+          label="DOIs inspected"
+          value={progress.doisInspected ? progress.doisInspected.toLocaleString() : '—'}
+        />
+      </div>
+
+      {progress.crossrefTotal > 0 && (
+        <div className="mt-5">
+          <div className="mb-1 flex items-center justify-between text-xs text-gray-600">
+            <span>
+              Crossref measurement: {progress.crossrefCompleted} / {progress.crossrefTotal} publishers
+              {progress.crossrefPublisher && (
+                <span className="text-gray-400"> · last: {progress.crossrefPublisher}</span>
+              )}
+            </span>
+            <span className="tabular-nums">{crossrefPct}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+            <div
+              className="h-full rounded-full bg-blue-600 transition-[width] duration-300"
+              style={{ width: `${crossrefPct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {topPublishers.length > 0 && (
+        <div className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-3">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Largest publisher samples so far
+          </p>
+          <ul className="space-y-1 text-sm">
+            {topPublishers.map(([name, count]) => (
+              <li key={name} className="flex justify-between">
+                <span className="truncate text-gray-700">{name}</span>
+                <span className="tabular-nums text-gray-500">{count.toLocaleString()} DOIs</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <p className="mt-4 text-xs text-gray-400">
+        Large institutions take longer — every DOI is fetched and every Crossref record is inspected
+        directly. You can leave this tab open; results render as soon as measurement completes.
+      </p>
+    </div>
+  );
+}
+
+function ProgressStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-gray-200 bg-white px-3 py-2">
+      <p className="text-xs font-medium text-gray-500">{label}</p>
+      <p className="mt-0.5 text-lg font-bold tabular-nums text-gray-900">{value}</p>
     </div>
   );
 }

@@ -274,6 +274,32 @@ export interface UnmappedPublisher {
   category: 'no-metadata' | 'institutional' | 'unmapped-publisher';
 }
 
+/**
+ * Streamed events from `analyzeInstitution`. The route emits these as NDJSON
+ * so the UI can show live progress instead of a 60-300s blank loader. The
+ * final event is always `done` (with the report) or `error`.
+ */
+export type ProgressEvent =
+  | { type: 'phase'; message: string }
+  | { type: 'institution'; name: string; ror: string; country: string }
+  | {
+      type: 'openalex_groups';
+      totalArticles: number;
+      mappedPublishers: number;
+      unmappedPublishers: number;
+    }
+  | { type: 'openalex_dois'; publisher: string; doisFetched: number }
+  | { type: 'crossref_start'; totalPublishers: number; totalDois: number }
+  | {
+      type: 'crossref_publisher';
+      publisher: string;
+      completed: number;
+      total: number;
+      doisInspected: number;
+    }
+  | { type: 'done'; report: InstitutionReport }
+  | { type: 'error'; message: string };
+
 export interface InstitutionReport {
   institution: {
     name: string;
