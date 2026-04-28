@@ -70,6 +70,8 @@ async function fetchWorkById(openalexId: string, email?: string): Promise<OpenAl
   try {
     const params = new URLSearchParams();
     if (email) params.set('mailto', email);
+    const apiKey = process.env.OPENALEX_API_KEY;
+    if (apiKey) params.set('api_key', apiKey);
 
     const url = `${OPENALEX_BASE_URL}/works/${openalexId}?${params}`;
     const response = await fetch(url);
@@ -87,10 +89,12 @@ async function fetchWorkById(openalexId: string, email?: string): Promise<OpenAl
  */
 export async function enrichFromOpenAlex(doi: string): Promise<EnrichmentResult | null> {
   const email = process.env.CROSSREF_MAILTO || process.env.OPENALEX_EMAIL;
+  const apiKey = process.env.OPENALEX_API_KEY;
 
   try {
     const params = new URLSearchParams();
     if (email) params.set('mailto', email);
+    if (apiKey) params.set('api_key', apiKey);
 
     const url = `${OPENALEX_BASE_URL}/works/doi:${doi}?${params}`;
     const response = await fetch(url);
@@ -178,6 +182,8 @@ export async function fetchReferenceDetails(
         per_page: '50',
       });
       if (email) params.set('mailto', email);
+      const apiKey = process.env.OPENALEX_API_KEY;
+      if (apiKey) params.set('api_key', apiKey);
 
       const url = `${OPENALEX_BASE_URL}/works?${params}`;
       const response = await fetch(url);

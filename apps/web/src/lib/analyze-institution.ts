@@ -21,6 +21,7 @@ import {
 const OPENALEX_BASE = 'https://api.openalex.org';
 const CROSSREF_BASE = 'https://api.crossref.org';
 const MAILTO = process.env.CROSSREF_MAILTO || 'varma2friend@gmail.com';
+const OPENALEX_API_KEY = process.env.OPENALEX_API_KEY || '';
 
 const WINDOW_DAYS = 90;
 const MIN_SAMPLE_SIZE = 10;
@@ -36,10 +37,17 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function fetchJson<T>(url: string, retries = 4): Promise<T> {
+  // Premium key auth: append api_key to every OpenAlex request when configured.
+  // Bypasses the polite-pool 10 req/s cap so the institutional analysis fits
+  // inside the 60s serverless budget on large institutions.
+  const finalUrl =
+    OPENALEX_API_KEY && url.includes('api.openalex.org') && !url.includes('api_key=')
+      ? `${url}${url.includes('?') ? '&' : '?'}api_key=${encodeURIComponent(OPENALEX_API_KEY)}`
+      : url;
   let lastError: unknown = null;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      const res = await fetch(url, {
+      const res = await fetch(finalUrl, {
         headers: { 'User-Agent': `nexus-score/0.1.2 (mailto:${MAILTO})` },
       });
       if (res.status === 429 || res.status >= 500) {
@@ -47,7 +55,7 @@ async function fetchJson<T>(url: string, retries = 4): Promise<T> {
         lastError = new Error(`HTTP ${res.status}`);
         continue;
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status} ${url.slice(0, 120)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status} ${finalUrl.slice(0, 120)}`);
       return res.json() as Promise<T>;
     } catch (err) {
       // network errors (connection reset, timeout) — retry with backoff
