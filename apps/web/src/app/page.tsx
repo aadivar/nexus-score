@@ -1,4 +1,5 @@
 import { MemberSearch } from '@/components/member-search';
+import { PilotBanner } from '@/components/pilot-banner';
 import Link from 'next/link';
 
 // Example publishers to highlight
@@ -14,6 +15,7 @@ const featuredPublishers = [
 export default function HomePage() {
   return (
     <div className="min-h-screen">
+      <PilotBanner />
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-blue-600 to-blue-700 py-20 text-white">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">

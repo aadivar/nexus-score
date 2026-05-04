@@ -35,7 +35,7 @@ Built to support [Crossref's Research Nexus](https://www.crossref.org/documentat
 - **Trend Analysis**: Compare current metadata practices vs historical (backfile)
 - **Actionable Recommendations**: Improvement suggestions with links to Crossref documentation
 - **Global Rankings**: See where any publisher stands among all Crossref members
-- **Gap Fixer**: Recover missing metadata from Crossref Participation Reports using open data sources
+- **Gap Fixer**: Local, self-hosted tool that turns a journal article PDF/DOCX into a Research Nexus scorecard plus a Crossref-ready DOI deposit XML. AGPL-3.0, no vendor lock-in, opt-in LLM with per-call USD ledger ([metadata_gapfixer](https://github.com/aadivar/metadata_gapfixer))
 - **Journal Nexus**: Journal-level deep analysis — article-by-article metadata coverage, OpenAlex reconciliation, PDF extraction, and metadata trend tracking
 - **Institutional Analysis**: Institution-level view of publisher deposit quality — reconciles an institution's output (via OpenAlex) against what reached Crossref, surfacing per-publisher deposit gaps and unmapped publishers
 - **MCP Server**: Integrate with Claude Desktop or other AI assistants
@@ -271,29 +271,56 @@ Most metadata gaps are **pipeline problems, not content problems**. The data exi
 
 ## Gap Fixer
 
-Once you know what metadata is missing, Gap Fixer helps you recover it.
+Once you know what metadata is missing, Gap Fixer helps you recover it — one paper at a time, with every paid LLM call metered in USD and gated behind an explicit editor click.
+
+> **Pilot is open.** Self-hosted, AGPL-3.0, no vendor lock-in. **$1/article — sustenance pricing only**, to keep the project alive. The software is and stays free under AGPL; you can self-host the entire pipeline at zero per-article cost forever. Email <varma2friend@gmail.com> to book a demo or apply.
+
+The tool lives in its own repository: **<https://github.com/aadivar/metadata_gapfixer>**.
 
 ### How It Works
 
-1. **Upload** your [Crossref Participation Report](https://www.crossref.org/documentation/reports/participation-reports/) gap CSV
-2. **Enrich** each DOI using OpenAlex, ORCID, ROR APIs + Reducto PDF extraction
-3. **Score** recovered data with multi-source confidence levels
-4. **Export** high-confidence recoveries formatted for Crossref submission
+Upload a single journal article PDF/DOCX. The pipeline produces a Research Nexus scorecard (using the same weights as this project) plus a Crossref-ready DOI deposit XML.
 
-### Supported Recovery
+Five layers, each layered on the one below. Costs are transparent and the LLM is never called automatically:
 
-| Gap Type | Sources | Confidence |
-|----------|---------|------------|
-| Abstracts | OpenAlex, Reducto | Up to 95% |
-| References | OpenAlex, Reducto | Up to 95% |
-| ORCID iDs | OpenAlex, ORCID, Reducto | Up to 100% |
-| Affiliations | OpenAlex, Reducto | Up to 95% |
-| ROR IDs | OpenAlex, ROR | Up to 95% |
-| Funder IDs | OpenAlex, Reducto | Up to 95% |
-| Award Numbers | OpenAlex, Reducto | Up to 95% |
-| Licenses | OpenAlex, Reducto | Up to 95% |
+| Layer | What | Cost | Trigger |
+|---|---|---|---|
+| **L0 · Docling layout** | PDF/DOCX → structured JSON, per-element bboxes, page renders | $0 | Always |
+| **L1 · Deterministic factsheet** | Regex sweep (DOI / ORCID / ROR / ISSN / arXiv / license / grant) + PDF /Info + header parser + boilerplate anchors (funding, CoI, data availability, ethics) | $0 | Always |
+| **L2 · Free identifier APIs** | ORCID public · ROR v2 · OpenAlex · Crossref REST. Affiliation normalisation + ROR clear-winner auto-accept | $0 | Auto-fix click |
+| **L3 · LLM picker** | Per-field structured-output call that picks among API-returned candidates with reasoning + confidence | ~$0.0002/call | Per-field "Adjudicate with AI" |
+| **L4 · LLM structurer** | Five named tasks (`structure_authors`, `structure_references`, `structure_funding`, `structure_credit`, `verify_authors`) that take a content region and return a clean structured record | ~$0.0003 – $0.013/call | Per-field "Identify on document" |
+| **Side · GLiNER2 NER** | On-device zero-shot NER (`fastino/gliner2-large-v1`) for ad-hoc entity extraction over a chosen text region — no network, no LLM cost | $0 | On demand |
 
-See [apps/gap-fixer/README.md](apps/gap-fixer/README.md) for detailed documentation.
+For a typical paper, full premium processing tops out around **$0.025**. Standard auto-fix (no LLM) is **$0**. Every paid call is recorded in a per-submission USD ledger.
+
+### Recoverable fields
+
+| Field | Sources |
+|---|---|
+| Authors (full names) | L1 header parser, L4 `structure_authors` |
+| ORCID iDs | L1 regex, L2 ORCID API + name-swap fallback, L3 picker |
+| Affiliations | L1 header marker map, L2 ORCID/OpenAlex, L4 structurer |
+| ROR IDs | L2 ROR v2 with comma-delete normalisation + clear-winner auto-accept |
+| Funder Registry IDs | L1 grant patterns, L2 OpenAlex/Crossref, L4 `structure_funding` |
+| Award/grant numbers | L1 regex, L4 `structure_funding` |
+| References | L1 + three-tier references-section detector, L2 OpenAlex/Crossref, L4 `structure_references` |
+| Abstracts | L0 Docling, L2 OpenAlex |
+| Licenses | L1 license patterns, L2 OpenAlex/Crossref |
+| CRediT contributor roles | L4 `structure_credit` |
+
+**No fabrication.** The LLM is constrained by structured outputs and explicit candidate lists. ORCIDs, DOIs, RORs, ISSNs come from APIs or PDF text — never invented. The `verify_authors` structurer also receives the paper's title, abstract excerpt, and OpenAlex concepts so it can reject candidates whose research domain doesn't match.
+
+### Self-host it
+
+```bash
+git clone https://github.com/aadivar/metadata_gapfixer
+cd metadata_gapfixer
+cp .env.example .env                # edit OPENAI_API_KEY + CONTACT_EMAIL
+docker compose up -d --build
+```
+
+Open <http://localhost:3000>. The LLM router is OpenAI-compatible — point it at OpenAI, OpenRouter, Anthropic-compat, Groq, Ollama, or LiteLLM. Storage is plain disk; swap to S3/Postgres without touching app code. See the [metadata_gapfixer README](https://github.com/aadivar/metadata_gapfixer#readme) for full docs.
 
 ## Architecture & Vision
 
@@ -304,7 +331,7 @@ graph TB
         OA["OpenAlex"]
         ORCID["ORCID API"]
         ROR["ROR API"]
-        PDF["PDF Extraction<br/><i>Reducto / AI backends</i>"]
+        PDF["PDF Layout<br/><i>Docling + GLiNER2 NER + opt-in LLM</i>"]
     end
 
     subgraph CORE ["@nexus-score/core"]
@@ -390,15 +417,19 @@ graph TB
 Gap Fixer recovers missing metadata (ORCIDs, funders, affiliations, abstracts, references) by pulling from multiple sources — OpenAlex, ORCID, ROR, and PDF extraction. Each source is an independent enricher module. Publishers and infrastructure providers can plug in their own sources or swap extraction backends to fit their workflow — no lock-in to any single provider.
 
 **Built-in enrichers:**
+- [Docling](https://github.com/docling-project/docling) — local PDF/DOCX layout extraction (structured JSON, bboxes, page renders) at $0
+- Deterministic factsheet — regex sweep for DOI / ORCID / ROR / ISSN / arXiv / license / grant patterns + boilerplate anchors
 - [OpenAlex](https://openalex.org/) — ORCIDs, ROR IDs, affiliations, references, abstracts, funders
-- [Reducto](https://reducto.ai/) — AI-powered structured extraction from scholarly PDFs (abstracts, authors, affiliations, funding, references)
-
-**In progress:**
-- [ORCID API](https://info.orcid.org/documentation/api-tutorials/) — Author identity validation (enricher built, integration in progress)
-- [ROR API](https://ror.org/about/) — Organization identifier matching (enricher built, integration in progress)
+- [ORCID public API](https://info.orcid.org/documentation/api-tutorials/) — author identity validation with name-swap fallback
+- [ROR v2](https://ror.org/about/) — organization identifier matching with clear-winner auto-accept
+- [Crossref REST](https://api.crossref.org/) — existing-record diff for safe updates
+- [GLiNER2](https://huggingface.co/fastino/gliner2-large-v1) — on-device zero-shot NER for ad-hoc entity extraction (no network, no LLM cost)
+- OpenAI-compatible LLM router (opt-in, per-call USD ledger) — works with OpenAI, OpenRouter, Anthropic-compat, Groq, Ollama, LiteLLM
 
 **On the radar:**
-- DeepSeek, Google Gemini, AWS Textract, Azure Document Intelligence, Mistral, LlamaParse
+- GROBID fallback for OCR-only / scanned PDFs
+- Local ROR / ORCID daily snapshot for air-gapped publishers
+- XSD validation against Crossref schema 5.4.0 + direct deposit API integration
 
 The goal: metadata gaps are a pipeline problem, not a discipline problem. With pluggable enrichers, anyone can recover what's missing using the sources that work best for them. Everything is open source and AGPL-3.0-licensed — contributions and sponsors welcome.
 
