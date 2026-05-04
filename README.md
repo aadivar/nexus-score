@@ -406,7 +406,8 @@ graph TB
 | **Gap Fixer** | Recover missing metadata from OpenAlex, ORCID, ROR, and PDF extraction | Done |
 | **Journal Nexus** | Journal-level article analysis — article-by-article metadata coverage, OpenAlex reconciliation, metadata trends, and PDF full-text extraction | In progress — evaluating with publishers |
 | **Content-Type Filtering** | Filter leaderboard and insights by content type (journal-article, book-chapter, etc.) | Done |
-| **Pluggable Enrichers** | Modular metadata recovery — plug in any source (OpenAlex, ORCID, ROR, PDF extraction, or your own) to fill gaps your way | In progress |
+| **Pluggable Enrichers** | Modular metadata recovery — Docling, deterministic factsheet, OpenAlex, ORCID, ROR, Crossref, on-device GLiNER2 NER, and an OpenAI-compatible LLM router. Shipped as [metadata_gapfixer](https://github.com/aadivar/metadata_gapfixer) | Done |
+| **Institutional View** | Reconcile an institution's output (via OpenAlex) against what reached Crossref — surface per-publisher deposit gaps and unmapped publishers | In progress — evaluating with institutes |
 | **Publisher API** | REST API for programmatic access to scores and gap reports | Planned |
 | **Batch Recovery** | Bulk metadata recovery with Crossref-ready export files | Planned |
 | **Trend Tracking** | Historical score tracking — see improvement over time per publisher | Planned |
