@@ -1,0 +1,103 @@
+# ai.txt — Machine-readable AI usage policy for Research Nexus Score
+# Project: Research Nexus Score
+# Repository: https://github.com/aadivar/nexus-score
+# Website: https://nexus-score.vercel.app/
+# Contact: varma2friend@gmail.com
+# Last updated: 2026-05-14
+
+# This file expresses the project's reservation of rights regarding the
+# use of Research Nexus Score data and methodology for commercial AI / ML
+# purposes. It is intended as a machine-readable opt-out under Article 4
+# of EU Directive 2019/790, the UK TDM exception, and equivalent
+# provisions in other jurisdictions.
+
+# Human-readable terms: see LICENSE-DATA and AI-USE.md in the repository.
+
+User-Agent: *
+
+# Disallowed without separate written license:
+Disallow-AI-Training: /
+Disallow-AI-Commercial: /
+Disallow-AI-Ingest: /
+
+# Specific scope of the reservation:
+# - Training, fine-tuning, distilling, or evaluating commercial AI/ML
+#   models on Nexus Score data, scores, rankings, or methodology.
+# - Incorporating Nexus Score data into the inputs, retrieval layers,
+#   embeddings, or grounding corpora of commercial AI systems.
+# - Producing derivative datasets primarily for commercial AI development.
+
+# Permitted under CC BY 4.0 (with attribution):
+# - All non-AI uses (research, libraries, publishers, journalism, etc.).
+# - Non-commercial academic and non-profit AI research, where outputs are
+#   openly licensed (CC BY 4.0 or equivalent) and not for a commercial
+#   product or service.
+
+# For commercial AI licensing inquiries: varma2friend@gmail.com
+
+# Known AI crawlers and training agents — explicit disallow:
+User-Agent: GPTBot
+Disallow: /
+
+User-Agent: ChatGPT-User
+Disallow: /
+
+User-Agent: OAI-SearchBot
+Disallow: /
+
+User-Agent: anthropic-ai
+Disallow: /
+
+User-Agent: ClaudeBot
+Disallow: /
+
+User-Agent: Claude-Web
+Disallow: /
+
+User-Agent: Google-Extended
+Disallow: /
+
+User-Agent: PerplexityBot
+Disallow: /
+
+User-Agent: Perplexity-User
+Disallow: /
+
+User-Agent: Bytespider
+Disallow: /
+
+User-Agent: CCBot
+Disallow: /
+
+User-Agent: cohere-ai
+Disallow: /
+
+User-Agent: Diffbot
+Disallow: /
+
+User-Agent: FacebookBot
+Disallow: /
+
+User-Agent: Meta-ExternalAgent
+Disallow: /
+
+User-Agent: Meta-ExternalFetcher
+Disallow: /
+
+User-Agent: Applebot-Extended
+Disallow: /
+
+User-Agent: Amazonbot
+Disallow: /
+
+User-Agent: ImagesiftBot
+Disallow: /
+
+User-Agent: PetalBot
+Disallow: /
+
+User-Agent: Timpibot
+Disallow: /
+
+User-Agent: YouBot
+Disallow: /
