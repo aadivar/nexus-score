@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { trackEvent, normalizeQuery } from '@/lib/analytics';
 
 interface SearchResult {
   id: number;
@@ -40,7 +41,12 @@ export function MemberSearch({
         `/api/search?q=${encodeURIComponent(searchQuery)}&limit=10`
       );
       const data = await response.json();
-      setResults(data.members || []);
+      const members: SearchResult[] = data.members || [];
+      setResults(members);
+      trackEvent('publisher_search', {
+        query: normalizeQuery(searchQuery),
+        results: members.length,
+      });
     } catch (error) {
       console.error('Search error:', error);
       setResults([]);

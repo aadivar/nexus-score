@@ -17,6 +17,7 @@ import { DimensionRadar } from '@/components/dimension-radar';
 import { MetricsTable } from '@/components/metrics-table';
 import { RecommendationsList } from '@/components/recommendations-list';
 import { MemberSearch } from '@/components/member-search';
+import { TrackMemberView } from '@/components/track-member-view';
 import { CopyLinkButton } from '@/components/copy-link-button';
 import { formatNumber, cn } from '@/lib/utils';
 
@@ -382,6 +383,11 @@ export default async function MemberPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen py-8">
+      <TrackMemberView
+        name={score.metadata.entityName}
+        grade={score.grade}
+        score={score.total}
+      />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

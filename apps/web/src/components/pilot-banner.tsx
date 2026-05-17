@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 
 const VISIBLE_MS = 15_000;
 
@@ -28,6 +29,7 @@ export function PilotBanner() {
           </span>
           <Link
             href="/gap-fixer"
+            onClick={() => trackEvent('gap_fixer_click', { location: 'pilot_banner' })}
             className="font-semibold underline decoration-amber-700 underline-offset-2 hover:text-amber-950"
           >
             Learn more &rarr;

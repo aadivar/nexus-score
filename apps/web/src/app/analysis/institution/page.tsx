@@ -5,6 +5,7 @@ import type { InstitutionReport, ProgressEvent } from '../../../lib/publisher-ma
 import { PublisherGapTable, GapSummaryTable } from '../../../components/publisher-gap-table';
 import { StakeholderImpact } from '../../../components/stakeholder-impact';
 import { InstitutionalBlindSpots } from '../../../components/institutional-blind-spots';
+import { trackEvent, normalizeQuery } from '../../../lib/analytics';
 
 interface SearchResult {
   name: string;
@@ -168,14 +169,23 @@ export default function InstitutionAnalysisPage() {
     try {
       const res = await fetch(`/api/analyze-institution?search=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setSearchResults(data.results || []);
+      const results: SearchResult[] = data.results || [];
+      setSearchResults(results);
+      trackEvent('institution_search', {
+        query: normalizeQuery(query),
+        results: results.length,
+      });
     } catch {
       setError('Search failed');
     }
     setSearching(false);
   }
 
-  function handleAnalyze(ror: string) {
+  function handleAnalyze(ror: string, name?: string) {
+    if (name) {
+      // Log the institution's literal name people chose to analyze.
+      trackEvent('institution_analyze', { institution: name });
+    }
     // Push URL so each analyzed institution is a distinct Vercel Analytics
     // pageview (their script patches history.pushState) and the link is
     // shareable. Then trigger the analysis directly.
@@ -350,7 +360,7 @@ export default function InstitutionAnalysisPage() {
               {searchResults.map((r) => (
                 <button
                   key={r.ror}
-                  onClick={() => handleAnalyze(r.ror)}
+                  onClick={() => handleAnalyze(r.ror, r.name)}
                   className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
                 >
                   <div>

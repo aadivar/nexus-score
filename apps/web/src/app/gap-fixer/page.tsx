@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { TrackAnchor } from '@/components/tracked-link';
 
 export const metadata: Metadata = {
   title: 'Gap Fixer · Research Nexus Score',
@@ -111,26 +112,32 @@ export default function GapFixerPage() {
             metered in USD and gated behind an explicit editor click.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <a
+            <TrackAnchor
               href={demoMailto}
+              event="gap_fixer_click"
+              eventData={{ location: 'gap_fixer_page', section: 'hero', action: 'book_demo' }}
               className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-amber-700"
             >
               Book a 30-min demo
-            </a>
-            <a
+            </TrackAnchor>
+            <TrackAnchor
               href={pilotMailto}
+              event="gap_fixer_click"
+              eventData={{ location: 'gap_fixer_page', section: 'hero', action: 'apply_pilot' }}
               className="inline-flex items-center justify-center rounded-lg border border-amber-600 bg-white px-6 py-3 font-semibold text-amber-700 transition-colors hover:bg-amber-50"
             >
               Apply for the pilot
-            </a>
-            <a
+            </TrackAnchor>
+            <TrackAnchor
               href="https://github.com/aadivar/metadata_gapfixer"
+              event="gap_fixer_click"
+              eventData={{ location: 'gap_fixer_page', section: 'hero', action: 'view_source' }}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
             >
               View source on GitHub &rarr;
-            </a>
+            </TrackAnchor>
           </div>
         </div>
       </section>
@@ -266,18 +273,22 @@ export default function GapFixerPage() {
             sustenance only, AGPL forever.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a
+            <TrackAnchor
               href={demoMailto}
+              event="gap_fixer_click"
+              eventData={{ location: 'gap_fixer_page', section: 'final_cta', action: 'book_demo' }}
               className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-amber-700"
             >
               Book a 30-min demo
-            </a>
-            <a
+            </TrackAnchor>
+            <TrackAnchor
               href={pilotMailto}
+              event="gap_fixer_click"
+              eventData={{ location: 'gap_fixer_page', section: 'final_cta', action: 'apply_pilot' }}
               className="inline-flex items-center justify-center rounded-lg border border-amber-600 bg-white px-6 py-3 font-semibold text-amber-700 transition-colors hover:bg-amber-50"
             >
               Apply for the pilot
-            </a>
+            </TrackAnchor>
           </div>
         </div>
       </section>

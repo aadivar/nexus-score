@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { PublisherRadar } from './publisher-radar';
+import { trackEvent, normalizeQuery } from '@/lib/analytics';
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
 
@@ -180,6 +181,22 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
 
     return filtered;
   }, [leaderboard, searchQuery, gradeFilter, sortField, sortDirection, viewMode, contentTypeFilter]);
+
+  // Track leaderboard searches, debounced so we log the settled query and how
+  // many publishers it matched — not every keystroke.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) return;
+    const timer = setTimeout(() => {
+      trackEvent('leaderboard_search', {
+        query: normalizeQuery(q),
+        results: filteredLeaderboard.length,
+        era: viewMode === 'progress' ? 'progress' : 'aggregate',
+        contentType: contentTypeFilter,
+      });
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [searchQuery, filteredLeaderboard.length, contentTypeFilter, viewMode]);
 
   // Pagination
   const totalPages = Math.ceil(filteredLeaderboard.length / ITEMS_PER_PAGE);
