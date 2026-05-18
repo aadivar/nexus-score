@@ -8,12 +8,17 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { appendFileSync, mkdirSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import {
   CrossrefClient,
   calculateMemberScore,
   calculateJournalScore,
   DIMENSION_WEIGHTS,
   METRICS_BY_DIMENSION,
+  analyzeInstitution,
+  searchInstitutions,
   type NexusScore,
 } from '@nexus-score/core';
 
@@ -21,6 +26,36 @@ import {
 const client = new CrossrefClient({
   mailto: process.env.CROSSREF_MAILTO || 'varma2friend@gmail.com',
 });
+
+// ============ QUERY LOGGING ============
+
+const LOG_DIR = process.env.NEXUS_LOG_DIR || join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  'logs'
+);
+
+function logQuery(tool: string, params: Record<string, unknown>, result?: { success: boolean; summary?: string }) {
+  try {
+    if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
+    const entry = {
+      timestamp: new Date().toISOString(),
+      tool,
+      params,
+      success: result?.success ?? true,
+      summary: result?.summary,
+    };
+    const logFile = join(LOG_DIR, `queries-${new Date().toISOString().split('T')[0]}.jsonl`);
+    appendFileSync(logFile, JSON.stringify(entry) + '\n');
+  } catch {
+    // Logging should never break the tool
+  }
+}
+
+// Institutional analysis (OpenAlex enumeration + evidence-based Crossref
+// classification) lives in @nexus-score/core — single source of truth shared
+// with the web app. The old PUBLISHER_MAP / aggregate-projection helpers that
+// used to sit here were removed; see issue #10.
 
 // Create MCP server
 const server = new McpServer({
@@ -45,6 +80,7 @@ server.tool(
     try {
       const member = await client.getMember(member_id);
       const score = calculateMemberScore(member);
+      logQuery('get_member_score', { member_id }, { success: true, summary: `${score.metadata.entityName}: ${score.total}/${score.grade}` });
 
       return {
         content: [
@@ -56,6 +92,7 @@ server.tool(
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
+      logQuery('get_member_score', { member_id }, { success: false, summary: message });
       return {
         content: [
           {
@@ -95,6 +132,7 @@ server.tool(
         location: m.location || 'Unknown',
       }));
 
+      logQuery('search_members', { query, limit }, { success: true, summary: `${result['total-results']} results` });
       return {
         content: [
           {
@@ -280,6 +318,102 @@ server.tool(
           {
             type: 'text' as const,
             text: `Error getting recommendations: ${message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+/**
+ * Analyze institutional research visibility
+ * Shows what publishers deposit vs what the institution produces
+ */
+server.tool(
+  'analyze_institution',
+  'Analyze what an institution can see about its own research output. Enumerates the institution\'s journal articles from OpenAlex over the window, then probes every DOI directly against Crossref and classifies each by evidence read from the Crossref record: in Crossref as a journal-article (grouped by the publisher Crossref itself reports), in Crossref under another content type (deposit gap), or absent from Crossref entirely (registered with DataCite / a repository — out of scope). No hand-maintained publisher map; no projection from aggregate coverage. Takes a ROR ID.',
+  {
+    ror_id: z
+      .string()
+      .describe('ROR ID for the institution (e.g., "052gg0110" for University of Oxford, "042nb2s44" for MIT)'),
+    window_days: z
+      .number()
+      .optional()
+      .default(90)
+      .describe('Publication window in days (default: 90, clamped to 7–365)'),
+  },
+  async ({ ror_id, window_days }) => {
+    try {
+      const days = Math.max(7, Math.min(365, window_days ?? 90));
+      const report = await analyzeInstitution(ror_id, days);
+      const missingInstRor = (100 - report.totals.institutionalRorPercent).toFixed(0);
+      logQuery(
+        'analyze_institution',
+        { ror_id, window_days: days },
+        {
+          success: true,
+          summary: `${report.institution.name}: ${report.measuredArticles}/${report.totalArticles} measured, ${missingInstRor}% missing institutional ROR`,
+        }
+      );
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify(report, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logQuery('analyze_institution', { ror_id }, { success: false, summary: message });
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error analyzing institution ${ror_id}: ${message}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+);
+
+/**
+ * Search for institutions by name
+ */
+server.tool(
+  'search_institutions',
+  'Search for research institutions by name. Returns ROR IDs that can be used with analyze_institution.',
+  {
+    query: z.string().describe('Institution name (e.g., "University of Oxford", "MIT", "Harvard")'),
+    limit: z.number().optional().default(5).describe('Maximum results (default: 5)'),
+  },
+  async ({ query, limit }) => {
+    try {
+      const all = await searchInstitutions(query);
+      const results = all.slice(0, Math.min(limit, 20));
+
+      logQuery('search_institutions', { query, limit }, { success: true, summary: `${results.length} results` });
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({ results }, null, 2),
+          },
+        ],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      logQuery('search_institutions', { query }, { success: false, summary: message });
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error searching institutions: ${message}`,
           },
         ],
         isError: true,

@@ -93,3 +93,16 @@ export {
   getTemplatesByDimension,
   type RecommendationTemplate,
 } from './recommendations/templates.js';
+
+// Institutional analysis (evidence-based Crossref classification)
+export {
+  analyzeInstitution,
+  searchInstitutions,
+} from './institution/index.js';
+
+export type {
+  CoverageMetrics,
+  PublisherGap,
+  ProgressEvent,
+  InstitutionReport,
+} from './institution/index.js';
