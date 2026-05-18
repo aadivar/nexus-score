@@ -43,7 +43,7 @@ function formatReport(report: InstitutionReport): string {
   lines.push(`  ${report.institution.name} (${report.institution.country}) — Research Visibility`);
   lines.push(`  ${report.dateRange}`);
   lines.push(
-    `  ${report.totalArticles.toLocaleString()} articles total | ${report.trackedArticles.toLocaleString()} tracked | ${report.measuredArticles.toLocaleString()} measured`
+    `  ${report.totalArticles.toLocaleString()} OpenAlex article-type works | ${report.analyzedArticles.toLocaleString()} in Crossref as journal-article | ${report.measuredArticles.toLocaleString()} measured`
   );
   lines.push(sep);
   lines.push('');
@@ -74,19 +74,23 @@ function formatReport(report: InstitutionReport): string {
   );
   lines.push(sep);
 
-  if (report.unmappedPublishers.length > 0) {
+  {
+    const s = report.crossrefScope;
+    const belowFloor = report.analyzedArticles - report.measuredArticles;
     lines.push('');
-    lines.push('  NOT ANALYZED (publishers not in our Crossref member mapping)');
+    lines.push('  NOT MEASURED (evidence-based, read from Crossref records)');
     lines.push(thin);
-    const totalUnmapped = report.unmappedPublishers.reduce((s, u) => s + u.articles, 0);
-    for (const u of report.unmappedPublishers.slice(0, 15)) {
-      lines.push(`  ${pad(u.name, 60)} ${padNum(u.articles.toLocaleString(), 8)}`);
+    lines.push(`  ${pad('Not in Crossref (DataCite/repo/preprint)', 60)} ${padNum(s.notInCrossref.toLocaleString(), 8)}`);
+    lines.push(`  ${pad('In Crossref, other content type', 60)} ${padNum(s.otherContentType.toLocaleString(), 8)}`);
+    for (const t of report.otherTypeBreakdown.slice(0, 8)) {
+      lines.push(`  ${pad(`    - ${t.type}`, 60)} ${padNum(t.count.toLocaleString(), 8)}`);
     }
-    if (report.unmappedPublishers.length > 15) {
-      lines.push(`  ... and ${report.unmappedPublishers.length - 15} more`);
+    lines.push(`  ${pad(`Below ${report.notes.minSampleSize}-article sample floor`, 60)} ${padNum(belowFloor.toLocaleString(), 8)}`);
+    lines.push(`  ${pad('No DOI in OpenAlex (nothing to probe)', 60)} ${padNum(s.noDoi.toLocaleString(), 8)}`);
+    lines.push(`  ${pad('Duplicate DOI in OpenAlex (probed once)', 60)} ${padNum(s.duplicateDoi.toLocaleString(), 8)}`);
+    if (s.probeFailed > 0) {
+      lines.push(`  ${pad('Crossref probe unresolved (excluded)', 60)} ${padNum(s.probeFailed.toLocaleString(), 8)}`);
     }
-    lines.push(thin);
-    lines.push(`  ${pad('UNMAPPED TOTAL', 60)} ${padNum(totalUnmapped.toLocaleString(), 8)}`);
     lines.push(sep);
   }
 

@@ -2,21 +2,26 @@
  * Institutional research visibility analysis.
  *
  * For a given institution (ROR) over the last N days:
- *   1. Enumerate the institution's journal articles from OpenAlex, grouped by publisher
- *   2. For each publisher we can map to a Crossref member ID, batch-fetch the actual
- *      Crossref work records and inspect each one for metadata presence.
+ *   1. Enumerate ALL of the institution's journal articles from OpenAlex
+ *      (full census, no publisher map gating).
+ *   2. Probe Crossref for every DOI directly — no content-type filter — and
+ *      classify each by EVIDENCE, not by a heuristic on OpenAlex's publisher
+ *      attribution:
+ *        - present in Crossref as a journal-article  -> analyzed
+ *        - present in Crossref under another type     -> content-type deposit gap
+ *        - absent from Crossref entirely              -> registered elsewhere
+ *                                                        (DataCite / repo / preprint)
+ *   3. Group the analyzed works by the Crossref member + publisher Crossref
+ *      itself reports on the record, and inspect each one for metadata presence.
  *
- * Gaps are OBSERVED (counted from real Crossref records), not projected from
- * publisher-wide aggregate coverage. Publishers we can't map to a Crossref member
- * are listed separately so their output is not silently dropped.
+ * Gaps are OBSERVED (counted from real Crossref records), never projected from
+ * aggregate coverage and never inferred from OpenAlex's publisher grouping.
  */
 
 import {
-  PUBLISHER_MAP,
   type InstitutionReport,
   type ProgressEvent,
   type PublisherGap,
-  type UnmappedPublisher,
 } from './publisher-map';
 
 type ProgressFn = (event: ProgressEvent) => void;
@@ -29,35 +34,19 @@ const OPENALEX_API_KEY = process.env.OPENALEX_API_KEY || '';
 
 const WINDOW_DAYS = 90;
 const MIN_SAMPLE_SIZE = 10;
-// Smaller batches keep the Crossref filter URL short and individual responses
-// fast. Each batch is one /works request; 20 DOIs ~= 800-char URL.
-const DOI_BATCH_SIZE = 20;
-const CROSSREF_CONCURRENCY = 5;
-const OPENALEX_CONCURRENCY = 5;
+// One /works request per batch. 40 DOIs ~= a 1,800-char filter URL — well
+// within Crossref's GET limits and 2x fewer round-trips than 20.
+const DOI_BATCH_SIZE = 40;
+const CROSSREF_CONCURRENCY = 6;
 const OPENALEX_PAGE_SIZE = 200;
 // Per-request hard ceiling. Crossref usually answers in <2s; anything past 10s
 // is a stalled connection eating budget we need for the rest of the batches.
 const FETCH_TIMEOUT_MS = 10_000;
-// Statistical sampling cap per publisher. Coverage percentages stabilise long
-// before this; pulling tens of thousands of DOIs blows the serverless budget
-// without changing the conclusion.
-const MAX_DOIS_PER_PUBLISHER = 1000;
-const CONTENT_TYPE_FILTER = 'type:article'; // OpenAlex
-const CROSSREF_TYPE_FILTER = 'type:journal-article';
+const OPENALEX_TYPE_FILTER = 'type:article'; // OpenAlex content type
+const CROSSREF_ARTICLE_TYPE = 'journal-article'; // Crossref work.type value
 
 function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
-}
-
-function randomSample<T>(items: T[], n: number): T[] {
-  if (items.length <= n) return items;
-  // Fisher-Yates partial shuffle — O(n) instead of O(items.length).
-  const arr = items.slice();
-  for (let i = 0; i < n; i++) {
-    const j = i + Math.floor(Math.random() * (arr.length - i));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr.slice(0, n);
 }
 
 async function fetchJson<T>(url: string, retries = 2): Promise<T> {
@@ -200,7 +189,7 @@ async function fetchAnnualArticleCount(ror: string): Promise<number> {
     .toISOString()
     .split('T')[0];
   const params = new URLSearchParams({
-    filter: `authorships.institutions.ror:https://ror.org/${ror},from_publication_date:${yearAgo},${CONTENT_TYPE_FILTER}`,
+    filter: `authorships.institutions.ror:https://ror.org/${ror},from_publication_date:${yearAgo},${OPENALEX_TYPE_FILTER}`,
     per_page: '1',
     select: 'id',
     mailto: MAILTO,
@@ -224,119 +213,36 @@ interface OpenAlexDoiResponse {
   results: OpenAlexDoiWork[];
 }
 
-interface OpenAlexGroupResponse {
-  meta: { count: number };
-  group_by: Array<{ key: string; key_display_name: string; count: number }>;
-}
-
 /**
- * Two-phase DOI fetch:
- *   1. One group_by call enumerates publishers with counts.
- *   2. For each publisher we can map to a Crossref member, fetch DOIs in parallel
- *      with a filter that includes only that publisher's OpenAlex lineage IDs
- *      (select=doi to minimise payload). Unmapped publishers are retained from
- *      the group_by counts without fetching DOIs.
+ * Full census: cursor-paginate every journal-article DOI OpenAlex attributes
+ * to this institution in the window. No publisher grouping, no map — the
+ * publisher is whatever Crossref itself reports once we probe each DOI.
  */
-async function fetchInstitutionDOIs(
+async function fetchAllInstitutionDois(
   ror: string,
   fromDate: string,
   onProgress: ProgressFn
 ): Promise<{
   totalArticles: number;
-  mapped: Map<number, { name: string; dois: string[] }>;
-  unmapped: Map<string, { name: string; count: number }>;
+  dois: string[];
+  noDoi: number;
+  duplicateDoi: number;
 }> {
-  const baseFilter = `authorships.institutions.ror:https://ror.org/${ror},from_publication_date:${fromDate},${CONTENT_TYPE_FILTER}`;
-
-  // Phase 1: enumerate publishers via group_by=host_organization (singular, not lineage).
-  // Lineage returns one group per ancestor of each work, which double-counts works
-  // published by a child entity under its parent (e.g., a paper at Oxford University
-  // Press would also show up as a "University of Oxford" group).
-  const groupParams = new URLSearchParams({
-    filter: baseFilter,
-    group_by: 'primary_location.source.host_organization',
-    per_page: '200',
-    mailto: MAILTO,
-  });
-  const groupData = await fetchJson<OpenAlexGroupResponse>(
-    `${OPENALEX_BASE}/works?${groupParams.toString()}`
-  );
-  const totalArticles = groupData.meta.count;
-
-  const mappedGroups = new Map<
-    number,
-    { name: string; openalexIds: string[] }
-  >();
-  const unmapped = new Map<string, { name: string; count: number }>();
-  let sumOfGroupCounts = 0;
-
-  for (const group of groupData.group_by) {
-    sumOfGroupCounts += group.count;
-    if (!group.key) continue;
-    const mapping = PUBLISHER_MAP[group.key];
-    if (mapping) {
-      const entry = mappedGroups.get(mapping.crossrefId);
-      if (entry) {
-        entry.openalexIds.push(group.key);
-      } else {
-        mappedGroups.set(mapping.crossrefId, {
-          name: mapping.name,
-          openalexIds: [group.key],
-        });
-      }
-    } else {
-      const displayName = group.key_display_name || 'Unknown publisher';
-      const existing = unmapped.get(group.key);
-      if (existing) {
-        existing.count += group.count;
-      } else {
-        unmapped.set(group.key, { name: displayName, count: group.count });
-      }
-    }
-  }
-
-  // Works whose primary_location.source has no host_organization aren't in any
-  // group_by entry. Surface them explicitly so totals reconcile.
-  const missingHostOrg = totalArticles - sumOfGroupCounts;
-  if (missingHostOrg > 0) {
-    unmapped.set('__no_source__', {
-      name: 'No publisher metadata in OpenAlex',
-      count: missingHostOrg,
-    });
-  }
-
-  onProgress({
-    type: 'openalex_groups',
-    totalArticles,
-    mappedPublishers: mappedGroups.size,
-    unmappedPublishers: unmapped.size,
-  });
-
-  // Phase 2: parallel DOI fetch per mapped publisher
-  const mapped = new Map<number, { name: string; dois: string[] }>();
-  const mappedList = Array.from(mappedGroups.entries());
-  await mapWithConcurrency(mappedList, OPENALEX_CONCURRENCY, async ([crossrefId, info]) => {
-    const dois = await fetchPublisherDOIs(baseFilter, info.openalexIds);
-    mapped.set(crossrefId, { name: info.name, dois });
-    onProgress({ type: 'openalex_dois', publisher: info.name, doisFetched: dois.length });
-  });
-
-  return { totalArticles, mapped, unmapped };
-}
-
-async function fetchPublisherDOIs(
-  baseFilter: string,
-  openalexIds: string[]
-): Promise<string[]> {
-  const out: string[] = [];
-  // OpenAlex OR-filter syntax uses `|` between values. Use host_organization
-  // (singular) to match the group_by grouping and avoid ancestor double-counting.
-  const lineageClause = `primary_location.source.host_organization:${openalexIds.join('|')}`;
+  const baseFilter = `authorships.institutions.ror:https://ror.org/${ror},from_publication_date:${fromDate},${OPENALEX_TYPE_FILTER}`;
+  const seen = new Set<string>();
+  // OpenAlex article records that can't enter the Crossref probe at all:
+  //   noDoi        — the work has no DOI, so there is nothing to look up
+  //   duplicateDoi — multiple OpenAlex works share one DOI (probed once)
+  // Tracked so the buckets reconcile to totalArticles instead of silently
+  // shrinking to the unique-DOI count.
+  let noDoi = 0;
+  let duplicateDoi = 0;
+  let totalArticles = 0;
   let cursor: string | null = '*';
   while (cursor !== null) {
     const currentCursor: string = cursor;
     const params = new URLSearchParams({
-      filter: `${baseFilter},${lineageClause}`,
+      filter: baseFilter,
       select: 'doi',
       per_page: String(OPENALEX_PAGE_SIZE),
       cursor: currentCursor,
@@ -345,18 +251,32 @@ async function fetchPublisherDOIs(
     const data = await fetchJson<OpenAlexDoiResponse>(
       `${OPENALEX_BASE}/works?${params.toString()}`
     );
+    if (totalArticles === 0 && data.meta.count > 0) {
+      totalArticles = data.meta.count;
+      onProgress({ type: 'openalex_total', totalArticles });
+    }
     for (const w of data.results) {
       const doi = normalizeDoi(w.doi);
-      if (doi) out.push(doi);
+      if (!doi) {
+        noDoi += 1;
+      } else if (seen.has(doi)) {
+        duplicateDoi += 1;
+      } else {
+        seen.add(doi);
+      }
     }
+    onProgress({ type: 'openalex_dois', fetched: seen.size, total: totalArticles });
     cursor = data.meta.next_cursor;
     if (cursor && data.results.length === 0) break;
   }
-  return out;
+  return { totalArticles, dois: Array.from(seen), noDoi, duplicateDoi };
 }
 
 interface CrossrefWork {
   DOI?: string;
+  type?: string;
+  member?: string;
+  publisher?: string;
   author?: Array<{
     ORCID?: string;
     affiliation?: Array<{
@@ -419,14 +339,19 @@ function inspectWork(work: CrossrefWork, institutionRorBare: string): WorkInspec
   };
 }
 
+/**
+ * Probe Crossref for a batch of DOIs. NO content-type filter — we want to know
+ * whether the DOI exists in Crossref at all, then read its type from the
+ * record. That lets us tell "in Crossref but typed differently" apart from
+ * "not in Crossref at all" instead of conflating them.
+ */
 async function fetchCrossrefBatch(dois: string[]): Promise<CrossrefWork[]> {
-  const filter =
-    dois.map((d) => `doi:${d}`).join(',') + `,${CROSSREF_TYPE_FILTER}`;
+  const filter = dois.map((d) => `doi:${d}`).join(',');
   const params = new URLSearchParams({
     filter,
     rows: String(dois.length),
     mailto: MAILTO,
-    select: 'DOI,author,funder,abstract,license',
+    select: 'DOI,member,publisher,type,author,funder,abstract,license',
   });
   const url = `${CROSSREF_BASE}/works?${params.toString()}`;
   const data = await fetchJson<CrossrefWorksResponse>(url);
@@ -443,34 +368,10 @@ interface GapTally {
   withOrcid: number;
 }
 
-async function measurePublisherGaps(
-  dois: string[],
+function tallyWorks(
+  works: CrossrefWork[],
   institutionRorBare: string
-): Promise<{ foundInCrossref: number; tally: GapTally }> {
-  const batches: string[][] = [];
-  for (let i = 0; i < dois.length; i += DOI_BATCH_SIZE) {
-    batches.push(dois.slice(i, i + DOI_BATCH_SIZE));
-  }
-
-  // If a single batch fails after retries, skip it rather than tanking the
-  // whole analysis. The remaining batches still produce a valid measurement
-  // (the sample is smaller, but the percentages remain truthful for what was
-  // observed).
-  const batchResults = await mapWithConcurrency(
-    batches,
-    CROSSREF_CONCURRENCY,
-    async (batch) => {
-      try {
-        return await fetchCrossrefBatch(batch);
-      } catch (err) {
-        console.warn(
-          `[analyze-institution] batch of ${batch.length} DOIs failed, skipping: ${String(err).slice(0, 140)}`
-        );
-        return [] as CrossrefWork[];
-      }
-    }
-  );
-
+): GapTally {
   const tally: GapTally = {
     withAffiliation: 0,
     withAnyRor: 0,
@@ -480,61 +381,43 @@ async function measurePublisherGaps(
     withLicense: 0,
     withOrcid: 0,
   };
-  let foundInCrossref = 0;
-
-  for (const works of batchResults) {
-    for (const work of works) {
-      foundInCrossref += 1;
-      const insp = inspectWork(work, institutionRorBare);
-      if (insp.hasAffiliation) tally.withAffiliation += 1;
-      if (insp.hasAnyRor) tally.withAnyRor += 1;
-      if (insp.hasInstitutionRor) tally.withInstitutionRor += 1;
-      if (insp.hasFunder) tally.withFunder += 1;
-      if (insp.hasAbstract) tally.withAbstract += 1;
-      if (insp.hasLicense) tally.withLicense += 1;
-      if (insp.hasOrcid) tally.withOrcid += 1;
-    }
+  for (const work of works) {
+    const insp = inspectWork(work, institutionRorBare);
+    if (insp.hasAffiliation) tally.withAffiliation += 1;
+    if (insp.hasAnyRor) tally.withAnyRor += 1;
+    if (insp.hasInstitutionRor) tally.withInstitutionRor += 1;
+    if (insp.hasFunder) tally.withFunder += 1;
+    if (insp.hasAbstract) tally.withAbstract += 1;
+    if (insp.hasLicense) tally.withLicense += 1;
+    if (insp.hasOrcid) tally.withOrcid += 1;
   }
-
-  return { foundInCrossref, tally };
+  return tally;
 }
 
-function emptyPublisherGap(name: string, crossrefId: number, articles: number): PublisherGap {
+function buildPublisherGap(
+  crossrefId: number,
+  name: string,
+  works: CrossrefWork[],
+  institutionRor: string
+): PublisherGap {
+  const articles = works.length;
+  if (articles < MIN_SAMPLE_SIZE) {
+    return {
+      name,
+      crossrefId,
+      articles,
+      measured: false,
+      coverage: { affiliations: 0, rorIds: 0, funders: 0, abstracts: 0, orcids: 0, licenses: 0 },
+      institutionalRor: 0,
+      gap: { noAffiliation: 0, noRor: 0, noFunder: 0, noAbstract: 0, noLicense: 0, noOrcid: 0, noInstitutionalRor: 0 },
+    };
+  }
+  const tally = tallyWorks(works, institutionRor);
+  const pct = (n: number) => (n / articles) * 100;
   return {
     name,
     crossrefId,
     articles,
-    measured: false,
-    coverage: { affiliations: 0, rorIds: 0, funders: 0, abstracts: 0, orcids: 0, licenses: 0 },
-    institutionalRor: 0,
-    gap: { noAffiliation: 0, noRor: 0, noFunder: 0, noAbstract: 0, noLicense: 0, noOrcid: 0, noInstitutionalRor: 0 },
-  };
-}
-
-async function measurePublisher(
-  crossrefId: number,
-  name: string,
-  dois: string[],
-  institutionRor: string
-): Promise<PublisherGap> {
-  if (dois.length < MIN_SAMPLE_SIZE) return emptyPublisherGap(name, crossrefId, dois.length);
-
-  // Statistical cap: large-publisher samples (Elsevier, Springer Nature) easily
-  // exceed 5k DOIs in 90 days. Coverage percentages are stable far below that;
-  // we randomly sample to keep the Crossref fetch within the serverless budget.
-  const sample =
-    dois.length > MAX_DOIS_PER_PUBLISHER
-      ? randomSample(dois, MAX_DOIS_PER_PUBLISHER)
-      : dois;
-
-  const { foundInCrossref, tally } = await measurePublisherGaps(sample, institutionRor);
-  if (foundInCrossref < MIN_SAMPLE_SIZE) return emptyPublisherGap(name, crossrefId, foundInCrossref);
-
-  const pct = (n: number) => (n / foundInCrossref) * 100;
-  return {
-    name,
-    crossrefId,
-    articles: foundInCrossref,
     measured: true,
     coverage: {
       affiliations: pct(tally.withAffiliation),
@@ -546,15 +429,120 @@ async function measurePublisher(
     },
     institutionalRor: tally.withInstitutionRor,
     gap: {
-      noAffiliation: foundInCrossref - tally.withAffiliation,
-      noRor: foundInCrossref - tally.withAnyRor,
-      noFunder: foundInCrossref - tally.withFunder,
-      noAbstract: foundInCrossref - tally.withAbstract,
-      noLicense: foundInCrossref - tally.withLicense,
-      noOrcid: foundInCrossref - tally.withOrcid,
-      noInstitutionalRor: foundInCrossref - tally.withInstitutionRor,
+      noAffiliation: articles - tally.withAffiliation,
+      noRor: articles - tally.withAnyRor,
+      noFunder: articles - tally.withFunder,
+      noAbstract: articles - tally.withAbstract,
+      noLicense: articles - tally.withLicense,
+      noOrcid: articles - tally.withOrcid,
+      noInstitutionalRor: articles - tally.withInstitutionRor,
     },
   };
+}
+
+interface ProbeResult {
+  publishers: PublisherGap[];
+  scope: {
+    analyzed: number;
+    otherContentType: number;
+    notInCrossref: number;
+    probeFailed: number;
+  };
+  otherTypeBreakdown: Array<{ type: string; count: number }>;
+}
+
+async function probeAndGroup(
+  dois: string[],
+  institutionRor: string,
+  onProgress: ProgressFn
+): Promise<ProbeResult> {
+  const batches: string[][] = [];
+  for (let i = 0; i < dois.length; i += DOI_BATCH_SIZE) {
+    batches.push(dois.slice(i, i + DOI_BATCH_SIZE));
+  }
+
+  // Each Crossref member becomes one publisher row, named by whatever Crossref
+  // itself reports on the record. No hand-maintained OpenAlex→Crossref map.
+  const groups = new Map<string, { crossrefId: number; name: string; works: CrossrefWork[] }>();
+  const otherTypes = new Map<string, number>();
+  const scope = { analyzed: 0, otherContentType: 0, notInCrossref: 0, probeFailed: 0 };
+  let probed = 0;
+
+  await mapWithConcurrency(batches, CROSSREF_CONCURRENCY, async (batch) => {
+    let items: CrossrefWork[] | null;
+    try {
+      items = await fetchCrossrefBatch(batch);
+    } catch (err) {
+      // Probe failed after retries — don't lie about presence. These DOIs are
+      // excluded from every denominator and surfaced separately.
+      console.warn(
+        `[analyze-institution] Crossref probe of ${batch.length} DOIs failed, marking unresolved: ${String(err).slice(0, 140)}`
+      );
+      items = null;
+    }
+
+    if (items === null) {
+      scope.probeFailed += batch.length;
+    } else {
+      const found = new Map<string, CrossrefWork>();
+      for (const w of items) {
+        const d = normalizeDoi(w.DOI);
+        if (d) found.set(d, w);
+      }
+      for (const doi of batch) {
+        const work = found.get(doi);
+        if (!work) {
+          scope.notInCrossref += 1;
+          continue;
+        }
+        if ((work.type || '').toLowerCase() !== CROSSREF_ARTICLE_TYPE) {
+          scope.otherContentType += 1;
+          const t = work.type || 'unknown';
+          otherTypes.set(t, (otherTypes.get(t) || 0) + 1);
+          continue;
+        }
+        scope.analyzed += 1;
+        const memberId = work.member ? parseInt(work.member, 10) : NaN;
+        const key = Number.isFinite(memberId)
+          ? `m:${memberId}`
+          : `n:${(work.publisher || 'Unknown publisher').toLowerCase()}`;
+        let g = groups.get(key);
+        if (!g) {
+          g = {
+            crossrefId: Number.isFinite(memberId) ? memberId : 0,
+            name: work.publisher || 'Unknown publisher',
+            works: [],
+          };
+          groups.set(key, g);
+        }
+        g.works.push(work);
+      }
+    }
+
+    probed += batch.length;
+    onProgress({
+      type: 'crossref_probe',
+      probed,
+      total: dois.length,
+      foundArticles: scope.analyzed,
+    });
+  });
+
+  const publishers = Array.from(groups.values())
+    .map((g) => buildPublisherGap(g.crossrefId, g.name, g.works, institutionRor))
+    .sort((a, b) => b.articles - a.articles);
+
+  const otherTypeBreakdown = Array.from(otherTypes.entries())
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
+
+  onProgress({
+    type: 'crossref_grouped',
+    publishers: publishers.length,
+    analyzed: scope.analyzed,
+  });
+
+  return { publishers, scope, otherTypeBreakdown };
 }
 
 export async function analyzeInstitution(
@@ -566,10 +554,8 @@ export async function analyzeInstitution(
 
   const t0 = Date.now();
   onProgress({ type: 'phase', message: 'Looking up institution in OpenAlex…' });
-  const [institution, { fromDate, dateLabel }] = [
-    await getInstitutionInfo(ror),
-    getDateWindow(windowDays),
-  ];
+  const institution = await getInstitutionInfo(ror);
+  const { fromDate, dateLabel } = getDateWindow(windowDays);
   onProgress({
     type: 'institution',
     name: institution.name,
@@ -584,70 +570,34 @@ export async function analyzeInstitution(
 
   onProgress({
     type: 'phase',
-    message: `Fetching ${windowDays}-day journal-article DOIs from OpenAlex…`,
+    message: `Enumerating every ${windowDays}-day journal-article DOI from OpenAlex…`,
   });
-  const { totalArticles, mapped, unmapped } = await fetchInstitutionDOIs(
+  const { totalArticles, dois, noDoi, duplicateDoi } = await fetchAllInstitutionDois(
     ror,
     fromDate,
     onProgress
   );
   const t2 = Date.now();
 
-  const mappedEntries = Array.from(mapped.entries());
-  const totalDois = Array.from(mapped.values()).reduce((s, info) => s + info.dois.length, 0);
   onProgress({
-    type: 'crossref_start',
-    totalPublishers: mappedEntries.length,
-    totalDois,
+    type: 'phase',
+    message: `Probing Crossref for all ${dois.length.toLocaleString()} DOIs…`,
   });
-
-  let completed = 0;
-  const publishers = await mapWithConcurrency(
-    mappedEntries,
-    CROSSREF_CONCURRENCY,
-    async ([crossrefId, info]) => {
-      const result = await measurePublisher(crossrefId, info.name, info.dois, ror);
-      completed += 1;
-      onProgress({
-        type: 'crossref_publisher',
-        publisher: info.name,
-        completed,
-        total: mappedEntries.length,
-        doisInspected: result.articles,
-      });
-      return result;
-    }
+  const { publishers, scope, otherTypeBreakdown } = await probeAndGroup(
+    dois,
+    ror,
+    onProgress
   );
   const t3 = Date.now();
 
   if (process.env.NEXUS_DEBUG_TIMING) {
     console.log(
-      `  [timing] institution-info=${t1 - t0}ms openalex-dois=${t2 - t1}ms crossref-measure=${t3 - t2}ms total=${t3 - t0}ms`
+      `  [timing] institution-info=${t1 - t0}ms openalex-dois=${t2 - t1}ms crossref-probe=${t3 - t2}ms total=${t3 - t0}ms`
     );
   }
 
-  publishers.sort((a, b) => b.articles - a.articles);
-
-  const unmappedPublishers: UnmappedPublisher[] = Array.from(unmapped.entries())
-    .map(([key, { name, count }]): UnmappedPublisher => {
-      let category: UnmappedPublisher['category'];
-      if (key === '__no_source__') category = 'no-metadata';
-      else if (key.startsWith('https://openalex.org/I')) category = 'institutional';
-      else category = 'unmapped-publisher';
-      return { name, articles: count, category };
-    })
-    .sort((a, b) => b.articles - a.articles);
-
-  // trackedArticles = articles at mapped publishers per OpenAlex (pre-Crossref
-  // fetch). This ensures the top-line math reconciles: total = tracked +
-  // unmapped. Some of these may not come back from Crossref when we inspect
-  // them (e.g. the DOI exists but isn't typed as a journal-article in
-  // Crossref) — that shortfall is reflected in measuredArticles being lower.
-  const trackedArticles = Array.from(mapped.values()).reduce(
-    (s, info) => s + info.dois.length,
-    0
-  );
   const measured = publishers.filter((p) => p.measured);
+  const analyzedArticles = scope.analyzed;
   const measuredArticles = measured.reduce((s, p) => s + p.articles, 0);
 
   const totals = {
@@ -685,16 +635,24 @@ export async function analyzeInstitution(
     windowDays,
     totalArticles,
     annualArticleCount,
-    trackedArticles,
+    analyzedArticles,
     measuredArticles,
     publishers,
-    unmappedPublishers,
+    crossrefScope: {
+      analyzed: scope.analyzed,
+      otherContentType: scope.otherContentType,
+      notInCrossref: scope.notInCrossref,
+      probeFailed: scope.probeFailed,
+      noDoi,
+      duplicateDoi,
+    },
+    otherTypeBreakdown,
     totals,
     generatedAt: new Date().toISOString(),
     notes: {
       contentType: 'Journal articles only',
       source:
-        'Counts are observed directly from Crossref work records, not projected from publisher-wide aggregate coverage.',
+        'Every DOI OpenAlex attributes to the institution is probed directly against Crossref. Presence, content type, and publisher are read from the Crossref record itself — not inferred from OpenAlex publisher attribution.',
       minSampleSize: MIN_SAMPLE_SIZE,
     },
   };

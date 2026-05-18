@@ -17,13 +17,11 @@ interface ProgressState {
   phase: string;
   institutionName: string;
   totalArticles: number;
-  mappedPublishers: number;
-  unmappedPublishers: number;
-  doiCounts: Map<string, number>;
-  crossrefTotal: number;
-  crossrefCompleted: number;
-  crossrefPublisher: string;
-  doisInspected: number;
+  doisFetched: number;
+  probed: number;
+  probeTotal: number;
+  foundArticles: number;
+  publishers: number;
   startedAt: number;
 }
 
@@ -31,13 +29,11 @@ const initialProgress = (): ProgressState => ({
   phase: 'Starting analysis…',
   institutionName: '',
   totalArticles: 0,
-  mappedPublishers: 0,
-  unmappedPublishers: 0,
-  doiCounts: new Map(),
-  crossrefTotal: 0,
-  crossrefCompleted: 0,
-  crossrefPublisher: '',
-  doisInspected: 0,
+  doisFetched: 0,
+  probed: 0,
+  probeTotal: 0,
+  foundArticles: 0,
+  publishers: 0,
   startedAt: Date.now(),
 });
 
@@ -95,7 +91,7 @@ export default function InstitutionAnalysisPage() {
 
   function applyEvent(event: ProgressEvent) {
     setProgress((prev) => {
-      const next = { ...prev, doiCounts: new Map(prev.doiCounts) };
+      const next = { ...prev };
       switch (event.type) {
         case 'phase':
           next.phase = event.message;
@@ -103,24 +99,22 @@ export default function InstitutionAnalysisPage() {
         case 'institution':
           next.institutionName = event.name;
           break;
-        case 'openalex_groups':
+        case 'openalex_total':
           next.totalArticles = event.totalArticles;
-          next.mappedPublishers = event.mappedPublishers;
-          next.unmappedPublishers = event.unmappedPublishers;
-          next.phase = `Found ${event.totalArticles.toLocaleString()} articles across ${event.mappedPublishers} mapped publishers — fetching DOIs…`;
+          next.phase = `Found ${event.totalArticles.toLocaleString()} journal articles — enumerating every DOI…`;
           break;
         case 'openalex_dois':
-          next.doiCounts.set(event.publisher, event.doisFetched);
+          next.doisFetched = event.fetched;
           break;
-        case 'crossref_start':
-          next.crossrefTotal = event.totalPublishers;
-          next.crossrefCompleted = 0;
-          next.phase = `Inspecting Crossref deposits for ${event.totalDois.toLocaleString()} DOIs across ${event.totalPublishers} publishers…`;
+        case 'crossref_probe':
+          next.probed = event.probed;
+          next.probeTotal = event.total;
+          next.foundArticles = event.foundArticles;
+          next.phase = `Probing Crossref directly: ${event.probed.toLocaleString()} / ${event.total.toLocaleString()} DOIs…`;
           break;
-        case 'crossref_publisher':
-          next.crossrefCompleted = event.completed;
-          next.crossrefPublisher = event.publisher;
-          next.doisInspected += event.doisInspected;
+        case 'crossref_grouped':
+          next.publishers = event.publishers;
+          next.phase = `Grouped ${event.analyzed.toLocaleString()} Crossref journal articles across ${event.publishers} publishers.`;
           break;
       }
       return next;
@@ -239,7 +233,7 @@ export default function InstitutionAnalysisPage() {
           <summary className="cursor-pointer px-4 py-3 font-medium">How this analysis works</summary>
           <div className="space-y-4 border-t border-blue-200 px-4 py-4">
             <p>
-              This page measures <strong>what publishers deposit to Crossref</strong> for your institution&apos;s journal articles. Crossref stores what it receives from publishers — the deposit practices are the variable. The analysis uses three data sources together:
+              This page measures <strong>what publishers deposit to Crossref</strong> for your institution&apos;s journal articles. Crossref stores what it receives from publishers — the deposit practices are the variable. The analysis uses two data sources together:
             </p>
 
             <div className="rounded-md border border-blue-200 bg-white p-3">
@@ -252,7 +246,7 @@ export default function InstitutionAnalysisPage() {
             <div className="rounded-md border border-blue-200 bg-white p-3">
               <p className="font-semibold text-blue-900">2. Crossref — for observed publisher deposits</p>
               <p className="mt-1 text-blue-800">
-                For every DOI OpenAlex returns at each mapped publisher, the tool fetches the actual Crossref work record and inspects it directly. Each record is counted by what it contains — affiliations, ROR IDs, funders, abstracts, licenses, ORCIDs — exactly as the publisher deposited them.
+                Every DOI OpenAlex returns is probed directly against Crossref — no content-type filter. Presence, content type, and the publisher (Crossref member) are read from the Crossref record itself, never inferred from OpenAlex&apos;s publisher attribution. Each record that exists as a journal article is counted by what it contains — affiliations, ROR IDs, funders, abstracts, licenses, ORCIDs — exactly as the publisher deposited them. DOIs Crossref has no record for are reported as out of scope, not as a deposit gap.
               </p>
             </div>
 
@@ -270,7 +264,7 @@ export default function InstitutionAnalysisPage() {
                 <li>If OpenAlex identifies a paper as institutional output but the Crossref deposit has no institutional ROR, that&apos;s counted as a gap — the affiliation exists, the publisher just didn&apos;t deposit it.</li>
                 <li>Only journal articles are inspected — no proceedings, book chapters, or peer reviews — to avoid the content-type dilution that inflates aggregate-style scores.</li>
                 <li>Publishers with fewer than 10 articles from this institution are shown but not measured (sample too small).</li>
-                <li>Articles that can&apos;t be traced to a mapped Crossref deposit are reported separately in &quot;Why N articles weren&apos;t analyzed&quot; with a per-reason breakdown.</li>
+                <li>Every probed DOI is classified by evidence from its Crossref record — in Crossref as a journal article, in Crossref under another content type, or absent from Crossref entirely — and reported in &quot;Why N articles weren&apos;t measured&quot;. There is no hand-maintained publisher map; grouping uses the Crossref member on each record.</li>
                 <li>A single extra OpenAlex count call fetches the institution&apos;s full-year journal-article output; the cost calculator uses that number to extrapolate the observed 90-day gap to an annual rate at your chosen hourly rates.</li>
               </ul>
             </div>
@@ -284,7 +278,7 @@ export default function InstitutionAnalysisPage() {
           </summary>
           <ul className="space-y-2 border-t border-amber-200 px-4 py-4 text-amber-900">
             <li>
-              <strong>Not every article can be analyzed — and every reason is a deposit gap.</strong> Some articles were never registered with Crossref (published only in an institutional repo, preprint server, or data platform); some come from publishers not yet mapped to a Crossref member ID; some have a deposit so incomplete that the publisher itself can&apos;t be identified downstream. The &quot;Why N articles weren&apos;t analyzed&quot; section below breaks these down.
+              <strong>Not every article can be measured — and the reasons are not all deposit gaps.</strong> Some articles are absent from Crossref entirely (registered with DataCite, an institutional repository, or a preprint/data platform) — these are genuinely <em>out of scope</em>, not a publisher failing. Others are in Crossref but registered under a different content type, which <em>is</em> a deposit gap. The rest fall below the sample floor. The &quot;Why N articles weren&apos;t measured&quot; section breaks these down from the actual Crossref records — never from a name heuristic.
             </li>
             <li>
               <strong>Author attribution is permissive.</strong> A paper is treated as &quot;from this institution&quot; if any author is affiliated with it. A co-authored paper with 20 authors across 5 institutions counts once for each — the deposit may or may not actually include this institution&apos;s ROR even when the institutional link is real.
@@ -448,36 +442,57 @@ export default function InstitutionAnalysisPage() {
               </div>
             </div>
 
-            {report.unmappedPublishers.length > 0 && (() => {
-              const totalUnmapped = report.unmappedPublishers.reduce((s, u) => s + u.articles, 0);
-              const noMetadata = report.unmappedPublishers.filter((u) => u.category === 'no-metadata').reduce((s, u) => s + u.articles, 0);
-              const institutional = report.unmappedPublishers.filter((u) => u.category === 'institutional').reduce((s, u) => s + u.articles, 0);
-              const unmappedPub = report.unmappedPublishers.filter((u) => u.category === 'unmapped-publisher').reduce((s, u) => s + u.articles, 0);
+            {(() => {
+              const scope = report.crossrefScope;
+              const belowFloor = report.analyzedArticles - report.measuredArticles;
+              const totalNotMeasured =
+                scope.notInCrossref + scope.otherContentType + belowFloor +
+                scope.probeFailed + scope.noDoi + scope.duplicateDoi;
+              if (totalNotMeasured <= 0) return null;
+              const otherTypeList = report.otherTypeBreakdown
+                .slice(0, 4)
+                .map((t) => `${t.type} (${t.count.toLocaleString()})`)
+                .join(', ');
               const rows = [
                 {
-                  count: institutional,
-                  title: 'No Crossref DOI registered at all',
-                  desc: 'The article exists only in an institutional repository, preprint server, or data platform — the publisher never registered a DOI through Crossref. Without a deposit, there\'s nothing to inspect. Smaller publishers, regional outlets, and non-traditional venues often skip Crossref registration entirely.',
+                  count: scope.notInCrossref,
+                  title: 'Not in Crossref at all',
+                  desc: 'Crossref returned no record for the DOI. The work is registered with a different agency — DataCite, an institutional repository, or a preprint/data platform — so it is outside the scope of Crossref deposit measurement. This is not a publisher deposit gap; it is simply not a Crossref object.',
                 },
                 {
-                  count: unmappedPub,
-                  title: 'Publisher deposits exist but aren\'t mapped yet',
-                  desc: 'The publisher does deposit to Crossref, but the mapping table doesn\'t yet link their OpenAlex identity to their Crossref member ID. Fixable — new publishers get added as they surface. Check back in a future run.',
+                  count: scope.otherContentType,
+                  title: 'In Crossref, but not as a journal article',
+                  desc: `The DOI exists in Crossref but is registered under a different content type${otherTypeList ? ` (${otherTypeList})` : ''}. OpenAlex classifies it as an article; the Crossref deposit does not. This content-type mismatch is itself a deposit gap — the work is harder to find as scholarly output.`,
                 },
                 {
-                  count: noMetadata,
-                  title: 'Deposit too incomplete to identify the publisher',
-                  desc: 'OpenAlex attributes the article to this institution but can\'t determine who published it. This typically means the Crossref deposit was missing or skeletal enough that the publisher field couldn\'t be reconstructed — another form of deposit gap, one step removed.',
+                  count: belowFloor,
+                  title: `Below the ${report.notes.minSampleSize}-article sample floor`,
+                  desc: 'These articles are in Crossref and were probed, but their publisher deposited fewer than the minimum number of this institution\'s articles in the window. Coverage percentages on a handful of records are statistically meaningless, so they are reported but not measured.',
+                },
+                {
+                  count: scope.noDoi,
+                  title: 'No DOI in OpenAlex',
+                  desc: 'OpenAlex has the article record but no DOI attached, so there is nothing to look up in Crossref. This is not a Crossref deposit question — without a DOI the work can\'t be cross-referenced at all.',
+                },
+                {
+                  count: scope.duplicateDoi,
+                  title: 'Duplicate DOI in OpenAlex',
+                  desc: 'Multiple OpenAlex work records share a single DOI (e.g. a record split). The DOI is probed once and classified above; the extra records are counted here so the totals reconcile to the OpenAlex universe.',
+                },
+                {
+                  count: scope.probeFailed,
+                  title: 'Crossref probe did not resolve',
+                  desc: 'The Crossref request for these DOIs failed after retries. We do not assume they are absent — they are excluded from every denominator so the percentages stay truthful. Re-running usually resolves these.',
                 },
               ].filter((r) => r.count > 0);
               return (
                 <div className="rounded-lg border bg-white shadow-sm">
                   <div className="border-b px-6 py-4">
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Why {totalUnmapped.toLocaleString()} articles weren&apos;t analyzed — all publisher deposit gaps
+                      Why {totalNotMeasured.toLocaleString()} articles weren&apos;t measured
                     </h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      Of the {report.totalArticles.toLocaleString()} articles OpenAlex attributed to {report.institution.name}, {totalUnmapped.toLocaleString()} couldn&apos;t be measured against Crossref deposits. Every reason below traces back to the same root — <strong>the publisher didn&apos;t deposit complete metadata to Crossref</strong> (or didn&apos;t deposit at all).
+                      Of the {report.totalArticles.toLocaleString()} articles OpenAlex attributed to {report.institution.name}, every DOI was probed directly against Crossref. The breakdown below is <strong>evidence-based</strong> — read from each Crossref record, not inferred from OpenAlex&apos;s publisher attribution. Only &quot;not as a journal article&quot; is a deposit gap; &quot;not in Crossref&quot; is genuinely out of scope.
                     </p>
                     <ScopeStrip report={report} variant="compact" />
                   </div>
@@ -498,7 +513,7 @@ export default function InstitutionAnalysisPage() {
                     ))}
                   </div>
                   <div className="border-t bg-gray-50 px-6 py-3 text-xs text-gray-600">
-                    Every bucket above is a form of deposit gap. Not registering a DOI, depositing incomplete metadata, or skipping Crossref entirely — each leaves institutions with less signal to track their own research.
+                    Presence, content type, and publisher are read from the Crossref record itself. An article counts as &quot;not in Crossref&quot; only when Crossref actually has no record for it — never from a name heuristic.
                   </div>
                 </div>
               );
@@ -522,12 +537,11 @@ function ScopeStrip({
   report: InstitutionReport;
   variant?: 'full' | 'compact';
 }) {
-  const unmappedCount = report.unmappedPublishers.reduce((s, u) => s + u.articles, 0);
   const items = [
-    { label: 'Journal articles total', value: report.totalArticles, tone: 'gray' },
-    { label: 'At publishers mapped to Crossref', value: report.trackedArticles, tone: 'blue' },
+    { label: 'Article-type works (OpenAlex)', value: report.totalArticles, tone: 'gray' },
+    { label: 'In Crossref as journal-article', value: report.analyzedArticles, tone: 'blue' },
     { label: 'Measured', value: report.measuredArticles, tone: 'emerald' },
-    { label: 'At unmapped publishers', value: unmappedCount, tone: 'amber' },
+    { label: 'Not in Crossref', value: report.crossrefScope.notInCrossref, tone: 'amber' },
   ];
 
   const toneClasses: Record<string, { bg: string; text: string; value: string }> = {
@@ -575,14 +589,10 @@ function ProgressPanel({ progress }: { progress: ProgressState }) {
     return () => clearInterval(id);
   }, [progress.startedAt]);
 
-  const totalDois = Array.from(progress.doiCounts.values()).reduce((s, n) => s + n, 0);
   const crossrefPct =
-    progress.crossrefTotal > 0
-      ? Math.round((progress.crossrefCompleted / progress.crossrefTotal) * 100)
+    progress.probeTotal > 0
+      ? Math.round((progress.probed / progress.probeTotal) * 100)
       : 0;
-  const topPublishers = Array.from(progress.doiCounts.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
 
   return (
     <div className="rounded-lg border bg-white p-6 shadow-sm">
@@ -601,30 +611,30 @@ function ProgressPanel({ progress }: { progress: ProgressState }) {
 
       <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <ProgressStat
-          label="Articles found"
+          label="Articles (OpenAlex)"
           value={progress.totalArticles ? progress.totalArticles.toLocaleString() : '—'}
         />
         <ProgressStat
-          label="Mapped publishers"
-          value={progress.mappedPublishers ? `${progress.mappedPublishers}` : '—'}
+          label="DOIs enumerated"
+          value={progress.doisFetched ? progress.doisFetched.toLocaleString() : '—'}
         />
         <ProgressStat
-          label="DOIs fetched"
-          value={totalDois ? totalDois.toLocaleString() : '—'}
+          label="Probed in Crossref"
+          value={progress.probed ? progress.probed.toLocaleString() : '—'}
         />
         <ProgressStat
-          label="DOIs inspected"
-          value={progress.doisInspected ? progress.doisInspected.toLocaleString() : '—'}
+          label="Found as articles"
+          value={progress.foundArticles ? progress.foundArticles.toLocaleString() : '—'}
         />
       </div>
 
-      {progress.crossrefTotal > 0 && (
+      {progress.probeTotal > 0 && (
         <div className="mt-5">
           <div className="mb-1 flex items-center justify-between text-xs text-gray-600">
             <span>
-              Crossref measurement: {progress.crossrefCompleted} / {progress.crossrefTotal} publishers
-              {progress.crossrefPublisher && (
-                <span className="text-gray-400"> · last: {progress.crossrefPublisher}</span>
+              Crossref probe: {progress.probed.toLocaleString()} / {progress.probeTotal.toLocaleString()} DOIs
+              {progress.publishers > 0 && (
+                <span className="text-gray-400"> · {progress.publishers} publishers grouped</span>
               )}
             </span>
             <span className="tabular-nums">{crossrefPct}%</span>
@@ -638,25 +648,10 @@ function ProgressPanel({ progress }: { progress: ProgressState }) {
         </div>
       )}
 
-      {topPublishers.length > 0 && (
-        <div className="mt-5 rounded-md border border-gray-200 bg-gray-50 p-3">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Largest publisher samples so far
-          </p>
-          <ul className="space-y-1 text-sm">
-            {topPublishers.map(([name, count]) => (
-              <li key={name} className="flex justify-between">
-                <span className="truncate text-gray-700">{name}</span>
-                <span className="tabular-nums text-gray-500">{count.toLocaleString()} DOIs</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       <p className="mt-4 text-xs text-gray-400">
-        Large institutions take longer — every DOI is fetched and every Crossref record is inspected
-        directly. You can leave this tab open; results render as soon as measurement completes.
+        Large institutions take longer — every DOI OpenAlex attributes to this institution is probed
+        directly against Crossref and every returned record is inspected. You can leave this tab
+        open; results render as soon as measurement completes.
       </p>
     </div>
   );
