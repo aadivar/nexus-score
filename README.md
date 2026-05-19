@@ -273,7 +273,7 @@ Most metadata gaps are **pipeline problems, not content problems**. The data exi
 
 Once you know what metadata is missing, Gap Fixer helps you recover it — one paper at a time, with every paid LLM call metered in USD and gated behind an explicit editor click.
 
-> **Pilot is open.** Self-hosted, AGPL-3.0, no vendor lock-in. **$1/article — sustenance pricing only**, to keep the project alive. The software is and stays free under AGPL; you can self-host the entire pipeline at zero per-article cost forever. Email <varma2friend@gmail.com> to book a demo or apply.
+> **Pilot is open.** Self-hosted, AGPL-3.0, no vendor lock-in. **$1/article — sustenance pricing only**, to keep the project alive. The software is and stays free under AGPL; you can self-host the entire pipeline at zero per-article cost forever. Email <aadi@nexus-score.org> to book a demo or apply.
 
 The tool lives in its own repository: **<https://github.com/aadivar/metadata_gapfixer>**.
 
@@ -492,7 +492,7 @@ Or in text:
 
 - LinkedIn: [@aadi-narayana-varma-dantuluri](https://www.linkedin.com/in/aadi-narayana-varma-dantuluri-62332b105/)
 - GitHub: [@aadivar](https://github.com/aadivar)
-- Email: varma2friend@gmail.com
+- Email: aadi@nexus-score.org
 
 ---
 

@@ -10,7 +10,7 @@
 
 If you discover a security vulnerability in Research Nexus Score, please report it responsibly.
 
-**Email:** [varma2friend@gmail.com](mailto:varma2friend@gmail.com)
+**Email:** [aadi@nexus-score.org](mailto:aadi@nexus-score.org)
 
 Please include:
 - Description of the vulnerability

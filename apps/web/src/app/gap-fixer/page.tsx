@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 const demoMailto =
-  'mailto:varma2friend@gmail.com?subject=' +
+  'mailto:aadi@nexus-score.org?subject=' +
   encodeURIComponent('Nexus Gap Fixer — Demo request') +
   '&body=' +
   encodeURIComponent(
@@ -17,7 +17,7 @@ const demoMailto =
   );
 
 const pilotMailto =
-  'mailto:varma2friend@gmail.com?subject=' +
+  'mailto:aadi@nexus-score.org?subject=' +
   encodeURIComponent('Nexus Gap Fixer — Pilot application') +
   '&body=' +
   encodeURIComponent(

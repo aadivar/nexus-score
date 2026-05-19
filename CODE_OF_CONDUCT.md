@@ -31,7 +31,7 @@ This project invites challenges to its scoring methodology. Disagreeing with wei
 
 ## Enforcement
 
-Instances of unacceptable behavior may be reported to [varma2friend@gmail.com](mailto:varma2friend@gmail.com). All reports will be reviewed and responded to promptly.
+Instances of unacceptable behavior may be reported to [aadi@nexus-score.org](mailto:aadi@nexus-score.org). All reports will be reviewed and responded to promptly.
 
 ## Attribution
 

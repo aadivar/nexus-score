@@ -100,10 +100,10 @@ export default function TermsPage() {
             <p className="mt-3">
               For questions about these Terms, please contact{' '}
               <a
-                href="mailto:varma2friend@gmail.com"
+                href="mailto:aadi@nexus-score.org"
                 className="text-blue-600 hover:underline"
               >
-                varma2friend@gmail.com
+                aadi@nexus-score.org
               </a>
               .
             </p>
