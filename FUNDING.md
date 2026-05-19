@@ -12,4 +12,4 @@ I'm looking for sponsorships to build targeted use cases for specific stakeholde
 
 If your organization benefits from open metadata infrastructure and wants to sponsor a specific use case, reach out:
 
-**Email:** [varma2friend@gmail.com](mailto:varma2friend@gmail.com)
+**Email:** [aadi@nexus-score.org](mailto:aadi@nexus-score.org)

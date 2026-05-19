@@ -166,10 +166,10 @@ export default function PrivacyPage() {
             <p className="mt-3">
               Questions about privacy? Contact{' '}
               <a
-                href="mailto:varma2friend@gmail.com"
+                href="mailto:aadi@nexus-score.org"
                 className="text-blue-600 hover:underline"
               >
-                varma2friend@gmail.com
+                aadi@nexus-score.org
               </a>
               .
             </p>

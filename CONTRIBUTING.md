@@ -274,7 +274,7 @@ If you want to propose changes to the scoring methodology:
 ## Questions?
 
 - Open a [Discussion](https://github.com/aadivar/nexus-score/discussions) for questions
-- Email: varma2friend@gmail.com
+- Email: aadi@nexus-score.org
 - LinkedIn: [@aadi-narayana-varma-dantuluri](https://www.linkedin.com/in/aadi-narayana-varma-dantuluri-62332b105/)
 
 ---

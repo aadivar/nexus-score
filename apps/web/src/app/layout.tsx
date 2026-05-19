@@ -156,7 +156,7 @@ export default function RootLayout({
                     </svg>
                   </a>
                   <a
-                    href="mailto:varma2friend@gmail.com"
+                    href="mailto:aadi@nexus-score.org"
                     className="text-gray-500 hover:text-red-500 transition-colors"
                     aria-label="Email"
                   >

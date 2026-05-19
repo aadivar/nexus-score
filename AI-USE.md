@@ -59,7 +59,7 @@ exists so that the conversation happens, not to block useful work.
 
 **Contact**
 D. Aadi Narayana Varma
-varma2friend@gmail.com
+aadi@nexus-score.org
 
 Please include:
 
