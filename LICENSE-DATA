@@ -6,8 +6,9 @@ repository. The source code is licensed under AGPL-3.0 (see LICENSE).
 
 SCOPE
 -----
-This license applies to all data artifacts produced by, distributed with,
-or published as part of the Research Nexus Score project, including:
+This license applies to the derivative data artifacts produced by,
+distributed with, or published as part of the Research Nexus Score
+project, including:
 
   - Computed Nexus Scores at any level of aggregation (publisher, journal,
     article, or other).
@@ -26,39 +27,65 @@ This license does NOT apply to:
 
 LICENSE
 -------
-The data described above is made available under the
-Creative Commons Attribution 4.0 International License (CC BY 4.0).
+The derivative data described above is made available under the
+Creative Commons Attribution-NonCommercial 4.0 International License
+(CC BY-NC 4.0).
 
 The full text is available at:
-  https://creativecommons.org/licenses/by/4.0/
+  https://creativecommons.org/licenses/by-nc/4.0/
 
-In short: you are free to share and adapt the data for any purpose,
-including commercially, provided you give appropriate attribution,
-link to the license, and indicate if changes were made.
+In short: you are free to share and adapt the data for non-commercial
+purposes, provided you give appropriate attribution, link to the license,
+and indicate if changes were made.
 
 Attribution should take the form:
 
   "Research Nexus Score (https://nexus-score.vercel.app/),
-   licensed CC BY 4.0."
+   licensed CC BY-NC 4.0."
 
-RESERVATION OF AI / MACHINE LEARNING RIGHTS
---------------------------------------------
-The author expressly reserves all rights, to the maximum extent
-permitted by applicable law, regarding the use of Nexus Score data
-and methodology for:
+PERMITTED USES (NON-COMMERCIAL, WITH ATTRIBUTION)
+-------------------------------------------------
+The CC BY-NC license above covers, without any further permission:
 
-  - Training, fine-tuning, distilling, or evaluating any artificial
-    intelligence, machine learning, or large language model intended
-    for or used in commercial products or services.
-  - Incorporating Nexus Score data into the inputs, retrieval layers,
-    embeddings, or grounding corpora of commercial AI systems
-    (including but not limited to discovery, recommendation,
-    summarisation, and research-assistant products).
-  - Producing derivative datasets primarily for the purpose of
-    commercial AI training or commercial AI system development.
+  - Academic and non-profit research, including methods research,
+    benchmarking, replication studies, and published findings.
+  - Library, repository, and university use — procurement analyses,
+    collection assessment, internal reporting.
+  - Journalism, advocacy, and policy work — citing scores, discussing
+    rankings, quoting findings.
+  - Public-interest, non-profit, and educational projects.
+  - Personal and individual use.
 
-This reservation is made under, and is intended to constitute a valid
-opt-out for the purposes of:
+If you are unsure whether your use qualifies as non-commercial, please
+ask before proceeding.
+
+COMMERCIAL USE — CONTACT FIRST
+------------------------------
+Any commercial use of the derivative data requires a separate written
+license from the author. This includes, without limitation:
+
+  - Incorporating Nexus Scores, rankings, or sub-scores into a paid
+    product, service, dashboard, or platform.
+  - Vendor or service-provider use that resells, repackages, or
+    integrates the data on behalf of clients.
+  - Training, fine-tuning, distilling, or evaluating commercial AI,
+    machine learning, or large language models on Nexus Score data,
+    rankings, or methodology.
+  - Using Nexus Score data in the inputs, retrieval layers, embeddings,
+    or grounding corpora of any commercial AI system (discovery,
+    recommendation, summarisation, research-assistant, or similar).
+  - Producing derivative datasets primarily for commercial purposes.
+
+Commercial licensing is available on reasonable terms. The reservation
+exists so the conversation happens, not to block useful work. See
+COMMERCIAL-USE.md for what to include in an inquiry.
+
+  Contact: aadi@nexus-score.org
+
+MACHINE-READABLE OPT-OUT
+------------------------
+This reservation of commercial rights is also intended to constitute a
+valid opt-out for the purposes of:
 
   - Article 4(3) of EU Directive 2019/790 (the DSM Directive) on
     text and data mining.
@@ -70,26 +97,6 @@ opt-out for the purposes of:
 Machine-readable expressions of this reservation are published at the
 repository root (`ai.txt`) and on the project website (`robots.txt`,
 TDM Reservation Protocol headers where applicable).
-
-The CC BY 4.0 license above is not granted for the reserved uses.
-Parties wishing to use Nexus Score data or methodology for any of the
-reserved purposes must obtain a separate written license. See
-AI-USE.md for contact details.
-
-NONCOMMERCIAL AI RESEARCH
--------------------------
-Use of Nexus Score data by academic researchers, non-profit research
-institutions, or independent scholars for non-commercial AI/ML
-research — including methods research, benchmarking, replication, and
-publication of findings — is permitted under the CC BY 4.0 license
-above and is NOT subject to the reservation, provided that:
-
-  - The research outputs (models, datasets, papers) are made openly
-    available on terms no more restrictive than CC BY 4.0.
-  - The use is not for, or in support of, a commercial product or
-    service.
-
-If you are unsure whether your use is covered, please ask.
 
 CITATION
 --------

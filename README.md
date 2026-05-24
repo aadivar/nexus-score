@@ -459,7 +459,10 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## License
 
-This project is licensed under the AGPL-3.0 License - see the [LICENSE](LICENSE) file for details.
+- **Source code** — [AGPL-3.0](LICENSE).
+- **Derivative data and scores** — [CC BY-NC 4.0](LICENSE-DATA). Free for non-commercial use with attribution.
+- **Commercial use** — requires a separate license. See [COMMERCIAL-USE.md](COMMERCIAL-USE.md).
+- **Upstream Crossref metadata** — Crossref's own terms (CC0).
 
 ## Acknowledgments
 

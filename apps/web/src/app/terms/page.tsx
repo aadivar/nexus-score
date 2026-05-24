@@ -73,9 +73,9 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">7. Open Source</h2>
+            <h2 className="text-xl font-semibold text-gray-900">7. Licensing</h2>
             <p className="mt-3">
-              Research Nexus Score is open-source software licensed under the MIT License. You are free to use, modify, and distribute the code in accordance with the license terms. See our{' '}
+              Research Nexus Score is open source. Source code is licensed under <strong>AGPL-3.0</strong>. Derivative data and scores — including computed Nexus Scores, sub-scores, rankings, and derived metrics — are licensed under <strong>CC BY-NC 4.0</strong>, free for non-commercial use with attribution. Commercial use, including incorporation into paid products and commercial AI training or product integration, requires a separate written license. See our{' '}
               <a
                 href="https://github.com/aadivar/nexus-score"
                 target="_blank"
@@ -84,7 +84,7 @@ export default function TermsPage() {
               >
                 GitHub repository
               </a>{' '}
-              for details.
+              (LICENSE, LICENSE-DATA, COMMERCIAL-USE.md) for full terms.
             </p>
           </section>
 

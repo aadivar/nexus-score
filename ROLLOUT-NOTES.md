@@ -1,5 +1,13 @@
 # Repo placement and rollout notes
 
+> **Superseded 2026-05-24.** The data layer has moved from CC BY 4.0
+> (with an AI-specific reservation) to **CC BY-NC 4.0**. Commercial use
+> of any kind — not only AI — now requires a separate license. The
+> notes below predate that change; the file/rollout structure still
+> holds, but treat the "Don't list this as non-commercial" guidance and
+> the Rob/Alice draft as historical context, not current messaging. See
+> `LICENSE-DATA` and `COMMERCIAL-USE.md` for current terms.
+
 ## File placement
 
 ```
