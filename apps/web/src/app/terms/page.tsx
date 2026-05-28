@@ -97,16 +97,16 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-gray-900">9. Contact</h2>
-            <p className="mt-3">
-              For questions about these Terms, please contact{' '}
-              <a
-                href="mailto:aadi@nexus-score.org"
-                className="text-blue-600 hover:underline"
-              >
-                aadi@nexus-score.org
-              </a>
-              .
-            </p>
+            <p className="mt-3">For questions about these Terms, please use the form below.</p>
+            <div
+              className="mt-3"
+              data-fillout-id="8qawy5VMrmus"
+              data-fillout-embed-type="slider"
+              data-fillout-button-text="Contact Us"
+              data-fillout-slider-direction="right"
+              data-fillout-inherit-parameters=""
+              data-fillout-popup-size="medium"
+            />
           </section>
         </div>
       </div>

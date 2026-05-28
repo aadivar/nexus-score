@@ -1,28 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { TrackAnchor } from '@/components/tracked-link';
+import { FilloutTrigger } from '@/components/fillout-trigger';
 
 export const metadata: Metadata = {
   title: 'Gap Fixer · Research Nexus Score',
   description:
     'A local diagnostic tool that turns a journal article PDF/DOCX into a Research Nexus scorecard plus a Crossref-ready DOI deposit XML. Self-hosted, AGPL-3.0, no vendor lock-in.',
 };
-
-const demoMailto =
-  'mailto:aadi@nexus-score.org?subject=' +
-  encodeURIComponent('Nexus Gap Fixer — Demo request') +
-  '&body=' +
-  encodeURIComponent(
-    'Publisher:\nISSN(s):\nPreferred times:\nAnything we should know:\n',
-  );
-
-const pilotMailto =
-  'mailto:aadi@nexus-score.org?subject=' +
-  encodeURIComponent('Nexus Gap Fixer — Pilot application') +
-  '&body=' +
-  encodeURIComponent(
-    'Publisher:\nTypical article volume / month:\nGap types you care most about:\nTimeline:\n',
-  );
 
 const layers = [
   {
@@ -112,22 +97,16 @@ export default function GapFixerPage() {
             metered in USD and gated behind an explicit editor click.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <TrackAnchor
-              href={demoMailto}
+            <FilloutTrigger
+              buttonText="Book a 30-min demo"
               event="gap_fixer_click"
               eventData={{ location: 'gap_fixer_page', section: 'hero', action: 'book_demo' }}
-              className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-amber-700"
-            >
-              Book a 30-min demo
-            </TrackAnchor>
-            <TrackAnchor
-              href={pilotMailto}
+            />
+            <FilloutTrigger
+              buttonText="Apply for the pilot"
               event="gap_fixer_click"
               eventData={{ location: 'gap_fixer_page', section: 'hero', action: 'apply_pilot' }}
-              className="inline-flex items-center justify-center rounded-lg border border-amber-600 bg-white px-6 py-3 font-semibold text-amber-700 transition-colors hover:bg-amber-50"
-            >
-              Apply for the pilot
-            </TrackAnchor>
+            />
             <TrackAnchor
               href="https://github.com/aadivar/metadata_gapfixer"
               event="gap_fixer_click"
@@ -273,22 +252,16 @@ export default function GapFixerPage() {
             sustenance only, AGPL forever.
           </p>
           <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <TrackAnchor
-              href={demoMailto}
+            <FilloutTrigger
+              buttonText="Book a 30-min demo"
               event="gap_fixer_click"
               eventData={{ location: 'gap_fixer_page', section: 'final_cta', action: 'book_demo' }}
-              className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-6 py-3 font-semibold text-white shadow-sm transition-colors hover:bg-amber-700"
-            >
-              Book a 30-min demo
-            </TrackAnchor>
-            <TrackAnchor
-              href={pilotMailto}
+            />
+            <FilloutTrigger
+              buttonText="Apply for the pilot"
               event="gap_fixer_click"
               eventData={{ location: 'gap_fixer_page', section: 'final_cta', action: 'apply_pilot' }}
-              className="inline-flex items-center justify-center rounded-lg border border-amber-600 bg-white px-6 py-3 font-semibold text-amber-700 transition-colors hover:bg-amber-50"
-            >
-              Apply for the pilot
-            </TrackAnchor>
+            />
           </div>
         </div>
       </section>
