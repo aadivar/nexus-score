@@ -137,6 +137,67 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Beyond a Single Metadata Source */}
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          <div className="border-l-4 border-blue-600 pl-6">
+            <h2 className="text-2xl font-semibold text-gray-900">
+              Beyond a Single Metadata Source
+            </h2>
+            <div className="mt-5 space-y-4 text-gray-600">
+              <p>
+                Nexus Score measures the machine interpretability of scholarly records.
+              </p>
+              <p>
+                The current implementation begins with metadata deposited in Crossref
+                because Crossref is open, publisher-contributed infrastructure and one of
+                the most important public sources of scholarly metadata. But Nexus Score
+                is not limited to Crossref, nor is it a replacement for Crossref&apos;s own
+                participation reports, metadata health checks, or community
+                infrastructure work.
+              </p>
+              <p>
+                The broader purpose of Nexus Score is to evaluate how well a scholarly
+                object can be discovered, connected, attributed, verified, and reused
+                across the research information ecosystem.
+              </p>
+              <p>
+                The same article, dataset, preprint, grant, protocol, or research object
+                may appear across Crossref, OpenAlex, PubMed, institutional repositories,
+                publisher platforms, funder databases, disciplinary registries, Scopus,
+                Web of Science, and other scholarly knowledge graphs. Each system may
+                represent the record differently, with different levels of completeness,
+                linkage, provenance, and machine-readiness.
+              </p>
+            </div>
+          </div>
+
+          <div className="my-8 rounded-lg border border-blue-100 bg-blue-50 p-6 text-center">
+            <p className="text-sm font-medium uppercase tracking-wide text-blue-700">
+              Nexus Score asks a larger question
+            </p>
+            <p className="mt-3 text-xl font-semibold leading-relaxed text-gray-900">
+              How interpretable is this scholarly record to humans, systems, and AI
+              agents wherever it appears?
+            </p>
+          </div>
+
+          <div className="space-y-4 text-gray-600">
+            <p>
+              A high score does not measure research quality, journal prestige,
+              publisher reputation, or scholarly impact. It measures whether the record
+              contains enough structured, connected, and trustworthy metadata to support
+              discovery, attribution, accountability, and AI-mediated research
+              workflows.
+            </p>
+            <p className="font-medium text-gray-900">
+              Nexus Score is an AI-readiness and interoperability signal for the
+              scholarly record.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Publishers */}
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
