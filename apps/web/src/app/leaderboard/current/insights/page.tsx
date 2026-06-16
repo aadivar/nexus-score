@@ -28,6 +28,30 @@ export default function CurrentEraInsightsPage() {
           <p className="mt-2 text-gray-600">
             Three lenses on the same data — each tells a different story
           </p>
+          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">
+                  Known Issues
+                </p>
+                <p className="mt-1 text-sm text-amber-900">
+                  Gaps in the methodology are tracked openly as community feedback.
+                </p>
+              </div>
+              <a
+                href="https://github.com/aadivar/nexus-score/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-sm font-semibold text-amber-800 hover:text-amber-950"
+              >
+                View GitHub Issues
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5H19.5M19.5 4.5V10.5M19.5 4.5L10.5 13.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.5V19.5H4.5V4.5H9.5" />
+                </svg>
+              </a>
+            </div>
+          </div>
         </div>
 
         {/* Navigation */}
