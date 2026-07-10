@@ -1,6 +1,9 @@
 Research Nexus Score — Data License
 ====================================
 
+Copyright (C) 2025–2026 D. Aadi Narayana Varma. All rights reserved
+except as expressly licensed below.
+
 The data covered by this license is distinct from the source code in this
 repository. The source code is licensed under AGPL-3.0 (see LICENSE).
 
@@ -43,18 +46,28 @@ Attribution should take the form:
   "Research Nexus Score (https://nexus-score.vercel.app/),
    licensed CC BY-NC 4.0."
 
-PERMITTED USES (NON-COMMERCIAL, WITH ATTRIBUTION)
+PERMITTED USES (NONCOMMERCIAL, WITH ATTRIBUTION)
 -------------------------------------------------
-The CC BY-NC license above covers, without any further permission:
+The CC BY-NC license above covers the following without further permission,
+provided the particular use is NonCommercial:
 
-  - Academic and non-profit research, including methods research,
-    benchmarking, replication studies, and published findings.
-  - Library, repository, and university use — procurement analyses,
-    collection assessment, internal reporting.
+  - NonCommercial academic and nonprofit research, including methods
+    research, benchmarking, replication studies, and published findings.
+  - NonCommercial library, repository, and university use — procurement
+    analyses, collection assessment, and internal reporting.
   - Journalism, advocacy, and policy work — citing scores, discussing
     rankings, quoting findings.
   - Public-interest, non-profit, and educational projects.
   - Personal and individual use.
+
+"NonCommercial" has the meaning in CC BY-NC 4.0: a use not primarily
+intended for or directed toward commercial advantage or monetary
+compensation. It turns on the purpose of the use, not the identity or tax
+status of the user. Use by a nonprofit, educational, governmental, or
+charitable organisation is therefore not automatically NonCommercial.
+Revenue-generating services, paid client work, commercial partnerships,
+fundraising products, and uses directed toward commercial advantage may
+require a separate licence regardless of the user's organisational status.
 
 If you are unsure whether your use qualifies as non-commercial, please
 ask before proceeding.
@@ -75,6 +88,10 @@ license from the author. This includes, without limitation:
     or grounding corpora of any commercial AI system (discovery,
     recommendation, summarisation, research-assistant, or similar).
   - Producing derivative datasets primarily for commercial purposes.
+
+These examples explain the CC BY-NC restriction; they do not replace or
+modify the Creative Commons legal code. A use permitted by applicable law
+without a licence remains permitted.
 
 Commercial licensing is available on reasonable terms. The reservation
 exists so the conversation happens, not to block useful work. See
@@ -97,6 +114,15 @@ valid opt-out for the purposes of:
 Machine-readable expressions of this reservation are published at the
 repository root (`ai.txt`) and on the project website (`robots.txt`,
 TDM Reservation Protocol headers where applicable).
+
+RIGHTS BOUNDARY
+---------------
+This licence grants only Copyright and Similar Rights that the licensor
+has authority to license. It does not claim exclusive rights in facts,
+ideas, scoring concepts, methods, algorithms, upstream CC0 metadata, or
+independently created material. It does apply to the selection,
+coordination, arrangement, expressive presentation, and database rights
+in covered artifacts to the extent those rights exist.
 
 CITATION
 --------

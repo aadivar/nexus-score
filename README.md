@@ -463,6 +463,8 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Derivative data and scores** — [CC BY-NC 4.0](LICENSE-DATA). Free for non-commercial use with attribution.
 - **Commercial use** — requires a separate license. See [COMMERCIAL-USE.md](COMMERCIAL-USE.md).
 - **Upstream Crossref metadata** — Crossref's own terms (CC0).
+- **Brand use** — names and logos are governed separately by [TRADEMARKS.md](TRADEMARKS.md).
+- **Copyright and dataset notices** — see [NOTICE](NOTICE) and [DATA-NOTICE.md](DATA-NOTICE.md).
 
 ## Acknowledgments
 

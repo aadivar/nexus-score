@@ -2,6 +2,7 @@
   "name": "@nexus-score/mcp-server",
   "version": "0.1.2",
   "description": "MCP server for Crossref metadata coverage scoring",
+  "license": "AGPL-3.0-only",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

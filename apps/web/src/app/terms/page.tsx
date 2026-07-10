@@ -10,7 +10,7 @@ export default function TermsPage() {
     <div className="min-h-screen py-12">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900">Terms of Service</h1>
-        <p className="mt-2 text-sm text-gray-500">Last updated: January 2026</p>
+        <p className="mt-2 text-sm text-gray-500">Last updated: July 2026</p>
 
         <div className="mt-8 space-y-8 text-gray-600">
           <section>
@@ -86,17 +86,27 @@ export default function TermsPage() {
               </a>{' '}
               (LICENSE, LICENSE-DATA, COMMERCIAL-USE.md) for full terms.
             </p>
+            <p className="mt-3">
+              NonCommercial status depends on the purpose of a use, not the user&apos;s identity or tax status. Use by a nonprofit, university, charity, government body, or individual is not automatically NonCommercial. Paid client work, revenue-generating services, commercial partnerships, and other uses directed toward commercial advantage may require a separate written license.
+            </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">8. Changes to Terms</h2>
+            <h2 className="text-xl font-semibold text-gray-900">8. API and Automated Access</h2>
+            <p className="mt-3">
+              Access to public endpoints does not change the license applicable to their contents. Automated access must respect published rate limits, access controls, robots directives, and machine-readable rights reservations. You may not evade technical restrictions, disrupt availability, or imply that API access grants commercial rights in Nexus Score data.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900">9. Changes to Terms</h2>
             <p className="mt-3">
               We reserve the right to modify these terms at any time. Continued use of the Service after changes constitutes acceptance of the new terms.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900">9. Contact</h2>
+            <h2 className="text-xl font-semibold text-gray-900">10. Contact</h2>
             <p className="mt-3">For questions about these Terms, please use the form below.</p>
             <div
               className="mt-3"

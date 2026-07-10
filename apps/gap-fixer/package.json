@@ -2,6 +2,7 @@
   "name": "@nexus-score/gap-fixer",
   "version": "0.1.2",
   "private": true,
+  "license": "AGPL-3.0-only",
   "scripts": {
     "dev": "next dev --turbopack -p 3001",
     "build": "next build",

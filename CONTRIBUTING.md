@@ -12,6 +12,7 @@ Thank you for your interest in contributing to Research Nexus Score! This projec
 - [Coding Standards](#coding-standards)
 - [Reporting Bugs](#reporting-bugs)
 - [Suggesting Features](#suggesting-features)
+- [Contributor Agreement](#contributor-agreement)
 
 ## Code of Conduct
 
@@ -141,6 +142,20 @@ pnpm lint --fix
 
 ## Pull Request Process
 
+## Contributor Agreement
+
+Contributors retain copyright in their contributions. Before a contribution
+can be accepted, the contributor must agree to the
+[Contributor License Agreement](CONTRIBUTOR-LICENSE-AGREEMENT.md) by including
+this statement in the pull request description:
+
+> I have read and agree to the Research Nexus Score Contributor License Agreement.
+
+This keeps the project able to enforce its licences and offer consistent
+commercial terms without taking ownership away from contributors. If a
+contribution is made on behalf of an employer or another organisation, the
+contributor is responsible for obtaining the necessary authority.
+
 ### Before You Start
 
 1. **Check existing issues and PRs** to avoid duplicate work
@@ -189,6 +204,7 @@ pnpm lint --fix
 - [ ] Linting passes (`pnpm lint`)
 - [ ] PR has a clear description of changes
 - [ ] Documentation updated if needed
+- [ ] Contributor License Agreement accepted in the PR description
 
 ## Coding Standards
 

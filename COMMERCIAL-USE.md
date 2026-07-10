@@ -27,18 +27,25 @@ following require a license:
   and research assistants.
 - Producing derivative datasets primarily for commercial purposes.
 
-## What is NOT commercial use
+## Uses that are generally noncommercial
 
-You do not need to contact anyone for:
+Subject to the purpose-of-use test below, examples generally include:
 
-- Academic and non-profit research, including benchmarking, replication
-  studies, and published findings.
+- NonCommercial academic and nonprofit research, including benchmarking,
+  replication studies, and published findings.
 - Library, repository, and university use — procurement analyses,
   collection assessment, internal reporting.
 - Journalism, advocacy, and policy work — citing scores, discussing
   rankings, quoting findings.
 - Public-interest, non-profit, and educational projects.
 - Personal and individual use.
+
+NonCommercial status depends on the use, not the organisation. A nonprofit,
+university, charity, government body, or individual can make a commercial
+use; a for-profit organisation can sometimes make a NonCommercial use.
+Revenue-generating services, paid client engagements, commercial
+partnerships, fundraising products, and work directed toward commercial
+advantage may require a separate licence regardless of tax status.
 
 If you are unsure where your use falls, please ask before proceeding.
 

@@ -2,6 +2,7 @@
   "name": "nexus-score",
   "version": "0.1.2",
   "private": true,
+  "license": "AGPL-3.0-only",
   "description": "Crossref metadata coverage scoring tool",
   "scripts": {
     "dev": "turbo dev",
