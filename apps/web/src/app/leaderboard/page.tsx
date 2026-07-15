@@ -27,8 +27,8 @@ interface LeaderboardEntry {
   grade: string;
   totalWorks: number;
   currentScore?: number;
-  backfileScore?: number;
-  improvement?: number;
+  backfileScore?: number | null;
+  improvement?: number | null;
   dimensions: {
     provenance: number;
     people: number;
@@ -109,6 +109,15 @@ export default function LeaderboardPage() {
   }
 
   const { leaderboard, generatedAt, totalMembers, totalWithWorks, availableContentTypes } = data;
+  const initialLeaderboard = leaderboard.slice(0, 50);
+  const publishersWithBackfile = leaderboard.filter(
+    (entry) =>
+      entry.improvement !== undefined &&
+      entry.improvement !== null &&
+      entry.backfileScore !== undefined &&
+      entry.backfileScore !== null &&
+      entry.backfileScore > 0
+  ).length;
 
   // Calculate grade distribution
   const gradeDistribution = leaderboard.reduce(
@@ -338,7 +347,13 @@ export default function LeaderboardPage() {
 
         {/* Leaderboard Table with Search and Pagination */}
         <div className="mt-8">
-          <LeaderboardTable leaderboard={leaderboard} totalWithWorks={totalWithWorks} availableContentTypes={availableContentTypes || []} />
+          <LeaderboardTable
+            initialLeaderboard={initialLeaderboard}
+            initialTotal={totalWithWorks}
+            totalWithWorks={totalWithWorks}
+            publishersWithBackfile={publishersWithBackfile}
+            availableContentTypes={availableContentTypes || []}
+          />
         </div>
 
         {/* Footer note */}

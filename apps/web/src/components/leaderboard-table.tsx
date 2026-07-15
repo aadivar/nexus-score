@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { PublisherRadar } from './publisher-radar';
@@ -37,9 +37,16 @@ interface LeaderboardEntry {
 }
 
 interface LeaderboardTableProps {
-  leaderboard: LeaderboardEntry[];
+  initialLeaderboard: LeaderboardEntry[];
+  initialTotal: number;
   totalWithWorks: number;
+  publishersWithBackfile: number;
   availableContentTypes: { type: string; label: string; count: number }[];
+}
+
+interface LeaderboardApiResponse {
+  total: number;
+  leaderboard: LeaderboardEntry[];
 }
 
 const ITEMS_PER_PAGE = 50;
@@ -63,8 +70,17 @@ type SortField = 'default' | 'score' | 'works' | 'improvement' | DimensionKey;
 type SortDirection = 'desc' | 'asc';
 type ViewMode = 'overall' | 'progress';
 
-export function LeaderboardTable({ leaderboard, totalWithWorks, availableContentTypes }: LeaderboardTableProps) {
+export function LeaderboardTable({
+  initialLeaderboard,
+  initialTotal,
+  totalWithWorks,
+  publishersWithBackfile,
+  availableContentTypes,
+}: LeaderboardTableProps) {
+  const [leaderboard, setLeaderboard] = useState(initialLeaderboard);
+  const [resultTotal, setResultTotal] = useState(initialTotal);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('default');
@@ -72,19 +88,11 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
   const [viewMode, setViewMode] = useState<ViewMode>('overall');
   const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
   const [radarEntry, setRadarEntry] = useState<LeaderboardEntry | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const skipInitialFetch = useRef(true);
 
-  // Check if improvement data is available (non-null values with meaningful backfile scores)
-  const hasImprovementData = leaderboard.some(e =>
-    e.improvement !== undefined && e.improvement !== null && e.backfileScore && e.backfileScore > 0
-  );
-
-  // Count publishers with valid improvement data (has meaningful backfile coverage)
-  const publishersWithBackfile = useMemo(() =>
-    leaderboard.filter(e =>
-      e.improvement !== undefined && e.improvement !== null && e.backfileScore && e.backfileScore > 0
-    ).length,
-    [leaderboard]
-  );
+  const hasImprovementData = publishersWithBackfile > 0;
 
   // Helper to get content-type score for an entry
   const getCtScore = (entry: LeaderboardEntry): number | null => {
@@ -99,117 +107,86 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
     return ct ? ct.grade : null;
   };
 
-  // Filter and sort leaderboard
-  const filteredLeaderboard = useMemo(() => {
-    let filtered = leaderboard;
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+      setCurrentPage(1);
+    }, 300);
 
-    // Content type filter: only show publishers that have this content type
-    if (contentTypeFilter !== 'all') {
-      filtered = filtered.filter((entry) =>
-        entry.contentTypes?.some((c) => c.type === contentTypeFilter)
-      );
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (skipInitialFetch.current) {
+      skipInitialFetch.current = false;
+      return;
     }
 
-    // In progress view, only show publishers with meaningful backfile data (score > 0)
-    if (viewMode === 'progress') {
-      filtered = filtered.filter((entry) =>
-        entry.improvement !== undefined && entry.improvement !== null && entry.backfileScore && entry.backfileScore > 0
-      );
-    }
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      limit: ITEMS_PER_PAGE.toString(),
+      offset: ((currentPage - 1) * ITEMS_PER_PAGE).toString(),
+      view: viewMode,
+      sort: sortField,
+      direction: sortDirection,
+    });
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((entry) =>
-        entry.name.toLowerCase().includes(query)
-      );
-    }
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (gradeFilter !== 'all') params.set('grade', gradeFilter);
+    if (contentTypeFilter !== 'all') params.set('contentType', contentTypeFilter);
 
-    if (gradeFilter !== 'all') {
-      const gradeForEntry = (entry: LeaderboardEntry) => {
-        if (contentTypeFilter !== 'all') {
-          const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
-          return ct?.grade || entry.grade;
+    async function loadLeaderboard() {
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const response = await fetch(`/api/leaderboard?${params.toString()}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Leaderboard request failed with status ${response.status}`);
         }
-        return entry.grade;
-      };
-      filtered = filtered.filter((entry) => gradeForEntry(entry) === gradeFilter);
+
+        const result = (await response.json()) as LeaderboardApiResponse;
+        setLeaderboard(result.leaderboard);
+        setResultTotal(result.total);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setLoadError('Could not update the leaderboard. Please try again.');
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
     }
 
-    // When content type is selected, default sort by that type's score
-    if (contentTypeFilter !== 'all' && sortField === 'default') {
-      filtered = [...filtered].sort((a, b) => {
-        const aScore = a.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0;
-        const bScore = b.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0;
-        return bScore - aScore;
-      });
-    }
-
-    // Apply sorting
-    if (sortField === 'works') {
-      filtered = [...filtered].sort((a, b) =>
-        sortDirection === 'desc' ? b.totalWorks - a.totalWorks : a.totalWorks - b.totalWorks
-      );
-    } else if (sortField === 'score') {
-      filtered = [...filtered].sort((a, b) => {
-        const aScore = contentTypeFilter !== 'all'
-          ? (a.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0)
-          : a.score;
-        const bScore = contentTypeFilter !== 'all'
-          ? (b.contentTypes?.find((c) => c.type === contentTypeFilter)?.score ?? 0)
-          : b.score;
-        return sortDirection === 'desc' ? bScore - aScore : aScore - bScore;
-      });
-    } else if (sortField === 'improvement') {
-      filtered = [...filtered].sort((a, b) =>
-        sortDirection === 'desc'
-          ? (b.improvement ?? 0) - (a.improvement ?? 0)
-          : (a.improvement ?? 0) - (b.improvement ?? 0)
-      );
-    } else if (['provenance', 'people', 'organizations', 'funding', 'access'].includes(sortField)) {
-      const dim = sortField as DimensionKey;
-      filtered = [...filtered].sort((a, b) =>
-        sortDirection === 'desc'
-          ? b.dimensions[dim] - a.dimensions[dim]
-          : a.dimensions[dim] - b.dimensions[dim]
-      );
-    }
-
-    // In progress view, default sort by improvement
-    if (viewMode === 'progress' && sortField === 'default' && contentTypeFilter === 'all') {
-      filtered = [...filtered].sort((a, b) => (b.improvement ?? 0) - (a.improvement ?? 0));
-    }
-
-    return filtered;
-  }, [leaderboard, searchQuery, gradeFilter, sortField, sortDirection, viewMode, contentTypeFilter]);
+    void loadLeaderboard();
+    return () => controller.abort();
+  }, [contentTypeFilter, currentPage, debouncedSearch, gradeFilter, sortDirection, sortField, viewMode]);
 
   // Track leaderboard searches, debounced so we log the settled query and how
   // many publishers it matched — not every keystroke.
   useEffect(() => {
-    const q = searchQuery.trim();
+    const q = debouncedSearch;
     if (q.length < 2) return;
     const timer = setTimeout(() => {
       trackEvent('leaderboard_search', {
         query: normalizeQuery(q),
-        results: filteredLeaderboard.length,
+        results: resultTotal,
         era: viewMode === 'progress' ? 'progress' : 'aggregate',
         contentType: contentTypeFilter,
       });
     }, 700);
     return () => clearTimeout(timer);
-  }, [searchQuery, filteredLeaderboard.length, contentTypeFilter, viewMode]);
+  }, [debouncedSearch, resultTotal, contentTypeFilter, viewMode]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredLeaderboard.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(resultTotal / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedLeaderboard = filteredLeaderboard.slice(
-    startIndex,
-    startIndex + ITEMS_PER_PAGE
-  );
+  const paginatedLeaderboard = leaderboard;
 
   // Reset to page 1 when filters change
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setCurrentPage(1);
   };
 
   const handleGradeFilterChange = (value: string) => {
@@ -426,7 +403,7 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
         <span>
           {searchQuery || gradeFilter !== 'all' || contentTypeFilter !== 'all' ? (
             <>
-              Showing {filteredLeaderboard.length.toLocaleString()} results
+              Showing {resultTotal.toLocaleString()} results
               {contentTypeFilter !== 'all' && ` for ${availableContentTypes.find(ct => ct.type === contentTypeFilter)?.label || contentTypeFilter}`}
               {searchQuery && ` matching "${searchQuery}"`}
               {gradeFilter !== 'all' && ` with grade ${gradeFilter}`}
@@ -454,10 +431,22 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
             </button>
           </span>
         )}
+        {isLoading && (
+          <span className="inline-flex items-center gap-1 text-xs text-gray-500" role="status">
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
+            Updating
+          </span>
+        )}
       </div>
 
+      {loadError && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {loadError}
+        </div>
+      )}
+
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border bg-white shadow-sm" aria-busy={isLoading}>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -669,8 +658,8 @@ export function LeaderboardTable({ leaderboard, totalWithWorks, availableContent
         <div className="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-gray-600">
             Showing {startIndex + 1} to{' '}
-            {Math.min(startIndex + ITEMS_PER_PAGE, filteredLeaderboard.length)} of{' '}
-            {filteredLeaderboard.length.toLocaleString()} publishers
+            {Math.min(startIndex + ITEMS_PER_PAGE, resultTotal)} of{' '}
+            {resultTotal.toLocaleString()} publishers
           </p>
 
           <div className="flex items-center gap-1">
