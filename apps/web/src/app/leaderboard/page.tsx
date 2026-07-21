@@ -4,7 +4,7 @@ import { join } from 'path';
 import { LeaderboardTable } from '@/components/leaderboard-table';
 
 export const metadata: Metadata = {
-  title: 'Leaderboard - Research Nexus Score',
+  title: 'Leaderboard - Nexus Score',
   description: 'See which publishers have the best metadata coverage scores.',
 };
 

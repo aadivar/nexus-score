@@ -353,15 +353,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!score) {
     return {
-      title: 'Member Not Found - Research Nexus Score',
+      title: 'Member Not Found - Nexus Score',
     };
   }
 
   return {
-    title: `${score.metadata.entityName} - Research Nexus Score`,
-    description: `Research Nexus Score: ${score.total}/100 (Grade ${score.grade}). View metadata coverage breakdown and recommendations.`,
+    title: `${score.metadata.entityName} - Nexus Score`,
+    description: `Nexus Score: ${score.total}/100 (Grade ${score.grade}). View metadata coverage breakdown and recommendations.`,
     openGraph: {
-      title: `${score.metadata.entityName} - Research Nexus Score: ${score.total}`,
+      title: `${score.metadata.entityName} - Nexus Score: ${score.total}`,
       description: `Grade ${score.grade} - View metadata coverage breakdown and improvement recommendations.`,
     },
   };

@@ -4,7 +4,7 @@ import { TrackAnchor } from '@/components/tracked-link';
 import { FilloutTrigger } from '@/components/fillout-trigger';
 
 export const metadata: Metadata = {
-  title: 'Gap Fixer · Research Nexus Score',
+  title: 'Gap Fixer · Nexus Score',
   description:
     'A local diagnostic tool that turns a journal article PDF/DOCX into a Research Nexus scorecard plus a Crossref-ready DOI deposit XML. Self-hosted, AGPL-3.0, no vendor lock-in.',
 };

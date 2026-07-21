@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Current Era Insights - Research Nexus Score',
+  title: 'Current Era Insights - Nexus Score',
   description:
     'Key findings from the current-era leaderboard. How publishers are improving their metadata practices on recent content.',
 };

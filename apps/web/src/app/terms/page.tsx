@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - Research Nexus Score',
-  description: 'Terms of Service for Research Nexus Score.',
+  title: 'Terms of Service - Nexus Score',
+  description: 'Terms of Service for Nexus Score.',
 };
 
 export default function TermsPage() {

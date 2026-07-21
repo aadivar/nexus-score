@@ -256,6 +256,73 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Media Mentions */}
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <h2 className="text-center text-2xl font-semibold text-gray-900">
+            In the Conversation
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
+            Nexus Score is part of an ongoing community discussion about metadata
+            quality and open research infrastructure.
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                outlet: 'LinkedIn',
+                type: 'Community post',
+                title:
+                  'On scholarly publishing, open science, and research infrastructure',
+                href: 'https://www.linkedin.com/posts/robjohnsonresearchconsulting_scholarlypublishing-openscience-researchinfrastructure-activity-7441740521741463552-Nlsz/',
+              },
+              {
+                outlet: 'The Scholarly Kitchen',
+                type: 'Guest post',
+                title:
+                  'Fixing the Leaky Metadata Pipeline: A Conversation with the Creator of Research Nexus Score',
+                href: 'https://scholarlykitchen.sspnet.org/2026/06/11/guest-post-fixing-the-leaky-metadata-pipeline-a-conversation-with-the-creator-of-research-nexus-score/',
+              },
+              {
+                outlet: 'Patreon',
+                type: 'Commentary',
+                title: 'Industry commentary on metadata and the scholarly record',
+                href: 'https://www.patreon.com/DavidWorlock/posts/notation-its-and-159270373',
+              },
+              {
+                outlet: 'Patreon',
+                type: 'Podcast interview',
+                title: 'Measuring in the age of AI',
+                href: 'https://www.patreon.com/DavidWorlock/posts/measuring-in-age-161710561',
+              },
+              {
+                outlet: 'Patreon',
+                type: 'Guest post',
+                title: 'Is AI changing how scholarly work is discovered?',
+                href: 'https://www.patreon.com/DavidWorlock/posts/guest-blog-is-ai-162519816',
+              },
+            ].map((mention) => (
+              <a
+                key={mention.href}
+                href={mention.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group rounded-lg border bg-gray-50 p-5 transition-shadow hover:shadow-md"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-blue-600">
+                    {mention.type}
+                  </span>
+                  <span className="text-xs text-gray-400">{mention.outlet}</span>
+                </div>
+                <p className="mt-3 text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                  {mention.title}
+                </p>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="bg-gray-50 py-16">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">

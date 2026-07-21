@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { CurrentLeaderboardTable } from '@/components/current-leaderboard-table';
 
 export const metadata: Metadata = {
-  title: 'Current Era Leaderboard - Research Nexus Score',
+  title: 'Current Era Leaderboard - Nexus Score',
   description:
     'See which publishers have the best metadata coverage on recent publications. Ranked by current content quality, not weighed down by historical backfiles.',
 };

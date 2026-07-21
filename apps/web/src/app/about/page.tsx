@@ -2,8 +2,8 @@ import { Metadata } from 'next';
 import { DIMENSION_WEIGHTS, METRICS_BY_DIMENSION, GRADE_THRESHOLDS } from '@nexus-score/core';
 
 export const metadata: Metadata = {
-  title: 'Methodology - Research Nexus Score',
-  description: 'Learn how Research Nexus Score calculates metadata coverage scores based on Crossref data.',
+  title: 'Methodology - Nexus Score',
+  description: 'Learn how Nexus Score calculates metadata coverage scores based on Crossref data.',
 };
 
 export default function AboutPage() {

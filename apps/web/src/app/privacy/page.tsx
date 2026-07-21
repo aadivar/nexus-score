@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Research Nexus Score',
-  description: 'Privacy Policy for Research Nexus Score.',
+  title: 'Privacy Policy - Nexus Score',
+  description: 'Privacy Policy for Nexus Score.',
 };
 
 export default function PrivacyPage() {
