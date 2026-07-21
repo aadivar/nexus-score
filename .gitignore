@@ -36,9 +36,24 @@ coverage/
 
 # Internal research
 sage.md
+apps/web/scripts/internal/
+apps/web/data/internal/
 
 # Private publisher demos
 apps/journal-nexus/
 
+# Outreach drafts — partner/sponsorship communications kept local
+docs/outreach/
+
+# Local working docs and AI agent context — not part of the public repo
+docs/homepage-concepts.html
+CLAUDE.md
+AGENTS.md
+
+# MCP server runtime logs
+packages/mcp-server/logs/
+
 # Misc
 *.tsbuildinfo
+.vercel
+.env*.local

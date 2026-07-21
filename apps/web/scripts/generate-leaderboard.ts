@@ -18,8 +18,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Crossref API settings
 const BASE_URL = 'https://api.crossref.org';
 const MAILTO = process.env.CROSSREF_MAILTO || 'varma2friend@gmail.com';
-const ROWS_PER_PAGE = 1000; // Max allowed by Crossref
+const ROWS_PER_PAGE = 500; // Crossref can intermittently fail at the 1000-row maximum
 const RATE_LIMIT_DELAY = 100; // ms between requests (polite pool allows faster)
+const MAX_FETCH_RETRIES = 5;
+const RETRY_BASE_DELAY = 1000; // ms
+const RETRY_MAX_DELAY = 30000; // ms
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 interface CrossrefMember {
   id: number;
@@ -323,28 +327,94 @@ function calculateScore(member: CrossrefMember): {
   };
 }
 
+function getRetryAfterDelay(response: Response): number | null {
+  const retryAfter = response.headers.get('Retry-After');
+  if (!retryAfter) return null;
+
+  const seconds = Number(retryAfter);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+
+  const timestamp = Date.parse(retryAfter);
+  if (Number.isFinite(timestamp)) return Math.max(0, timestamp - Date.now());
+
+  return null;
+}
+
+function getBackoffDelay(attempt: number, response?: Response): number {
+  const retryAfterDelay = response ? getRetryAfterDelay(response) : null;
+  if (retryAfterDelay !== null) return retryAfterDelay;
+
+  const exponentialDelay = RETRY_BASE_DELAY * 2 ** attempt;
+  const jitter = Math.round(Math.random() * 250);
+  return Math.min(RETRY_MAX_DELAY, exponentialDelay + jitter);
+}
+
+async function readErrorBody(response: Response): Promise<string> {
+  try {
+    const body = await response.text();
+    return body ? `: ${body.slice(0, 500)}` : '';
+  } catch {
+    return '';
+  }
+}
+
 async function fetchMembers(offset: number): Promise<{ items: CrossrefMember[]; totalResults: number }> {
   const url = new URL(`${BASE_URL}/members`);
   url.searchParams.set('mailto', MAILTO);
   url.searchParams.set('rows', ROWS_PER_PAGE.toString());
   url.searchParams.set('offset', offset.toString());
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      'User-Agent': `NexusScore/1.0 (mailto:${MAILTO})`,
-      Accept: 'application/json',
-    },
-  });
+  for (let attempt = 0; attempt <= MAX_FETCH_RETRIES; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: {
+          'User-Agent': `NexusScore/1.0 (mailto:${MAILTO})`,
+          Accept: 'application/json',
+        },
+      });
 
-  if (!response.ok) {
-    throw new Error(`Crossref API error: ${response.status} ${response.statusText}`);
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          items: data.message.items,
+          totalResults: data.message['total-results'],
+        };
+      }
+
+      const retryable = RETRYABLE_STATUSES.has(response.status);
+      if (!retryable || attempt === MAX_FETCH_RETRIES) {
+        const body = await readErrorBody(response);
+        const error = new Error(
+          `Crossref API error at offset ${offset}: ${response.status} ${response.statusText}${body}`
+        );
+        error.name = retryable ? 'CrossrefRetriesExhaustedError' : 'CrossrefNonRetryableError';
+        throw error;
+      }
+
+      const delay = getBackoffDelay(attempt, response);
+      console.warn(
+        `\n   Crossref returned ${response.status} at offset ${offset}. Retrying ${attempt + 1}/${MAX_FETCH_RETRIES} in ${Math.round(delay / 1000)}s...`
+      );
+      await sleep(delay);
+    } catch (error) {
+      if (error instanceof Error && error.name === 'CrossrefNonRetryableError') {
+        throw error;
+      }
+
+      if (attempt === MAX_FETCH_RETRIES) {
+        throw error;
+      }
+
+      const delay = getBackoffDelay(attempt);
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `\n   Crossref request failed at offset ${offset}: ${message}. Retrying ${attempt + 1}/${MAX_FETCH_RETRIES} in ${Math.round(delay / 1000)}s...`
+      );
+      await sleep(delay);
+    }
   }
 
-  const data = await response.json();
-  return {
-    items: data.message.items,
-    totalResults: data.message['total-results'],
-  };
+  throw new Error(`Crossref API error at offset ${offset}: retries exhausted`);
 }
 
 async function sleep(ms: number): Promise<void> {

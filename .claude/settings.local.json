@@ -2,7 +2,55 @@
   "permissions": {
     "allow": [
       "Bash(pnpm --filter @nexus-score/gap-fixer build:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__plugin_context-mode_context-mode__execute",
+      "mcp__plugin_context-mode_context-mode__execute_file",
+      "Bash(curl -s https://api.crossref.org/members/23445)",
+      "WebFetch(domain:api.crossref.org)",
+      "Bash(B=~/.claude/skills/gstack/browse/dist/browse)",
+      "Bash($B stop:*)",
+      "Bash(lsof -ti:9400)",
+      "Bash($B screenshot:*)",
+      "Bash($B click:*)",
+      "Bash($B scroll:*)",
+      "Bash($B viewport:*)",
+      "Bash($B js \":*)",
+      "Bash($B goto:*)",
+      "Bash(gh run:*)",
+      "Bash(xargs kill:*)",
+      "Bash($B snapshot:*)",
+      "Bash($B js:*)",
+      "Bash(ls -la /tmp/jn-flow/*.png)",
+      "Bash($B text:*)",
+      "Bash(curl -sL \"https://docs.reducto.ai/agent-guide\")",
+      "Bash(curl -sL \"https://docs.reducto.ai/core-functions/extract\")",
+      "Bash(source .env.local)",
+      "Bash(curl -s \"$KV_REST_API_URL/del/pdf:https://pure.manchester.ac.uk/ws/files/1707297842/HullemanBBS2025.pdf\" -H \"Authorization: Bearer $KV_REST_API_TOKEN\")",
+      "Bash(curl -s \"$KV_REST_API_URL/keys/pdf*\" -H \"Authorization: Bearer $KV_REST_API_TOKEN\")",
+      "Bash($B press:*)",
+      "Bash(ls /Users/Sumedha/.claude/projects/-Users-Sumedha-Desktop-OwnProjects-nexus-score/memory/*.md)",
+      "Bash(grep -A 20 \"buildScoreFromLeaderboard\\\\|const result =\" /Users/Sumedha/Desktop/OwnProjects/nexus-score/apps/web/src/app/member/[id]/page.tsx)",
+      "Bash(pnpm:*)",
+      "Bash(ls:*)",
+      "WebSearch",
+      "Bash(find /Users/Sumedha/Desktop/OwnProjects/nexus-score/apps/web/src/app/api -type f -name *.ts)",
+      "Bash(gh issue:*)",
+      "Bash(gh pr:*)",
+      "Bash(curl -s \"https://api.crossref.org/members/56?mailto=varma2friend@gmail.com\")",
+      "Bash(python3 -c ':*)",
+      "WebFetch(domain:www.elsevier.com)",
+      "WebFetch(domain:www.springernature.com)",
+      "Bash(curl -s \"https://api.crossref.org/members?rows=0\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Total Crossref members: {d[\\\\\"message\\\\\"][\\\\\"total-results\\\\\"]}'\\)\")",
+      "Bash(git show-ref:*)",
+      "Bash(curl -s \"https://api.crossref.org/works?filter=has-ror-id:true,member:78&rows=0\")",
+      "Bash(curl -s \"https://api.crossref.org/works?filter=has-affiliation:true&rows=0\")",
+      "Bash(curl:*)",
+      "Bash(python3 /tmp/nexus_trend.py)"
     ]
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "shadcn"
+  ]
 }
