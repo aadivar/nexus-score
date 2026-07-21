@@ -44,8 +44,8 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-gray-50`}>
         <header className="border-b bg-white">
-          <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-            <Link href="/" className="flex items-center gap-2">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-y-2 px-4 py-4 sm:px-6 lg:px-8">
+            <Link href="/" className="flex shrink-0 items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
                 <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <rect x="16" y="16" width="6" height="6" rx="1"/>
@@ -56,9 +56,9 @@ export default function RootLayout({
                 </svg>
               </div>
               <span className="hidden text-xl font-semibold text-gray-900 sm:inline">Nexus Score</span>
-              <span className="text-xl font-semibold text-gray-900 sm:hidden">Nexus Score</span>
+              <span className="text-base font-semibold text-gray-900 sm:hidden">Nexus Score</span>
             </Link>
-            <nav className="flex items-center gap-3 sm:gap-6">
+            <nav className="flex flex-wrap items-center gap-2.5 sm:gap-6">
               <Link
                 href="/leaderboard"
                 className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"

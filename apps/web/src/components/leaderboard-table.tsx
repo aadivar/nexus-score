@@ -446,7 +446,7 @@ export function LeaderboardTable({
       )}
 
       {/* Table */}
-      <div className="overflow-hidden rounded-xl border bg-white shadow-sm" aria-busy={isLoading}>
+      <div className="overflow-x-auto rounded-xl border bg-white shadow-sm" aria-busy={isLoading}>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

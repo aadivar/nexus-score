@@ -92,7 +92,40 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="mt-10 overflow-x-auto rounded-lg border shadow-sm">
+          {/* Mobile: stacked cards */}
+          <div className="mt-10 space-y-4 lg:hidden">
+            {dimensionTable.map((dim) => (
+              <div key={dim.name} className="rounded-lg border bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${dim.badgeClass}`}
+                  >
+                    {dim.name}
+                  </span>
+                  <span className="text-lg font-bold text-gray-900">
+                    {dim.points} pts
+                  </span>
+                </div>
+                <dl className="mt-4 space-y-3 text-sm">
+                  <div>
+                    <dt className="font-semibold text-gray-900">What it measures</dt>
+                    <dd className="mt-0.5 text-gray-700">{dim.measures}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold text-gray-900">Why AI needs it</dt>
+                    <dd className="mt-0.5 text-gray-700">{dim.aiNeeds}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold text-gray-900">In plain English</dt>
+                    <dd className="mt-0.5 text-gray-600">{dim.plainEnglish}</dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: full table */}
+          <div className="mt-10 hidden overflow-x-auto rounded-lg border shadow-sm lg:block">
             <table className="w-full min-w-[900px] divide-y divide-gray-200 bg-white text-left text-sm">
               <thead className="bg-gray-50">
                 <tr>

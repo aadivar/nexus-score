@@ -45,16 +45,16 @@ export function MetricsTable({ dimensions, className }: MetricsTableProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b bg-gray-50">
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-4 py-3 text-left sm:px-6 text-xs font-medium uppercase tracking-wider text-gray-500">
                 Metric
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-4 py-3 text-left sm:px-6 text-xs font-medium uppercase tracking-wider text-gray-500">
                 Coverage
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-4 py-3 text-left sm:px-6 text-xs font-medium uppercase tracking-wider text-gray-500">
                 Points
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-4 py-3 text-left sm:px-6 text-xs font-medium uppercase tracking-wider text-gray-500">
                 Status
               </th>
             </tr>
@@ -62,13 +62,13 @@ export function MetricsTable({ dimensions, className }: MetricsTableProps) {
           <tbody className="divide-y divide-gray-200">
             {allMetrics.map((metric) => (
               <tr key={metric.key} className="hover:bg-gray-50">
-                <td className="whitespace-nowrap px-6 py-4">
+                <td className="whitespace-nowrap px-4 py-4 sm:px-6">
                   <div>
                     <p className="font-medium text-gray-900">{metric.name}</p>
                     <p className="text-xs text-gray-500 capitalize">{metric.dimension}</p>
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4">
+                <td className="whitespace-nowrap px-4 py-4 sm:px-6">
                   <div className="flex items-center gap-2">
                     <div className="h-2 w-24 rounded-full bg-gray-200">
                       <div
@@ -81,10 +81,10 @@ export function MetricsTable({ dimensions, className }: MetricsTableProps) {
                     </span>
                   </div>
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                <td className="whitespace-nowrap px-4 py-4 sm:px-6 text-sm text-gray-900">
                   {metric.contribution.toFixed(1)} / {metric.maxContribution}
                 </td>
-                <td className="whitespace-nowrap px-6 py-4">
+                <td className="whitespace-nowrap px-4 py-4 sm:px-6">
                   <span
                     className={cn(
                       'inline-flex rounded-full px-2 py-1 text-xs font-medium',
