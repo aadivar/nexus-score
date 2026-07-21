@@ -376,8 +376,29 @@ function scoreFromSimplifiedCoverage(coverage: Record<string, number>): {
 }
 
 /**
+ * Extract simplified coverage for one content type in one era, or null when
+ * the era has no meaningful data for that type.
+ */
+function getEraCoverage(
+  eraData: Record<string, unknown> | undefined,
+  type: string
+): Record<string, number> | null {
+  const coverage = eraData?.[type];
+  if (!coverage || typeof coverage !== 'object') return null;
+
+  // coverage-type entries use simplified field names (e.g., "abstracts" not "abstracts-current")
+  // which don't match MemberCoverage's era-suffixed keys, so we cast through unknown
+  const cov = coverage as unknown as Record<string, number>;
+  const hasAnyData = Object.keys(SIMPLIFIED_FIELD_MAP).some(
+    (key) => typeof cov[key] === 'number' && cov[key] > 0
+  );
+  return hasAnyData ? cov : null;
+}
+
+/**
  * Calculate scores for each content type from Crossref coverage-type data.
- * Uses the "all" period to give an overall per-type score.
+ * Top-level score uses the "all" period; current/backfile era scores are
+ * attached when that era has coverage data for the type.
  */
 export function calculateContentTypeScores(
   coverageType: CrossrefMember['coverage-type'] | undefined
@@ -386,27 +407,33 @@ export function calculateContentTypeScores(
 
   const results: ContentTypeScore[] = [];
 
-  for (const [type, coverage] of Object.entries(coverageType.all)) {
-    if (!coverage || typeof coverage !== 'object') continue;
+  for (const type of Object.keys(coverageType.all)) {
+    const allCov = getEraCoverage(coverageType.all, type);
+    if (!allCov) continue;
 
-    // coverage-type entries use simplified field names (e.g., "abstracts" not "abstracts-current")
-    // which don't match MemberCoverage's era-suffixed keys, so we cast through unknown
-    const cov = coverage as unknown as Record<string, number>;
-    // Skip types with no meaningful coverage data
-    const hasAnyData = Object.keys(SIMPLIFIED_FIELD_MAP).some(
-      (key) => typeof cov[key] === 'number' && cov[key] > 0
-    );
-    if (!hasAnyData) continue;
+    const { score, dimensions } = scoreFromSimplifiedCoverage(allCov);
 
-    const { score, dimensions } = scoreFromSimplifiedCoverage(cov);
-
-    results.push({
+    const entry: ContentTypeScore = {
       type,
       label: CONTENT_TYPE_LABELS[type] || type.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       score,
       grade: scoreToGrade(score),
       dimensions,
-    });
+    };
+
+    const currentCov = getEraCoverage(coverageType.current, type);
+    if (currentCov) {
+      const current = scoreFromSimplifiedCoverage(currentCov);
+      entry.current = { ...current, grade: scoreToGrade(current.score) };
+    }
+
+    const backfileCov = getEraCoverage(coverageType.backfile, type);
+    if (backfileCov) {
+      const backfile = scoreFromSimplifiedCoverage(backfileCov);
+      entry.backfile = { ...backfile, grade: scoreToGrade(backfile.score) };
+    }
+
+    results.push(entry);
   }
 
   // Sort by score descending

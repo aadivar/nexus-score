@@ -11,9 +11,12 @@ import {
   type NexusScore,
   type ContentTypeScore,
 } from '@nexus-score/core';
-import { ScoreCard } from '@/components/score-card';
-import { DimensionChart } from '@/components/dimension-chart';
-import { DimensionRadar } from '@/components/dimension-radar';
+import { MemberScoreView } from '@/components/member-score-view';
+import { MemberContentTypeProvider } from '@/components/member-content-type-context';
+import {
+  MemberRankingBanner,
+  type RankingData,
+} from '@/components/member-ranking-banner';
 import { MetricsTable } from '@/components/metrics-table';
 import { RecommendationsList } from '@/components/recommendations-list';
 import { MemberSearch } from '@/components/member-search';
@@ -26,6 +29,13 @@ export const revalidate = 86400;
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+interface LeaderboardContentType {
+  type: string;
+  label: string;
+  score: number;
+  grade: string;
 }
 
 interface LeaderboardEntry {
@@ -54,6 +64,7 @@ interface LeaderboardEntry {
     funding: number;
     access: number;
   };
+  contentTypes?: LeaderboardContentType[];
 }
 
 interface LeaderboardData {
@@ -185,6 +196,65 @@ function getRankingInfo(memberId: number, score: number): RankingInfo | null {
     nearbyPublishers,
     topGap,
   };
+}
+
+/**
+ * Recompute rankings within each of the member's content types, mirroring
+ * the /api/leaderboard?contentType= re-ranking: publishers with that type,
+ * sorted by that type's all-years score.
+ */
+function getContentTypeRankings(
+  memberId: number,
+  types: string[]
+): Record<string, RankingData> {
+  const data = getLeaderboardData();
+  const rankings: Record<string, RankingData> = {};
+  if (!data || types.length === 0) return rankings;
+
+  for (const type of types) {
+    const ranked = data.leaderboard
+      .map((entry) => {
+        const ct = entry.contentTypes?.find((c) => c.type === type);
+        return ct ? { entry, ctScore: ct.score } : null;
+      })
+      .filter((x): x is { entry: LeaderboardEntry; ctScore: number } => x !== null)
+      .sort((a, b) => b.ctScore - a.ctScore);
+
+    const index = ranked.findIndex((x) => x.entry.id === memberId);
+    if (index === -1) continue;
+
+    const rank = index + 1;
+    const total = ranked.length;
+    const percentile = Math.round((1 - rank / total) * 100);
+
+    const nearbyPublishers = ranked
+      .slice(Math.max(0, index - 2), index + 3)
+      .filter((x) => x.entry.id !== memberId)
+      .slice(0, 4)
+      .map((x) => ({
+        id: x.entry.id,
+        name: x.entry.name,
+        rank: ranked.indexOf(x) + 1,
+        score: x.ctScore,
+      }));
+
+    const top10PercentRank = Math.ceil(total * 0.1);
+    const top10 = ranked[top10PercentRank - 1];
+    const topGap =
+      rank > top10PercentRank && top10
+        ? Math.max(0, top10.ctScore - ranked[index].ctScore)
+        : null;
+
+    rankings[type] = {
+      rank,
+      totalPublishers: total,
+      percentile: Math.max(0, percentile),
+      nearbyPublishers,
+      topGap,
+    };
+  }
+
+  return rankings;
 }
 
 function getImprovementTips(dimensions: NexusScore['dimensions']): {
@@ -380,8 +450,16 @@ export default async function MemberPage({ params }: PageProps) {
   const improvementTips = getImprovementTips(score.dimensions);
   const isCachedData = score.metadata.dataSource === 'leaderboard-cache';
   const eraRanking = getEraRanking(parseInt(id));
+  const contentTypeRankings = getContentTypeRankings(
+    parseInt(id),
+    contentTypeScores?.map((ct) => ct.type) ?? []
+  );
+  const contentTypeLabels = Object.fromEntries(
+    (contentTypeScores ?? []).map((ct) => [ct.type, ct.label])
+  );
 
   return (
+    <MemberContentTypeProvider>
     <div className="min-h-screen py-8">
       <TrackMemberView
         name={score.metadata.entityName}
@@ -434,217 +512,40 @@ export default async function MemberPage({ params }: PageProps) {
           </div>
         )}
 
-        {/* Ranking Banner */}
+        {/* Ranking Banner — reacts to the content-type filter */}
         {rankingInfo && (
-          <div className="mt-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 shadow-sm">
-            <div className="flex flex-col gap-4 sm:gap-6">
-              <div className="grid grid-cols-2 gap-4 sm:flex sm:items-center sm:gap-6">
-                <div className="text-center">
-                  <p className="text-xs sm:text-sm font-medium text-gray-500">Global Rank</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-blue-600">
-                    #{rankingInfo.rank.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    of {rankingInfo.totalPublishers.toLocaleString()}
-                  </p>
-                </div>
-                <div className="hidden sm:block h-12 w-px bg-gray-200" />
-                <div className="text-center">
-                  <p className="text-xs sm:text-sm font-medium text-gray-500">Percentile</p>
-                  <p
-                    className={cn(
-                      'text-2xl sm:text-3xl font-bold',
-                      rankingInfo.percentile >= 90
-                        ? 'text-green-600'
-                        : rankingInfo.percentile >= 70
-                          ? 'text-blue-600'
-                          : rankingInfo.percentile >= 50
-                            ? 'text-yellow-600'
-                            : 'text-gray-600'
-                    )}
-                  >
-                    Top {100 - rankingInfo.percentile}%
-                  </p>
-                  <p className="text-xs text-gray-500">of all publishers</p>
-                </div>
-                {rankingInfo.topGap !== null && rankingInfo.topGap > 0 && (
-                  <>
-                    <div className="hidden md:block h-12 w-px bg-gray-200" />
-                    <div className="hidden md:block text-center">
-                      <p className="text-sm font-medium text-gray-500">
-                        To Reach Top 10%
-                      </p>
-                      <p className="text-3xl font-bold text-indigo-600">
-                        +{rankingInfo.topGap}
-                      </p>
-                      <p className="text-xs text-gray-500">points needed</p>
-                    </div>
-                  </>
-                )}
-              </div>
-              <Link
-                href="/leaderboard"
-                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 w-full sm:w-auto sm:self-end"
-              >
-                View Full Leaderboard
-              </Link>
-            </div>
-
-            {/* Nearby Publishers */}
-            {rankingInfo.nearbyPublishers.length > 0 && (
-              <div className="mt-6 border-t border-gray-200 pt-4">
-                <p className="mb-3 text-sm font-medium text-gray-600">
-                  Nearby in Rankings:
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {rankingInfo.nearbyPublishers.map((pub) => (
-                    <Link
-                      key={pub.id}
-                      href={`/member/${pub.id}`}
-                      className={cn(
-                        'inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm transition-colors',
-                        pub.rank < rankingInfo.rank
-                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      )}
-                    >
-                      <span className="font-medium">#{pub.rank}</span>
-                      <span className="max-w-[150px] truncate">{pub.name}</span>
-                      <span className="text-xs">({pub.score} pts)</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <MemberRankingBanner
+            aggregate={{
+              rank: rankingInfo.rank,
+              totalPublishers: rankingInfo.totalPublishers,
+              percentile: rankingInfo.percentile,
+              nearbyPublishers: rankingInfo.nearbyPublishers.map((pub) => ({
+                id: pub.id,
+                name: pub.name,
+                rank: pub.rank,
+                score: pub.score,
+              })),
+              topGap: rankingInfo.topGap,
+            }}
+            perContentType={contentTypeRankings}
+            contentTypeLabels={contentTypeLabels}
+          />
         )}
 
         {/* Main Content */}
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           {/* Left Column - Score and Dimensions */}
           <div className="space-y-6 lg:col-span-2">
-            <ScoreCard
-              score={score.total}
+            <MemberScoreView
+              total={score.total}
               grade={score.grade}
-              trend={score.trend.direction}
-              change={score.trend.change}
+              trend={score.trend}
+              dimensions={score.dimensions}
+              currentWorks={score.metadata.currentWorks}
+              backfileWorks={score.metadata.backfileWorks}
+              contentTypeScores={contentTypeScores}
+              eraRanking={eraRanking}
             />
-
-            {/* Current vs Backfile Breakdown */}
-            <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
-              <h3 className="text-sm font-medium text-gray-500 mb-4">Score Breakdown by Era</h3>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Current Era */}
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-blue-600 uppercase tracking-wide">Current</p>
-                      <p className="text-xs text-gray-500 mb-2">Last 2 years</p>
-                    </div>
-                    {eraRanking?.currentRank && (
-                      <Link
-                        href="/leaderboard/current"
-                        className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 hover:bg-blue-200 transition-colors"
-                        title={`Rank #${eraRanking.currentRank.toLocaleString()} of ${eraRanking.currentTotal.toLocaleString()} active publishers`}
-                      >
-                        #{eraRanking.currentRank.toLocaleString()}
-                      </Link>
-                    )}
-                  </div>
-                  <p className="text-3xl font-bold text-blue-700">{score.trend.currentScore}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formatNumber(score.metadata.currentWorks)} works
-                  </p>
-                </div>
-
-                {/* Backfile Era */}
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Backfile</p>
-                      <p className="text-xs text-gray-500 mb-2">Older than 2 years</p>
-                    </div>
-                    {eraRanking?.overallRank && (
-                      <Link
-                        href="/leaderboard"
-                        className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600 hover:bg-gray-300 transition-colors"
-                        title={`Overall rank #${eraRanking.overallRank.toLocaleString()} of ${eraRanking.overallTotal.toLocaleString()} publishers`}
-                      >
-                        #{eraRanking.overallRank.toLocaleString()}
-                      </Link>
-                    )}
-                  </div>
-                  <p className="text-3xl font-bold text-gray-700">{score.trend.backfileScore}</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {formatNumber(score.metadata.backfileWorks)} works
-                  </p>
-                </div>
-              </div>
-
-              {/* Rank comparison insight */}
-              {eraRanking?.currentRank && eraRanking?.overallRank && eraRanking.currentRank !== eraRanking.overallRank && (
-                <div className={cn(
-                  'mt-3 flex items-center gap-1.5 text-sm rounded-lg px-3 py-2',
-                  eraRanking.currentRank < eraRanking.overallRank
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-amber-50 text-amber-700'
-                )}>
-                  {eraRanking.currentRank < eraRanking.overallRank ? (
-                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                      <polyline points="16 7 22 7 22 13" />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
-                      <polyline points="16 17 22 17 22 11" />
-                    </svg>
-                  )}
-                  <span>
-                    Ranked <strong>#{eraRanking.currentRank.toLocaleString()}</strong> for recent publications vs <strong>#{eraRanking.overallRank.toLocaleString()}</strong> overall
-                    {eraRanking.currentRank < eraRanking.overallRank
-                      ? ' — improving with recent work'
-                      : ' — recent work trailing historical performance'}
-                  </span>
-                </div>
-              )}
-
-              {/* Score trend indicator (when ranks aren't available or are equal) */}
-              {(!eraRanking?.currentRank || !eraRanking?.overallRank || eraRanking.currentRank === eraRanking.overallRank) && score.trend.direction !== 'stable' && (
-                <div className={cn(
-                  'mt-3 flex items-center gap-1.5 text-sm rounded-lg px-3 py-2',
-                  score.trend.direction === 'up'
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-red-50 text-red-700'
-                )}>
-                  {score.trend.direction === 'up' ? (
-                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
-                      <polyline points="16 7 22 7 22 13" />
-                    </svg>
-                  ) : (
-                    <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="22 17 13.5 8.5 8.5 13.5 2 7" />
-                      <polyline points="16 17 22 17 22 11" />
-                    </svg>
-                  )}
-                  <span>
-                    Recent publications score <strong>{Math.abs(score.trend.change)} points {score.trend.direction === 'up' ? 'higher' : 'lower'}</strong> than historical average
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <DimensionChart dimensions={score.dimensions} />
-              <DimensionRadar dimensions={{
-                provenance: score.dimensions.provenance.percentage,
-                people: score.dimensions.people.percentage,
-                organizations: score.dimensions.organizations.percentage,
-                funding: score.dimensions.funding.percentage,
-                access: score.dimensions.access.percentage,
-              }} />
-            </div>
 
             {/* Content Type Breakdown */}
             {contentTypeScores && contentTypeScores.length > 0 && (
@@ -655,7 +556,7 @@ export default async function MemberPage({ params }: PageProps) {
                     <p className="mt-1 text-sm text-gray-500">
                       {contentTypeScores.length === 1
                         ? `All works are ${contentTypeScores[0].label.toLowerCase()} \u2014 the aggregate score above is accurate.`
-                        : 'Scores calculated separately for each content type registered with Crossref. The aggregate score above includes all types.'}
+                        : 'Scores calculated separately for each content type registered with Crossref. Score covers all years; Current and Backfile split it by era. The aggregate score above includes all types.'}
                     </p>
                   </div>
                 </div>
@@ -668,6 +569,8 @@ export default async function MemberPage({ params }: PageProps) {
                           <th className="pb-2 pr-4">Content Type</th>
                           <th className="pb-2 pr-4 text-center">Score</th>
                           <th className="pb-2 pr-4 text-center">Grade</th>
+                          <th className="pb-2 pr-4 text-center text-blue-600">Current</th>
+                          <th className="pb-2 pr-4 text-center">Backfile</th>
                           <th className="hidden pb-2 pr-2 text-center sm:table-cell">Prov</th>
                           <th className="hidden pb-2 pr-2 text-center sm:table-cell">People</th>
                           <th className="hidden pb-2 pr-2 text-center sm:table-cell">Orgs</th>
@@ -708,6 +611,12 @@ export default async function MemberPage({ params }: PageProps) {
                               >
                                 {ct.grade}
                               </span>
+                            </td>
+                            <td className="py-2.5 pr-4 text-center font-medium text-blue-700">
+                              {ct.current ? ct.current.score : '\u2014'}
+                            </td>
+                            <td className="py-2.5 pr-4 text-center text-gray-600">
+                              {ct.backfile ? ct.backfile.score : '\u2014'}
                             </td>
                             <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
                               {ct.dimensions.provenance}%
@@ -920,5 +829,6 @@ export default async function MemberPage({ params }: PageProps) {
         </div>
       </div>
     </div>
+    </MemberContentTypeProvider>
   );
 }

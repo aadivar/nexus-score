@@ -135,13 +135,9 @@ export interface ContentTypeCoverage {
 }
 
 /**
- * Score calculated for a single content type (e.g., journal-article).
+ * Score for a single content type within one era (all/current/backfile).
  */
-export interface ContentTypeScore {
-  /** Crossref content type key, e.g. 'journal-article' */
-  type: string;
-  /** Human-readable label, e.g. 'Journal Articles' */
-  label: string;
+export interface ContentTypeEraScore {
   /** Weighted score 0-100 */
   score: number;
   /** Letter grade */
@@ -154,4 +150,31 @@ export interface ContentTypeScore {
     funding: number;
     access: number;
   };
+}
+
+/**
+ * Score calculated for a single content type (e.g., journal-article).
+ * Top-level score/grade/dimensions reflect the "all years" period.
+ */
+export interface ContentTypeScore {
+  /** Crossref content type key, e.g. 'journal-article' */
+  type: string;
+  /** Human-readable label, e.g. 'Journal Articles' */
+  label: string;
+  /** Weighted score 0-100 (all years) */
+  score: number;
+  /** Letter grade (all years) */
+  grade: Grade;
+  /** Per-dimension percentages (0-100, all years) */
+  dimensions: {
+    provenance: number;
+    people: number;
+    organizations: number;
+    funding: number;
+    access: number;
+  };
+  /** Score for works from the last 2 years, when coverage data exists */
+  current?: ContentTypeEraScore;
+  /** Score for works older than 2 years, when coverage data exists */
+  backfile?: ContentTypeEraScore;
 }
