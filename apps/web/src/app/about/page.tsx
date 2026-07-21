@@ -187,37 +187,11 @@ export default function AboutPage() {
           </p>
         </section>
 
-        {/* Barcelona Declaration */}
-        <section className="mt-12">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Barcelona Declaration Alignment
-          </h2>
-          <p className="mt-4 text-gray-600">
-            The{' '}
-            <a
-              href="https://barcelona-declaration.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Barcelona Declaration on Open Research Information
-            </a>{' '}
-            (2024) calls for making research information openly available. Research Nexus Score
-            supports this vision by:
-          </p>
-          <ul className="mt-4 list-inside list-disc space-y-2 text-gray-600">
-            <li>Making metadata coverage visible and comparable</li>
-            <li>Encouraging adoption of persistent identifiers (ORCID, ROR)</li>
-            <li>Promoting transparency in funding acknowledgements</li>
-            <li>Supporting FAIR principles for metadata</li>
-          </ul>
-        </section>
-
         {/* Open Source */}
         <section className="mt-12 rounded-lg bg-gray-100 p-6">
           <h2 className="text-xl font-semibold text-gray-900">Open Source</h2>
           <p className="mt-2 text-gray-600">
-            Research Nexus Score is open source. View the code, report issues, or contribute on{' '}
+            Nexus Score is open source. View the code, report issues, or contribute on{' '}
             <a
               href="https://github.com/aadivar/nexus-score"
               target="_blank"

@@ -55,8 +55,8 @@ export default function RootLayout({
                   <path d="M12 12V8"/>
                 </svg>
               </div>
-              <span className="hidden text-xl font-semibold text-gray-900 sm:inline">Research Nexus Score</span>
-              <span className="text-xl font-semibold text-gray-900 sm:hidden">RN Score</span>
+              <span className="hidden text-xl font-semibold text-gray-900 sm:inline">Nexus Score</span>
+              <span className="text-xl font-semibold text-gray-900 sm:hidden">Nexus Score</span>
             </Link>
             <nav className="flex items-center gap-3 sm:gap-6">
               <Link
