@@ -372,12 +372,7 @@ export default function HomePage() {
               { name: 'Barcelona Declaration', href: 'https://barcelona-declaration.org/' },
               { name: 'DORA', href: 'https://sfdora.org/' },
               { name: 'FAIR Principles', href: 'https://www.go-fair.org/fair-principles/' },
-              { name: 'COARA', href: 'https://coara.eu/' },
-              { name: 'cOAlition S', href: 'https://www.coalition-s.org/' },
-              { name: 'I4OC', href: 'https://i4oc.org/' },
-              { name: 'I4OA', href: 'https://i4oa.org/' },
               { name: 'Metadata 2020', href: 'https://metadata2020.org/' },
-              { name: 'POSI', href: 'https://openscholarlyinfrastructure.org/' },
             ].map((org) => (
               <a
                 key={org.name}
@@ -389,6 +384,9 @@ export default function HomePage() {
                 {org.name}
               </a>
             ))}
+            <span className="px-1 text-sm text-gray-500">
+              among other open research information initiatives
+            </span>
           </div>
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
