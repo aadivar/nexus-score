@@ -66,9 +66,17 @@ export default function HomePage() {
             completeness
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-blue-100">
-            Nexus Score evaluates how well publishers deposit their metadata into
-            Crossref — and how well those deposits contribute to connecting research
-            across 5 dimensions.
+            Nexus Score evaluates how well publishers deposit their metadata into{' '}
+            <a
+              href="https://www.crossref.org/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-white underline decoration-blue-300 underline-offset-2 hover:decoration-white"
+            >
+              Crossref
+            </a>{' '}
+            — and how well those deposits contribute to connecting research across 5
+            dimensions.
           </p>
           <div className="mt-10">
             <MemberSearch
