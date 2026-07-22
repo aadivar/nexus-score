@@ -289,6 +289,14 @@ export default function HomePage() {
                     people and machines
                   </span>
                 </li>
+                <li className="flex gap-2">
+                  <span className="text-green-600">✓</span>
+                  <span>
+                    <strong>A recognition of best open-science practice</strong> —
+                    complete, open metadata is invisible work, and the score makes
+                    it visible and rewarded
+                  </span>
+                </li>
               </ul>
             </div>
             <div className="rounded-lg border border-red-200 bg-red-50 p-6">
