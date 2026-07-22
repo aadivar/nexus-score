@@ -376,8 +376,8 @@ function scoreFromSimplifiedCoverage(coverage: Record<string, number>): {
 }
 
 /**
- * Extract simplified coverage for one content type in one era, or null when
- * the era has no meaningful data for that type.
+ * Extract the simplified coverage object for one content type in one era,
+ * or null when there is no coverage entry.
  */
 function getEraCoverage(
   eraData: Record<string, unknown> | undefined,
@@ -388,20 +388,28 @@ function getEraCoverage(
 
   // coverage-type entries use simplified field names (e.g., "abstracts" not "abstracts-current")
   // which don't match MemberCoverage's era-suffixed keys, so we cast through unknown
-  const cov = coverage as unknown as Record<string, number>;
-  const hasAnyData = Object.keys(SIMPLIFIED_FIELD_MAP).some(
+  return coverage as unknown as Record<string, number>;
+}
+
+function coverageHasData(cov: Record<string, number>): boolean {
+  return Object.keys(SIMPLIFIED_FIELD_MAP).some(
     (key) => typeof cov[key] === 'number' && cov[key] > 0
   );
-  return hasAnyData ? cov : null;
 }
 
 /**
  * Calculate scores for each content type from Crossref coverage-type data.
  * Top-level score uses the "all" period; current/backfile era scores are
- * attached when that era has coverage data for the type.
+ * attached when that era applies.
+ *
+ * A type is included when the member has works of that type (counts-type),
+ * even if every coverage field is 0% — an all-zero type is meaningful signal
+ * (it dilutes the aggregate score), not missing data. When counts are not
+ * provided, falls back to including only types with nonzero coverage.
  */
 export function calculateContentTypeScores(
-  coverageType: CrossrefMember['coverage-type'] | undefined
+  coverageType: CrossrefMember['coverage-type'] | undefined,
+  countsType?: CrossrefMember['counts-type']
 ): ContentTypeScore[] {
   if (!coverageType?.all) return [];
 
@@ -411,6 +419,11 @@ export function calculateContentTypeScores(
     const allCov = getEraCoverage(coverageType.all, type);
     if (!allCov) continue;
 
+    const worksAll = countsType?.all?.[type];
+    const include =
+      worksAll !== undefined ? worksAll > 0 : coverageHasData(allCov);
+    if (!include) continue;
+
     const { score, dimensions } = scoreFromSimplifiedCoverage(allCov);
 
     const entry: ContentTypeScore = {
@@ -419,24 +432,30 @@ export function calculateContentTypeScores(
       score,
       grade: scoreToGrade(score),
       dimensions,
+      works: worksAll,
     };
 
-    const currentCov = getEraCoverage(coverageType.current, type);
-    if (currentCov) {
-      const current = scoreFromSimplifiedCoverage(currentCov);
-      entry.current = { ...current, grade: scoreToGrade(current.score) };
-    }
+    for (const era of ['current', 'backfile'] as const) {
+      const eraCov = getEraCoverage(coverageType[era], type);
+      if (!eraCov) continue;
 
-    const backfileCov = getEraCoverage(coverageType.backfile, type);
-    if (backfileCov) {
-      const backfile = scoreFromSimplifiedCoverage(backfileCov);
-      entry.backfile = { ...backfile, grade: scoreToGrade(backfile.score) };
+      const eraWorks = countsType?.[era]?.[type];
+      const eraInclude =
+        eraWorks !== undefined ? eraWorks > 0 : coverageHasData(eraCov);
+      if (!eraInclude) continue;
+
+      const eraScore = scoreFromSimplifiedCoverage(eraCov);
+      entry[era] = {
+        ...eraScore,
+        grade: scoreToGrade(eraScore.score),
+        works: eraWorks,
+      };
     }
 
     results.push(entry);
   }
 
-  // Sort by score descending
-  results.sort((a, b) => b.score - a.score);
+  // Sort by score descending, then by works so large zero-score types surface
+  results.sort((a, b) => b.score - a.score || (b.works ?? 0) - (a.works ?? 0));
   return results;
 }

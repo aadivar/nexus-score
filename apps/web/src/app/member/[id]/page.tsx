@@ -12,6 +12,11 @@ import {
   type ContentTypeScore,
 } from '@nexus-score/core';
 import { MemberScoreView } from '@/components/member-score-view';
+import {
+  MemberChangeInsights,
+  type MetricChange,
+  type MixShiftEntry,
+} from '@/components/member-change-insights';
 import { MemberContentTypeProvider } from '@/components/member-content-type-context';
 import {
   MemberRankingBanner,
@@ -378,15 +383,111 @@ function buildScoreFromLeaderboard(entry: LeaderboardEntry): NexusScore {
   };
 }
 
+// The 11 scored metrics with their simplified coverage-type keys and weights
+// (mirrors packages/core scoring/weights.ts)
+const SIMPLIFIED_METRICS: { key: string; name: string; weight: number }[] = [
+  { key: 'references', name: 'References', weight: 15 },
+  { key: 'update-policies', name: 'Update Policies', weight: 5 },
+  { key: 'similarity-checking', name: 'Similarity Check', weight: 5 },
+  { key: 'orcids', name: 'ORCID iDs', weight: 20 },
+  { key: 'affiliations', name: 'Affiliations', weight: 5 },
+  { key: 'ror-ids', name: 'ROR IDs', weight: 10 },
+  { key: 'funders', name: 'Funder Registry IDs', weight: 10 },
+  { key: 'award-numbers', name: 'Award Numbers', weight: 10 },
+  { key: 'licenses', name: 'Licenses', weight: 7 },
+  { key: 'resource-links', name: 'Full-text Links', weight: 7 },
+  { key: 'abstracts', name: 'Abstracts', weight: 6 },
+];
+
+interface ChangeInsights {
+  aggregate: MetricChange[];
+  perType: Record<string, MetricChange[]>;
+  mixShift: MixShiftEntry[];
+}
+
+function buildMetricChanges(
+  getCurrent: (key: string) => number,
+  getBackfile: (key: string) => number
+): MetricChange[] {
+  return SIMPLIFIED_METRICS.map((m) => {
+    const current = getCurrent(m.key) * 100;
+    const backfile = getBackfile(m.key) * 100;
+    return {
+      key: m.key,
+      name: m.name,
+      weight: m.weight,
+      current,
+      backfile,
+      impact: Math.round((current - backfile) * m.weight) / 100,
+    };
+  });
+}
+
+function buildChangeInsights(
+  member: Awaited<ReturnType<CrossrefClient['getMember']>>,
+  contentTypeScores: ContentTypeScore[]
+): ChangeInsights {
+  const coverage = member.coverage as unknown as Record<string, number>;
+  const aggregate = buildMetricChanges(
+    (key) => coverage[`${key}-current`] || 0,
+    (key) => coverage[`${key}-backfile`] || 0
+  );
+
+  const perType: Record<string, MetricChange[]> = {};
+  const coverageType = member['coverage-type'] as unknown as {
+    current?: Record<string, Record<string, number>>;
+    backfile?: Record<string, Record<string, number>>;
+  };
+  for (const ct of contentTypeScores) {
+    // Only meaningful when the type exists in both eras
+    if (!ct.current || !ct.backfile) continue;
+    const cur = coverageType.current?.[ct.type];
+    const back = coverageType.backfile?.[ct.type];
+    if (!cur || !back) continue;
+    perType[ct.type] = buildMetricChanges(
+      (key) => cur[key] || 0,
+      (key) => back[key] || 0
+    );
+  }
+
+  const mixShift: MixShiftEntry[] = [];
+  const counts = member['counts-type'];
+  const currentTotal = member.counts['current-dois'];
+  const backfileTotal = member.counts['backfile-dois'];
+  if (counts && currentTotal > 0 && backfileTotal > 0) {
+    for (const ct of contentTypeScores) {
+      const currentWorks = counts.current?.[ct.type] ?? 0;
+      const backfileWorks = counts.backfile?.[ct.type] ?? 0;
+      if (currentWorks === 0 && backfileWorks === 0) continue;
+      mixShift.push({
+        type: ct.type,
+        label: ct.label,
+        currentShare: (currentWorks / currentTotal) * 100,
+        backfileShare: (backfileWorks / backfileTotal) * 100,
+        currentWorks,
+        backfileWorks,
+        score: ct.score,
+      });
+    }
+  }
+
+  return { aggregate, perType, mixShift };
+}
+
 async function getMemberData(id: string): Promise<{
   score: NexusScore;
   contentTypeScores: ContentTypeScore[] | null;
+  changeInsights: ChangeInsights | null;
 } | null> {
   try {
     const member = await client.getMember(id);
     const score = calculateMemberScore(member);
-    const contentTypeScores = calculateContentTypeScores(member['coverage-type']);
-    return { score, contentTypeScores };
+    const contentTypeScores = calculateContentTypeScores(
+      member['coverage-type'],
+      member['counts-type']
+    );
+    const changeInsights = buildChangeInsights(member, contentTypeScores);
+    return { score, contentTypeScores, changeInsights };
   } catch (error) {
     if (error instanceof CrossrefNotFoundError) {
       return null;
@@ -397,7 +498,11 @@ async function getMemberData(id: string): Promise<{
     if (data) {
       const entry = data.leaderboard.find((e) => e.id === parseInt(id));
       if (entry) {
-        return { score: buildScoreFromLeaderboard(entry), contentTypeScores: null };
+        return {
+          score: buildScoreFromLeaderboard(entry),
+          contentTypeScores: null,
+          changeInsights: null,
+        };
       }
     }
 
@@ -445,7 +550,7 @@ export default async function MemberPage({ params }: PageProps) {
     notFound();
   }
 
-  const { score, contentTypeScores } = result;
+  const { score, contentTypeScores, changeInsights } = result;
   const rankingInfo = getRankingInfo(parseInt(id), score.total);
   const improvementTips = getImprovementTips(score.dimensions);
   const isCachedData = score.metadata.dataSource === 'leaderboard-cache';
@@ -547,6 +652,27 @@ export default async function MemberPage({ params }: PageProps) {
               eraRanking={eraRanking}
             />
 
+            {/* What changed between backfile and current era, and why */}
+            {changeInsights && (
+              <MemberChangeInsights
+                aggregate={changeInsights.aggregate}
+                perType={changeInsights.perType}
+                mixShift={changeInsights.mixShift}
+                currentScore={score.trend.currentScore}
+                backfileScore={score.trend.backfileScore}
+                perTypeScores={Object.fromEntries(
+                  (contentTypeScores ?? []).map((ct) => [
+                    ct.type,
+                    {
+                      current: ct.current?.score,
+                      backfile: ct.backfile?.score,
+                      label: ct.label,
+                    },
+                  ])
+                )}
+              />
+            )}
+
             {/* Content Type Breakdown */}
             {contentTypeScores && contentTypeScores.length > 0 && (
               <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
@@ -567,6 +693,7 @@ export default async function MemberPage({ params }: PageProps) {
                       <thead>
                         <tr className="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                           <th className="pb-2 pr-4">Content Type</th>
+                          <th className="pb-2 pr-4 text-right">Works</th>
                           <th className="pb-2 pr-4 text-center">Score</th>
                           <th className="pb-2 pr-4 text-center">Grade</th>
                           <th className="pb-2 pr-4 text-center text-blue-600">Current</th>
@@ -594,6 +721,9 @@ export default async function MemberPage({ params }: PageProps) {
                                   TOP
                                 </span>
                               )}
+                            </td>
+                            <td className="py-2.5 pr-4 text-right text-gray-600">
+                              {ct.works !== undefined ? formatNumber(ct.works) : '\u2014'}
                             </td>
                             <td className="py-2.5 pr-4 text-center font-semibold text-gray-900">
                               {ct.score}

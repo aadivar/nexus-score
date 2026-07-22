@@ -82,6 +82,13 @@ export function MemberScoreView({
       ? contentTypeScores.find((ct) => ct.type === contentTypeFilter) ?? null
       : null;
 
+  // A type can legitimately score 0 everywhere: works exist but no scoreable
+  // metadata was deposited for them. Flag it so the zeros read as a data gap.
+  const selectedHasNoMetadata =
+    selected !== null &&
+    selected.score === 0 &&
+    Object.values(selected.dimensions).every((v) => v === 0);
+
   // Per-type trend: current vs backfile era scores, same thresholds as the
   // aggregate trend in packages/core scoring/calculator.ts
   const selectedTrend =
@@ -95,6 +102,12 @@ export function MemberScoreView({
               : 'stable') as TrendDirection,
         }
       : null;
+
+  // All 11 coverage fields at 0% — works exist but carry no scoreable metadata
+  const selectedIsEmpty =
+    selected !== null &&
+    selected.score === 0 &&
+    Object.values(selected.dimensions).every((v) => v === 0);
 
   const displayDimensions = selected
     ? buildDimensionScores(selected)
@@ -131,6 +144,7 @@ export function MemberScoreView({
               {contentTypeScores.map((ct) => (
                 <option key={ct.type} value={ct.type}>
                   {ct.label}
+                  {ct.works !== undefined ? ` (${formatNumber(ct.works)})` : ''}
                 </option>
               ))}
             </select>
@@ -153,6 +167,33 @@ export function MemberScoreView({
         hideTrend={selected !== null && selectedTrend === null}
       />
 
+      {/* Zero-metadata explanation — a bare 0 otherwise looks like a bug */}
+      {selectedIsEmpty && selected && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+          <svg
+            className="mt-0.5 h-4 w-4 flex-shrink-0"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <span>
+            {selected.works !== undefined
+              ? `${formatNumber(selected.works)} ${selected.label.toLowerCase()} are registered with Crossref, but none of them carry any of the 11 scoreable metadata fields (ORCID iDs, licenses, references, etc.).`
+              : `Works of this type are registered with Crossref, but none of them carry any of the 11 scoreable metadata fields (ORCID iDs, licenses, references, etc.).`}{' '}
+            This is real signal, not missing data — these works dilute the
+            aggregate score above, and depositing metadata for them is the
+            fastest way to improve it.
+          </span>
+        </div>
+      )}
+
       {/* Current vs Backfile Breakdown */}
       {selected ? (
         <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
@@ -173,6 +214,8 @@ export function MemberScoreView({
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Grade {selected.current.grade}
+                    {selected.current.works !== undefined &&
+                      ` \u00b7 ${formatNumber(selected.current.works)} works`}
                   </p>
                 </>
               ) : (
@@ -195,6 +238,8 @@ export function MemberScoreView({
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Grade {selected.backfile.grade}
+                    {selected.backfile.works !== undefined &&
+                      ` \u00b7 ${formatNumber(selected.backfile.works)} works`}
                   </p>
                 </>
               ) : (

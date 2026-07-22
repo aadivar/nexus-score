@@ -150,6 +150,8 @@ export interface ContentTypeEraScore {
     funding: number;
     access: number;
   };
+  /** Number of works of this type in this era, when counts are available */
+  works?: number;
 }
 
 /**
@@ -173,8 +175,10 @@ export interface ContentTypeScore {
     funding: number;
     access: number;
   };
-  /** Score for works from the last 2 years, when coverage data exists */
+  /** Number of works of this type across all years, when counts are available */
+  works?: number;
+  /** Score for works from the last 2 years, when the era has works */
   current?: ContentTypeEraScore;
-  /** Score for works older than 2 years, when coverage data exists */
+  /** Score for works older than 2 years, when the era has works */
   backfile?: ContentTypeEraScore;
 }

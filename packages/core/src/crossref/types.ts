@@ -55,6 +55,11 @@ export interface CrossrefMember {
     'current-dois': number;
     'backfile-dois': number;
   };
+  'counts-type'?: {
+    all?: Record<string, number>;
+    current?: Record<string, number>;
+    backfile?: Record<string, number>;
+  };
   breakdowns: {
     'dois-by-issued-year': Array<[number, number]>;
   };
