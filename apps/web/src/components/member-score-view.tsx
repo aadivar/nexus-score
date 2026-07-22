@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import type {
-  Grade,
   TrendInfo,
   TrendDirection,
   DimensionScores,
@@ -23,7 +22,6 @@ interface EraRankingInfo {
 
 interface MemberScoreViewProps {
   total: number;
-  grade: Grade;
   trend: TrendInfo;
   dimensions: DimensionScores;
   currentWorks: number;
@@ -65,7 +63,6 @@ function buildDimensionScores(ct: ContentTypeScore): DimensionScores {
 
 export function MemberScoreView({
   total,
-  grade,
   trend,
   dimensions,
   currentWorks,
@@ -160,7 +157,6 @@ export function MemberScoreView({
 
       <ScoreCard
         score={selected ? selected.score : total}
-        grade={selected ? selected.grade : grade}
         trend={selectedTrend ? selectedTrend.direction : trend.direction}
         change={selectedTrend ? selectedTrend.change : trend.change}
         label={selected ? `Nexus Score — ${selected.label} (all years)` : 'Nexus Score'}
@@ -212,11 +208,11 @@ export function MemberScoreView({
                   <p className="text-3xl font-bold text-blue-700">
                     {selected.current.score}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Grade {selected.current.grade}
-                    {selected.current.works !== undefined &&
-                      ` \u00b7 ${formatNumber(selected.current.works)} works`}
-                  </p>
+                  {selected.current.works !== undefined && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {formatNumber(selected.current.works)} works
+                    </p>
+                  )}
                 </>
               ) : (
                 <p className="text-sm text-gray-500">
@@ -236,11 +232,11 @@ export function MemberScoreView({
                   <p className="text-3xl font-bold text-gray-700">
                     {selected.backfile.score}
                   </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Grade {selected.backfile.grade}
-                    {selected.backfile.works !== undefined &&
-                      ` \u00b7 ${formatNumber(selected.backfile.works)} works`}
-                  </p>
+                  {selected.backfile.works !== undefined && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      {formatNumber(selected.backfile.works)} works
+                    </p>
+                  )}
                 </>
               ) : (
                 <p className="text-sm text-gray-500">

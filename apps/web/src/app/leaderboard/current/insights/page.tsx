@@ -115,19 +115,19 @@ export default function CurrentEraInsightsPage() {
                   <td className="px-4 py-3 text-center text-emerald-600">+4</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3">Grade A publishers</td>
+                  <td className="px-4 py-3">Publishers scoring 80+</td>
                   <td className="px-4 py-3 text-center">2</td>
                   <td className="px-4 py-3 text-center font-semibold text-blue-700">11</td>
                   <td className="px-4 py-3 text-center text-emerald-600">+9</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3">Grade B publishers</td>
+                  <td className="px-4 py-3">Publishers scoring 65–79</td>
                   <td className="px-4 py-3 text-center">41</td>
                   <td className="px-4 py-3 text-center font-semibold text-blue-700">251</td>
                   <td className="px-4 py-3 text-center text-emerald-600">+210</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3">Grade F publishers</td>
+                  <td className="px-4 py-3">Publishers scoring below 35</td>
                   <td className="px-4 py-3 text-center">19,547</td>
                   <td className="px-4 py-3 text-center font-semibold text-blue-700">17,665</td>
                   <td className="px-4 py-3 text-center text-emerald-600">-1,882</td>
@@ -137,7 +137,7 @@ export default function CurrentEraInsightsPage() {
           </div>
 
           <p>
-            <strong>2,844 publishers</strong> (12.4%) earn a higher grade on current content than overall.
+            <strong>2,844 publishers</strong> (12.4%) score meaningfully higher on current content than overall.
             The industry <em>is</em> improving — it&apos;s just buried under decades of legacy metadata.
           </p>
 
@@ -159,14 +159,14 @@ export default function CurrentEraInsightsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {[
-                  ['American Physical Society', '55K', '58 (C)', '81 (A)', 'C→A'],
-                  ['American Society for Microbiology', '15K', '67 (B)', '86 (A)', 'B→A'],
-                  ['American Chemical Society', '210K', '48 (D)', '70 (B)', 'D→B'],
-                  ['American Meteorological Society', '4K', '41 (D)', '66 (B)', 'D→B'],
-                  ['IEEE', '883K', '34 (F)', '41 (D)', 'F→D'],
-                  ['SAGE Publications', '234K', '48 (D)', '61 (C)', 'D→C'],
-                  ['BMJ', '64K', '33 (F)', '47 (D)', 'F→D'],
-                  ['Wolters Kluwer', '237K', '26 (F)', '35 (D)', 'F→D'],
+                  ['American Physical Society', '55K', '58', '81', '+23'],
+                  ['American Society for Microbiology', '15K', '67', '86', '+19'],
+                  ['American Chemical Society', '210K', '48', '70', '+22'],
+                  ['American Meteorological Society', '4K', '41', '66', '+25'],
+                  ['IEEE', '883K', '34', '41', '+7'],
+                  ['SAGE Publications', '234K', '48', '61', '+13'],
+                  ['BMJ', '64K', '33', '47', '+14'],
+                  ['Wolters Kluwer', '237K', '26', '35', '+9'],
                 ].map(([name, works, overall, current, jump]) => (
                   <tr key={name}>
                     <td className="px-4 py-3 font-medium">{name}</td>
@@ -185,9 +185,9 @@ export default function CurrentEraInsightsPage() {
           </div>
 
           <p>
-            <strong>APS</strong> is the standout — a C-overall publisher producing A-grade metadata right now
-            (score 81, #6 among all active publishers). <strong>ASM</strong> jumps from B to A
-            (#3 in current era, score 86). Only <strong>135 publishers</strong> (0.6%) actually score
+            <strong>APS</strong> is the standout — scoring 58 overall but 81 on current content
+            (#6 among all active publishers). <strong>ASM</strong> jumps from 67 to 86
+            (#3 in current era). Only <strong>135 publishers</strong> (0.6%) actually score
             lower on current content than overall.
           </p>
 
@@ -370,7 +370,7 @@ export default function CurrentEraInsightsPage() {
             are setting the standard for metadata quality at scale.
           </p>
 
-          <h3>Commercial Publishers: Improved, But Still D&apos;s</h3>
+          <h3>Commercial Publishers: Improved, But Far From Solved</h3>
           <div className="not-prose my-6 overflow-hidden rounded-lg border">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
@@ -378,27 +378,23 @@ export default function CurrentEraInsightsPage() {
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Publisher</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-700">Current Works</th>
                   <th className="px-4 py-3 text-center font-medium text-emerald-700">Current Score</th>
-                  <th className="px-4 py-3 text-center font-medium text-emerald-700">Grade</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {[
-                  ['MDPI', '632K', '68', 'B', 'bg-blue-100 text-blue-800'],
-                  ['SAGE', '234K', '61', 'C', 'bg-yellow-100 text-yellow-800'],
-                  ['IOP Publishing', '117K', '55', 'C', 'bg-yellow-100 text-yellow-800'],
-                  ['Wiley', '895K', '48', 'D', 'bg-orange-100 text-orange-800'],
-                  ['Springer Nature', '2.0M', '47', 'D', 'bg-orange-100 text-orange-800'],
-                  ['Elsevier', '3.0M', '42', 'D', 'bg-orange-100 text-orange-800'],
-                  ['IEEE', '883K', '41', 'D', 'bg-orange-100 text-orange-800'],
-                  ['OUP', '451K', '29', 'F', 'bg-red-100 text-red-800'],
-                ].map(([name, works, score, grade, color]) => (
+                  ['MDPI', '632K', '68'],
+                  ['SAGE', '234K', '61'],
+                  ['IOP Publishing', '117K', '55'],
+                  ['Wiley', '895K', '48'],
+                  ['Springer Nature', '2.0M', '47'],
+                  ['Elsevier', '3.0M', '42'],
+                  ['IEEE', '883K', '41'],
+                  ['OUP', '451K', '29'],
+                ].map(([name, works, score]) => (
                   <tr key={name}>
                     <td className="px-4 py-3 font-medium">{name}</td>
                     <td className="px-4 py-3 text-right text-gray-500">{works}</td>
                     <td className="px-4 py-3 text-center font-bold">{score}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${color}`}>{grade}</span>
-                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -406,8 +402,8 @@ export default function CurrentEraInsightsPage() {
           </div>
 
           <p>
-            MDPI remains the only commercial-scale publisher to earn a B. <strong>OUP is the worst
-            performer among major publishers even on current content</strong> — still an F at 29.
+            MDPI leads the commercial-scale publishers at 68. <strong>OUP is the worst
+            performer among major publishers even on current content</strong> — still just 29.
           </p>
 
           <h3>South Korea Still Dominates the Top 50</h3>
@@ -434,11 +430,11 @@ export default function CurrentEraInsightsPage() {
           <ul>
             <li>
               <strong>Overall vs Current:</strong> The industry is getting better — 2,844 publishers
-              earn a higher grade on recent content. The backfile drags the picture down.
+              score meaningfully higher on recent content. The backfile drags the picture down.
             </li>
             <li>
-              <strong>By Content Type:</strong> Aggregate scores mislead. eLife is an F in aggregate
-              but an A on journal articles. The pipeline per content type, not the discipline, determines quality.
+              <strong>By Content Type:</strong> Aggregate scores mislead. eLife scores in the 30s in
+              aggregate but near-perfect on journal articles. The pipeline per content type, not the discipline, determines quality.
             </li>
             <li>
               <strong>By Dimension:</strong> Access is nearly solved. ORCIDs are unevenly adopted.

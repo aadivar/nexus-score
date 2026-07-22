@@ -5,21 +5,10 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Responsi
 import { X, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
-
-const gradeColors: Record<Grade, string> = {
-  A: 'bg-green-100 text-green-800',
-  B: 'bg-blue-100 text-blue-800',
-  C: 'bg-yellow-100 text-yellow-800',
-  D: 'bg-orange-100 text-orange-800',
-  F: 'bg-red-100 text-red-800',
-};
-
 interface PublisherRadarProps {
   id: number;
   name: string;
   score: number;
-  grade: string;
   dimensions: {
     provenance: number;
     people: number;
@@ -39,7 +28,7 @@ const DIMENSION_LABELS: Record<string, { label: string; description: string }> =
   access: { label: 'Access', description: 'Licenses, full-text links, abstracts' },
 };
 
-export function PublisherRadar({ id, name, score, grade, dimensions, contentTypeFilter, onClose }: PublisherRadarProps) {
+export function PublisherRadar({ id, name, score, dimensions, contentTypeFilter, onClose }: PublisherRadarProps) {
   const data = Object.entries(dimensions).map(([key, value]) => ({
     dimension: DIMENSION_LABELS[key]?.label || key,
     value,
@@ -57,9 +46,6 @@ export function PublisherRadar({ id, name, score, grade, dimensions, contentType
           <div className="flex items-center gap-2 mt-1">
             <span className="text-2xl font-bold text-gray-900">{score}</span>
             <span className="text-sm text-gray-400">/100</span>
-            <span className={cn('inline-flex rounded-full px-2 py-0.5 text-xs font-bold', gradeColors[grade as Grade] || 'bg-gray-100 text-gray-800')}>
-              {grade}
-            </span>
           </div>
           <Link href={`/member/${id}`} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-1">
             View full profile <ExternalLink className="h-3 w-3" />

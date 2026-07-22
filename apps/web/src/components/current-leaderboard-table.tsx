@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils';
 import { PublisherRadar } from './publisher-radar';
 import { trackEvent, normalizeQuery } from '@/lib/analytics';
 
-type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
-
 interface ContentTypeEntry {
   type: string;
   label: string;
@@ -45,14 +43,6 @@ interface Props {
 
 const ITEMS_PER_PAGE = 50;
 
-const gradeColors: Record<Grade, string> = {
-  A: 'bg-green-100 text-green-800',
-  B: 'bg-blue-100 text-blue-800',
-  C: 'bg-yellow-100 text-yellow-800',
-  D: 'bg-orange-100 text-orange-800',
-  F: 'bg-red-100 text-red-800',
-};
-
 type DimensionKey = 'provenance' | 'people' | 'organizations' | 'funding' | 'access';
 type SortField = 'default' | 'score' | 'works' | 'improvement' | 'overall' | DimensionKey;
 type SortDirection = 'desc' | 'asc';
@@ -60,7 +50,6 @@ type SortDirection = 'desc' | 'asc';
 export function CurrentLeaderboardTable({ leaderboard, totalActive, availableContentTypes }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<SortField>('default');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
@@ -70,12 +59,6 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
     if (contentTypeFilter === 'all') return null;
     const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
     return ct ? ct.score : null;
-  };
-
-  const getCtGrade = (entry: CurrentLeaderboardEntry): string | null => {
-    if (contentTypeFilter === 'all') return null;
-    const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
-    return ct ? ct.grade : null;
   };
 
   const filteredLeaderboard = useMemo(() => {
@@ -93,17 +76,6 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
       filtered = filtered.filter((entry) =>
         entry.name.toLowerCase().includes(query)
       );
-    }
-
-    if (gradeFilter !== 'all') {
-      const gradeForEntry = (entry: CurrentLeaderboardEntry) => {
-        if (contentTypeFilter !== 'all') {
-          const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
-          return ct?.grade || entry.grade;
-        }
-        return entry.grade;
-      };
-      filtered = filtered.filter((entry) => gradeForEntry(entry) === gradeFilter);
     }
 
     // When content type is selected, default sort by that type's score
@@ -149,7 +121,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
     }
 
     return filtered;
-  }, [leaderboard, searchQuery, gradeFilter, sortField, sortDirection, contentTypeFilter]);
+  }, [leaderboard, searchQuery, sortField, sortDirection, contentTypeFilter]);
 
   // Track leaderboard searches, debounced so we log the settled query (the
   // literal text people type) and how many publishers it matched — not every
@@ -177,11 +149,6 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setCurrentPage(1);
-  };
-
-  const handleGradeFilterChange = (value: string) => {
-    setGradeFilter(value);
     setCurrentPage(1);
   };
 
@@ -247,8 +214,6 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
     return pages;
   };
 
-  const gradeOrder: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1 };
-
   return (
     <div>
       {/* Search and Filters */}
@@ -301,31 +266,17 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
               </select>
             </>
           )}
-          <label className="text-sm text-gray-600">Grade:</label>
-          <select
-            value={gradeFilter}
-            onChange={(e) => handleGradeFilterChange(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-          >
-            <option value="all">All Grades</option>
-            <option value="A">A (80-100)</option>
-            <option value="B">B (65-79)</option>
-            <option value="C">C (50-64)</option>
-            <option value="D">D (35-49)</option>
-            <option value="F">F (0-34)</option>
-          </select>
         </div>
       </div>
 
       {/* Results count */}
       <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-600">
         <span>
-          {searchQuery || gradeFilter !== 'all' || contentTypeFilter !== 'all' ? (
+          {searchQuery || contentTypeFilter !== 'all' ? (
             <>
               Showing {filteredLeaderboard.length.toLocaleString()} results
               {contentTypeFilter !== 'all' && ` for ${availableContentTypes.find(ct => ct.type === contentTypeFilter)?.label || contentTypeFilter}`}
               {searchQuery && ` matching "${searchQuery}"`}
-              {gradeFilter !== 'all' && ` with grade ${gradeFilter}`}
             </>
           ) : (
             <>Showing all {totalActive.toLocaleString()} active publishers</>
@@ -369,9 +320,6 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                   Current Score
                   {getSortIcon('score')}
                 </button>
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                Grade
               </th>
               {contentTypeFilter === 'all' && (
               <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 sm:table-cell">
@@ -434,17 +382,14 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
           <tbody className="divide-y divide-gray-200">
             {paginatedLeaderboard.length === 0 ? (
               <tr>
-                <td colSpan={contentTypeFilter === 'all' ? 12 : 10} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={contentTypeFilter === 'all' ? 11 : 9} className="px-4 py-8 text-center text-gray-500">
                   No publishers found matching your search.
                 </td>
               </tr>
             ) : (
               paginatedLeaderboard.map((entry, index) => {
-                const useOriginalRank = contentTypeFilter === 'all' && sortField === 'default' && !searchQuery && gradeFilter === 'all';
+                const useOriginalRank = contentTypeFilter === 'all' && sortField === 'default' && !searchQuery;
                 const displayRank = useOriginalRank ? entry.rank : startIndex + index + 1;
-                const displayGrade = getCtGrade(entry) ?? entry.grade;
-                const gradeUpgrade = gradeOrder[displayGrade] > gradeOrder[entry.overallGrade];
-                const gradeDowngrade = gradeOrder[displayGrade] < gradeOrder[entry.overallGrade];
 
                 return (
                   <tr key={entry.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setRadarEntry(entry)}>
@@ -476,35 +421,10 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                     <td className="whitespace-nowrap px-4 py-4 text-center">
                       <span className="text-lg font-bold text-gray-900">{getCtScore(entry) ?? entry.score}</span>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-center">
-                      <span
-                        className={cn(
-                          'inline-flex rounded-full px-2 py-1 text-xs font-bold',
-                          gradeColors[(getCtGrade(entry) ?? entry.grade) as Grade] || 'bg-gray-100 text-gray-800'
-                        )}
-                      >
-                        {getCtGrade(entry) ?? entry.grade}
-                      </span>
-                      {contentTypeFilter === 'all' && gradeUpgrade && (
-                        <span className="ml-1 text-xs text-emerald-600" title={`Overall: ${entry.overallGrade}`}>
-                          ↑
-                        </span>
-                      )}
-                      {contentTypeFilter === 'all' && gradeDowngrade && (
-                        <span className="ml-1 text-xs text-red-500" title={`Overall: ${entry.overallGrade}`}>
-                          ↓
-                        </span>
-                      )}
-                    </td>
                     {contentTypeFilter === 'all' && (
-                    <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-500 sm:table-cell">
-                      <span
-                        className={cn(
-                          'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                          gradeColors[entry.overallGrade as Grade] || 'bg-gray-100 text-gray-800'
-                        )}
-                      >
-                        {entry.overallScore} ({entry.overallGrade})
+                    <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm sm:table-cell">
+                      <span className="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        {entry.overallScore}
                       </span>
                     </td>
                     )}
@@ -639,7 +559,6 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
             id={radarEntry.id}
             name={radarEntry.name}
             score={getCtScore(radarEntry) ?? radarEntry.score}
-            grade={(getCtGrade(radarEntry) ?? radarEntry.grade)}
             dimensions={radarEntry.dimensions}
             contentTypeFilter={contentTypeFilter}
             onClose={() => setRadarEntry(null)}

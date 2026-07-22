@@ -1,26 +1,17 @@
 'use client';
 
 import { cn } from '@/lib/utils';
-import type { Grade, TrendDirection } from '@nexus-score/core';
+import type { TrendDirection } from '@nexus-score/core';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface ScoreCardProps {
   score: number;
-  grade: Grade;
   trend: TrendDirection;
   change: number;
   label?: string;
   hideTrend?: boolean;
   className?: string;
 }
-
-const gradeColors: Record<Grade, string> = {
-  A: 'text-green-600 bg-green-50 border-green-200',
-  B: 'text-blue-600 bg-blue-50 border-blue-200',
-  C: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-  D: 'text-orange-600 bg-orange-50 border-orange-200',
-  F: 'text-red-600 bg-red-50 border-red-200',
-};
 
 const trendIcons: Record<TrendDirection, typeof TrendingUp> = {
   up: TrendingUp,
@@ -34,7 +25,7 @@ const trendColors: Record<TrendDirection, string> = {
   stable: 'text-gray-500',
 };
 
-export function ScoreCard({ score, grade, trend, change, label, hideTrend, className }: ScoreCardProps) {
+export function ScoreCard({ score, trend, change, label, hideTrend, className }: ScoreCardProps) {
   const TrendIcon = trendIcons[trend];
 
   return (
@@ -47,14 +38,10 @@ export function ScoreCard({ score, grade, trend, change, label, hideTrend, class
             <span className="text-base sm:text-lg text-gray-400">/ 100</span>
           </div>
         </div>
-        <div
-          className={cn(
-            'flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full border-4 text-3xl sm:text-4xl font-bold',
-            gradeColors[grade]
-          )}
-        >
-          {grade}
-        </div>
+        <p className="max-w-[180px] text-right text-xs text-gray-400">
+          A diagnosis, not a judgment — every point lost is a fixable metadata
+          field.
+        </p>
       </div>
 
       {!hideTrend && (

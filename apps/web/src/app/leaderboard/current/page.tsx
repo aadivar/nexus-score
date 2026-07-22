@@ -97,23 +97,24 @@ export default function CurrentLeaderboardPage() {
 
   const { leaderboard, generatedAt, totalMembers, totalActive, availableContentTypes } = data;
 
-  const gradeDistribution = leaderboard.reduce(
-    (acc, entry) => {
-      acc[entry.grade as keyof typeof acc] = (acc[entry.grade as keyof typeof acc] || 0) + 1;
-      return acc;
-    },
-    { A: 0, B: 0, C: 0, D: 0, F: 0 }
-  );
+  // Score distribution across diagnostic bands (mirrors core thresholds)
+  const scoreBands = [
+    { label: '80–100', color: 'bg-green-100 text-green-800', min: 80, max: 101 },
+    { label: '65–79', color: 'bg-blue-100 text-blue-800', min: 65, max: 80 },
+    { label: '50–64', color: 'bg-yellow-100 text-yellow-800', min: 50, max: 65 },
+    { label: '35–49', color: 'bg-orange-100 text-orange-800', min: 35, max: 50 },
+    { label: '0–34', color: 'bg-red-100 text-red-800', min: 0, max: 35 },
+  ].map((band) => ({
+    ...band,
+    count: leaderboard.filter((e) => e.score >= band.min && e.score < band.max).length,
+  }));
 
   const avgScore = leaderboard.length > 0
     ? Math.round(leaderboard.reduce((sum, e) => sum + e.score, 0) / leaderboard.length)
     : 0;
 
-  // Count grade upgrades (current grade better than overall grade)
-  const gradeOrder: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1 };
-  const upgrades = leaderboard.filter(
-    (e) => gradeOrder[e.grade] > gradeOrder[e.overallGrade]
-  ).length;
+  // Publishers whose recent metadata outscores their overall record
+  const upgrades = leaderboard.filter((e) => e.score > e.overallScore).length;
 
   return (
     <div className="min-h-screen py-8">
@@ -214,11 +215,11 @@ export default function CurrentLeaderboardPage() {
             </p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Grade Upgrades</p>
+            <p className="text-sm text-gray-500">Scoring Higher Now</p>
             <p className="text-2xl font-bold text-emerald-600">
               {upgrades.toLocaleString()}
             </p>
-            <p className="text-xs text-gray-400">vs overall grade</p>
+            <p className="text-xs text-gray-400">current score above overall</p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
             <p className="text-sm text-gray-500">Last Updated</p>
@@ -232,32 +233,23 @@ export default function CurrentLeaderboardPage() {
           </div>
         </div>
 
-        {/* Grade Distribution */}
+        {/* Score Distribution */}
         <div className="mt-6 rounded-lg border bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-medium text-gray-700">Grade Distribution (Current Era)</p>
+          <p className="mb-3 text-sm font-medium text-gray-700">Score Distribution (Current Era)</p>
           <div className="flex flex-wrap items-center gap-4">
-            {(['A', 'B', 'C', 'D', 'F'] as const).map((grade) => {
-              const colors: Record<string, string> = {
-                A: 'bg-green-100 text-green-800',
-                B: 'bg-blue-100 text-blue-800',
-                C: 'bg-yellow-100 text-yellow-800',
-                D: 'bg-orange-100 text-orange-800',
-                F: 'bg-red-100 text-red-800',
-              };
-              return (
-                <div key={grade} className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${colors[grade]}`}
-                  >
-                    {grade}
-                  </span>
-                  <span className="text-sm text-gray-600">
-                    {gradeDistribution[grade].toLocaleString()} (
-                    {((gradeDistribution[grade] / totalActive) * 100).toFixed(1)}%)
-                  </span>
-                </div>
-              );
-            })}
+            {scoreBands.map((band) => (
+              <div key={band.label} className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold ${band.color}`}
+                >
+                  {band.label}
+                </span>
+                <span className="text-sm text-gray-600">
+                  {band.count.toLocaleString()} (
+                  {((band.count / totalActive) * 100).toFixed(1)}%)
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 

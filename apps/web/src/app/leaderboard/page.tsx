@@ -119,14 +119,17 @@ export default function LeaderboardPage() {
       entry.backfileScore > 0
   ).length;
 
-  // Calculate grade distribution
-  const gradeDistribution = leaderboard.reduce(
-    (acc, entry) => {
-      acc[entry.grade as keyof typeof acc] = (acc[entry.grade as keyof typeof acc] || 0) + 1;
-      return acc;
-    },
-    { A: 0, B: 0, C: 0, D: 0, F: 0 }
-  );
+  // Score distribution across diagnostic bands (mirrors core thresholds)
+  const scoreBands = [
+    { label: '80–100', color: 'bg-green-100 text-green-800', min: 80, max: 101 },
+    { label: '65–79', color: 'bg-blue-100 text-blue-800', min: 65, max: 80 },
+    { label: '50–64', color: 'bg-yellow-100 text-yellow-800', min: 50, max: 65 },
+    { label: '35–49', color: 'bg-orange-100 text-orange-800', min: 35, max: 50 },
+    { label: '0–34', color: 'bg-red-100 text-red-800', min: 0, max: 35 },
+  ].map((band) => ({
+    ...band,
+    count: leaderboard.filter((e) => e.score >= band.min && e.score < band.max).length,
+  }));
 
   return (
     <div className="min-h-screen py-8">
@@ -298,50 +301,22 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Grade Distribution */}
+        {/* Score Distribution */}
         <div className="mt-6 rounded-lg border bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-medium text-gray-700">Grade Distribution</p>
+          <p className="mb-3 text-sm font-medium text-gray-700">Score Distribution</p>
           <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-800">
-                A
-              </span>
-              <span className="text-sm text-gray-600">
-                {gradeDistribution.A.toLocaleString()} ({((gradeDistribution.A / totalWithWorks) * 100).toFixed(1)}%)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-800">
-                B
-              </span>
-              <span className="text-sm text-gray-600">
-                {gradeDistribution.B.toLocaleString()} ({((gradeDistribution.B / totalWithWorks) * 100).toFixed(1)}%)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-xs font-bold text-yellow-800">
-                C
-              </span>
-              <span className="text-sm text-gray-600">
-                {gradeDistribution.C.toLocaleString()} ({((gradeDistribution.C / totalWithWorks) * 100).toFixed(1)}%)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-100 text-xs font-bold text-orange-800">
-                D
-              </span>
-              <span className="text-sm text-gray-600">
-                {gradeDistribution.D.toLocaleString()} ({((gradeDistribution.D / totalWithWorks) * 100).toFixed(1)}%)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-800">
-                F
-              </span>
-              <span className="text-sm text-gray-600">
-                {gradeDistribution.F.toLocaleString()} ({((gradeDistribution.F / totalWithWorks) * 100).toFixed(1)}%)
-              </span>
-            </div>
+            {scoreBands.map((band) => (
+              <div key={band.label} className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-bold ${band.color}`}
+                >
+                  {band.label}
+                </span>
+                <span className="text-sm text-gray-600">
+                  {band.count.toLocaleString()} ({((band.count / totalWithWorks) * 100).toFixed(1)}%)
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import { DIMENSION_WEIGHTS, METRICS_BY_DIMENSION, GRADE_THRESHOLDS } from '@nexus-score/core';
+import { DIMENSION_WEIGHTS, METRICS_BY_DIMENSION } from '@nexus-score/core';
 
 export const metadata: Metadata = {
   title: 'Methodology - Nexus Score',
@@ -89,74 +89,57 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Grades */}
+        {/* Reading the Score */}
         <section className="mt-12">
-          <h2 className="text-2xl font-semibold text-gray-900">Grading Scale</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Reading the Score</h2>
+          <p className="mt-4 text-gray-600">
+            The score is a diagnostic, not a grade. It answers one question: how
+            much of this publisher&apos;s metadata is complete enough for research to
+            be found, connected, and reused? These bands describe what a score
+            typically means in practice — every point below 100 maps to a
+            specific, fixable metadata field.
+          </p>
           <div className="mt-6 overflow-x-auto rounded-lg border bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Grade
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     Score Range
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Description
+                    What It Typically Means
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 <tr>
-                  <td className="whitespace-nowrap px-6 py-4 text-2xl font-bold text-green-600">
-                    A
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">{GRADE_THRESHOLDS.A}-100</td>
+                  <td className="whitespace-nowrap px-6 py-4 font-bold text-green-600">80–100</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Excellent metadata coverage with comprehensive coverage
+                    Comprehensive coverage — the record is well connected and machine-readable
                   </td>
                 </tr>
                 <tr>
-                  <td className="whitespace-nowrap px-6 py-4 text-2xl font-bold text-blue-600">
-                    B
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">
-                    {GRADE_THRESHOLDS.B}-{GRADE_THRESHOLDS.A - 1}
-                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 font-bold text-blue-600">65–79</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Good coverage with room for improvement in some areas
+                    Good coverage with a small number of high-impact gaps left to close
                   </td>
                 </tr>
                 <tr>
-                  <td className="whitespace-nowrap px-6 py-4 text-2xl font-bold text-yellow-600">
-                    C
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">
-                    {GRADE_THRESHOLDS.C}-{GRADE_THRESHOLDS.B - 1}
-                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 font-bold text-yellow-600">50–64</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Adequate coverage but with significant gaps
+                    Adequate coverage but with significant gaps across dimensions
                   </td>
                 </tr>
                 <tr>
-                  <td className="whitespace-nowrap px-6 py-4 text-2xl font-bold text-orange-600">
-                    D
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">
-                    {GRADE_THRESHOLDS.D}-{GRADE_THRESHOLDS.C - 1}
-                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 font-bold text-orange-600">35–49</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Needs substantial work across multiple dimensions
+                    Substantial gaps across multiple dimensions — often a pipeline problem, not a practice problem
                   </td>
                 </tr>
                 <tr>
-                  <td className="whitespace-nowrap px-6 py-4 text-2xl font-bold text-red-600">
-                    F
-                  </td>
-                  <td className="px-6 py-4 text-gray-900">0-{GRADE_THRESHOLDS.D - 1}</td>
+                  <td className="whitespace-nowrap px-6 py-4 font-bold text-red-600">0–34</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Poor metadata coverage requiring immediate attention
+                    Most metadata is missing from deposits — the biggest opportunities live here
                   </td>
                 </tr>
               </tbody>

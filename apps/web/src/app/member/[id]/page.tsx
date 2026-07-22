@@ -534,10 +534,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${score.metadata.entityName} - Nexus Score`,
-    description: `Nexus Score: ${score.total}/100 (Grade ${score.grade}). View metadata coverage breakdown and recommendations.`,
+    description: `Nexus Score: ${score.total}/100. View metadata coverage breakdown and recommendations.`,
     openGraph: {
       title: `${score.metadata.entityName} - Nexus Score: ${score.total}`,
-      description: `Grade ${score.grade} - View metadata coverage breakdown and improvement recommendations.`,
+      description: `Score ${score.total}/100 - View metadata coverage breakdown and improvement recommendations.`,
     },
   };
 }
@@ -643,7 +643,6 @@ export default async function MemberPage({ params }: PageProps) {
           <div className="space-y-6 lg:col-span-2">
             <MemberScoreView
               total={score.total}
-              grade={score.grade}
               trend={score.trend}
               dimensions={score.dimensions}
               currentWorks={score.metadata.currentWorks}
@@ -695,7 +694,6 @@ export default async function MemberPage({ params }: PageProps) {
                           <th className="pb-2 pr-4">Content Type</th>
                           <th className="pb-2 pr-4 text-right">Works</th>
                           <th className="pb-2 pr-4 text-center">Score</th>
-                          <th className="pb-2 pr-4 text-center">Grade</th>
                           <th className="pb-2 pr-4 text-center text-blue-600">Current</th>
                           <th className="pb-2 pr-4 text-center">Backfile</th>
                           <th className="hidden pb-2 pr-2 text-center sm:table-cell">Prov</th>
@@ -727,20 +725,6 @@ export default async function MemberPage({ params }: PageProps) {
                             </td>
                             <td className="py-2.5 pr-4 text-center font-semibold text-gray-900">
                               {ct.score}
-                            </td>
-                            <td className="py-2.5 pr-4 text-center">
-                              <span
-                                className={cn(
-                                  'inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold',
-                                  ct.grade === 'A' && 'bg-green-100 text-green-700',
-                                  ct.grade === 'B' && 'bg-blue-100 text-blue-700',
-                                  ct.grade === 'C' && 'bg-yellow-100 text-yellow-700',
-                                  ct.grade === 'D' && 'bg-orange-100 text-orange-700',
-                                  ct.grade === 'F' && 'bg-red-100 text-red-700'
-                                )}
-                              >
-                                {ct.grade}
-                              </span>
                             </td>
                             <td className="py-2.5 pr-4 text-center font-medium text-blue-700">
                               {ct.current ? ct.current.score : '\u2014'}
@@ -811,7 +795,7 @@ export default async function MemberPage({ params }: PageProps) {
                       <polyline points="22 4 12 14.01 9 11.01"/>
                     </svg>
                     <span>
-                      Your <strong>{contentTypeScores[0].label.toLowerCase()}</strong> score <strong>{contentTypeScores[0].score}</strong> (Grade {contentTypeScores[0].grade}) — strong work on your primary research outputs! The tips below reflect your aggregate coverage across all content types, where there&apos;s still room to grow.
+                      Your <strong>{contentTypeScores[0].label.toLowerCase()}</strong> score <strong>{contentTypeScores[0].score}/100</strong> — strong work on your primary research outputs! The tips below reflect your aggregate coverage across all content types, where there&apos;s still room to grow.
                     </span>
                   </div>
                 )}

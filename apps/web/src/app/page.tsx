@@ -255,29 +255,54 @@ export default function HomePage() {
           <h2 className="text-center text-2xl font-semibold text-gray-900">
             What Nexus Score Is — and What It Is Not
           </h2>
+          <p className="mx-auto mt-6 max-w-3xl text-center text-gray-600">
+            The number is not the point. Nexus Score is a diagnostic — a way to
+            find where metadata breaks down between a publisher&apos;s workflow and
+            the open research infrastructure that depends on it. Every score
+            exists to answer one question: what specific, fixable gap is keeping
+            this research from being found, connected, and reused?
+          </p>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <div className="rounded-lg border border-green-200 bg-green-50 p-6">
               <h3 className="font-semibold text-green-800">Nexus Score is</h3>
               <ul className="mt-4 space-y-3 text-sm text-gray-700">
                 <li className="flex gap-2">
                   <span className="text-green-600">✓</span>
-                  A signal that recognises and rewards the reusability status of a
-                  scholarly record
+                  <span>
+                    <strong>A diagnostic</strong> — it locates the exact metadata
+                    fields (ORCID iDs, licenses, references, funding IDs) where a
+                    publisher&apos;s deposits leak value
+                  </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-green-600">✓</span>
-                  A signal that recognises and rewards best open science practices
+                  <span>
+                    <strong>A repair list</strong> — every point lost maps to a
+                    specific, fixable field, with a recommendation and a fixer
+                  </span>
                 </li>
                 <li className="flex gap-2">
                   <span className="text-green-600">✓</span>
-                  A measure of the machine interpretability and AI-readiness of a
-                  scholarly record
+                  <span>
+                    <strong>A reusability measure</strong> — how ready a scholarly
+                    record is to be found, connected, and legally reused by both
+                    people and machines
+                  </span>
                 </li>
               </ul>
             </div>
             <div className="rounded-lg border border-red-200 bg-red-50 p-6">
               <h3 className="font-semibold text-red-800">Nexus Score is not</h3>
               <ul className="mt-4 space-y-3 text-sm text-gray-700">
+                <li className="flex gap-2">
+                  <span className="text-red-600">✗</span>
+                  <span>
+                    <strong>A league table</strong> — the leaderboard exists to
+                    make gaps visible and progress trackable, not to crown
+                    winners; two publishers with the same score can have
+                    completely different gaps
+                  </span>
+                </li>
                 <li className="flex gap-2">
                   <span className="text-red-600">✗</span>
                   A measure of research quality or scholarly impact
@@ -294,6 +319,10 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
+          <p className="mx-auto mt-8 max-w-2xl text-center text-sm font-medium text-gray-500">
+            Every score is a starting point, not a verdict. Every gap has a fix.
+            The only direction is forward.
+          </p>
         </div>
       </section>
 
