@@ -44,8 +44,8 @@ export function MemberRankingBanner({
     return (
       <div className="mt-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 shadow-sm">
         <p className="text-sm text-gray-600">
-          Rankings are not available for {label ?? 'this content type'} —
-          the leaderboard has no per-type data for this publisher yet.
+          Benchmark comparisons are not available for {label ?? 'this content type'} —
+          there is no per-type data for this member yet.
         </p>
       </div>
     );
@@ -57,7 +57,7 @@ export function MemberRankingBanner({
         <div className="grid grid-cols-2 gap-4 sm:flex sm:items-center sm:gap-6">
           <div className="text-center">
             <p className="text-xs sm:text-sm font-medium text-gray-500">
-              {filtered ? `Rank — ${label}` : 'Global Rank'}
+              {filtered ? `Benchmark position — ${label}` : 'Benchmark position'}
             </p>
             <p className="text-2xl sm:text-3xl font-bold text-blue-600">
               #{ranking.rank.toLocaleString()}
@@ -93,7 +93,7 @@ export function MemberRankingBanner({
               <div className="hidden md:block h-12 w-px bg-gray-200" />
               <div className="hidden md:block text-center">
                 <p className="text-sm font-medium text-gray-500">
-                  To Reach Top 10%
+                  Gap to Top 10%
                 </p>
                 <p className="text-3xl font-bold text-indigo-600">
                   +{ranking.topGap}
@@ -107,7 +107,7 @@ export function MemberRankingBanner({
           href="/leaderboard"
           className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 w-full sm:w-auto sm:self-end"
         >
-          View Full Leaderboard
+          Explore Full Benchmark
         </Link>
       </div>
 
@@ -115,7 +115,7 @@ export function MemberRankingBanner({
       {ranking.nearbyPublishers.length > 0 && (
         <div className="mt-6 border-t border-gray-200 pt-4">
           <p className="mb-3 text-sm font-medium text-gray-600">
-            Nearby in Rankings{filtered ? ` (${label})` : ''}:
+            Nearby benchmark values{filtered ? ` (${label})` : ''}:
           </p>
           <div className="flex flex-wrap gap-2">
             {ranking.nearbyPublishers.map((pub) => (
@@ -131,7 +131,7 @@ export function MemberRankingBanner({
               >
                 <span className="font-medium">#{pub.rank}</span>
                 <span className="max-w-[150px] truncate">{pub.name}</span>
-                <span className="text-xs">({pub.score} pts)</span>
+                <span className="text-xs">({pub.score} index)</span>
               </Link>
             ))}
           </div>
@@ -140,8 +140,8 @@ export function MemberRankingBanner({
 
       {filtered && (
         <p className="mt-4 text-xs text-gray-400">
-          Ranked among publishers with {label?.toLowerCase()} by their
-          all-years score for that type, matching the overall leaderboard
+          Compared with members registering {label?.toLowerCase()} by their
+          all-years index value for that type, matching the overall benchmark
           filter.
         </p>
       )}

@@ -10,7 +10,6 @@ interface ContentTypeEntry {
   type: string;
   label: string;
   score: number;
-  grade: string;
 }
 
 interface LeaderboardEntry {
@@ -19,7 +18,6 @@ interface LeaderboardEntry {
   name: string;
   location?: string;
   score: number;
-  grade: string;
   totalWorks: number;
   currentScore?: number;
   backfileScore?: number | null;
@@ -135,7 +133,7 @@ export function LeaderboardTable({
         setResultTotal(result.total);
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') return;
-        setLoadError('Could not update the leaderboard. Please try again.');
+        setLoadError('Could not update the benchmark. Please try again.');
       } finally {
         if (!controller.signal.aborted) setIsLoading(false);
       }
@@ -276,12 +274,12 @@ export function LeaderboardTable({
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               )}
             >
-              Overall Score
+              Overall Index
             </button>
             <button
               onClick={() => handleViewModeChange('progress')}
               disabled={contentTypeFilter !== 'all'}
-              title={contentTypeFilter !== 'all' ? 'Improvement data is only available for aggregate scores' : undefined}
+              title={contentTypeFilter !== 'all' ? 'Trend data is only available for aggregate index values' : undefined}
               className={cn(
                 'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
                 viewMode === 'progress'
@@ -291,12 +289,12 @@ export function LeaderboardTable({
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               )}
             >
-              Most Improved
+              Recent vs Backfile
             </button>
           </div>
           {viewMode === 'progress' && (
             <p className="mt-2 text-sm text-gray-500">
-              Improvement = Current Score − Backfile Score. Positive values indicate better metadata
+              Trend = Current Index − Backfile Index. Positive values indicate better metadata
               coverage on recent publications (&lt;2 years) compared to older content (&gt;2 years).
               Showing {publishersWithBackfile.toLocaleString()} publishers with historical data.
             </p>
@@ -414,7 +412,7 @@ export function LeaderboardTable({
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                {viewMode === 'progress' ? '#' : 'Rank'}
+                {viewMode === 'progress' ? '#' : 'Position'}
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Publisher
@@ -444,7 +442,7 @@ export function LeaderboardTable({
                       onClick={() => handleSortToggle('score')}
                       className="inline-flex items-center gap-1 hover:text-gray-700"
                     >
-                      Score
+                      Index
                       {getSortIcon('score')}
                     </button>
                   </th>

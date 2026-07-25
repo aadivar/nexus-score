@@ -5,8 +5,7 @@ import { trackEvent } from '@/lib/analytics';
 
 interface Props {
   name: string;
-  grade: string;
-  score: number;
+  indexValue: number;
 }
 
 /**
@@ -14,10 +13,10 @@ interface Props {
  * see which publisher pages people actually open. Re-fires when the name
  * changes (client-side nav between two publisher pages reuses this component).
  */
-export function TrackMemberView({ name, grade, score }: Props) {
+export function TrackMemberView({ name, indexValue }: Props) {
   useEffect(() => {
-    trackEvent('publisher_view', { name, grade, score });
-  }, [name, grade, score]);
+    trackEvent('publisher_view', { name, indexValue });
+  }, [name, indexValue]);
 
   return null;
 }

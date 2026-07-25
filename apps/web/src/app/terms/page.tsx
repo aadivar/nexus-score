@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - Nexus Score',
-  description: 'Terms of Service for Nexus Score.',
+  title: 'Terms of Service - Nexus-Index',
+  description: 'Terms of Service for Nexus-Index.',
 };
 
 export default function TermsPage() {
@@ -16,18 +16,18 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">1. Acceptance of Terms</h2>
             <p className="mt-3">
-              By accessing and using Research Nexus Score (&quot;the Service&quot;), you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
+              By accessing and using Nexus-Index (&quot;the Service&quot;), you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-gray-900">2. Description of Service</h2>
             <p className="mt-3">
-              Research Nexus Score is a free, open-source tool that evaluates metadata coverage for Crossref members. The Service provides:
+              Nexus-Index is a free, open-source diagnostic benchmark of metadata coverage for Crossref members. The Service provides:
             </p>
             <ul className="mt-3 list-inside list-disc space-y-1">
-              <li>Metadata quality scores based on Crossref API data</li>
-              <li>Publisher rankings and leaderboards</li>
+              <li>Diagnostic metadata health index values based on Crossref API data</li>
+              <li>Benchmark comparisons across members and content types</li>
               <li>Recommendations for metadata improvement</li>
               <li>Educational resources about the Research Nexus</li>
             </ul>
@@ -36,7 +36,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">3. Data Source</h2>
             <p className="mt-3">
-              All scoring data is derived from the publicly available Crossref REST API. Research Nexus Score is not affiliated with, endorsed by, or officially connected to Crossref. The scores and rankings are calculated independently using Crossref&apos;s public metadata coverage statistics.
+              All index data is derived from the publicly available Crossref REST API. Nexus-Index is not affiliated with, endorsed by, or officially connected to Crossref. Index values and benchmark positions are calculated independently using Crossref&apos;s public metadata coverage statistics and do not assess publisher, journal, or research quality.
             </p>
           </section>
 
@@ -46,7 +46,7 @@ export default function TermsPage() {
               The Service is provided &quot;as is&quot; without warranty of any kind, express or implied. We do not guarantee:
             </p>
             <ul className="mt-3 list-inside list-disc space-y-1">
-              <li>The accuracy, completeness, or timeliness of scores</li>
+              <li>The accuracy, completeness, or timeliness of index values</li>
               <li>Uninterrupted or error-free operation</li>
               <li>That the Service will meet your specific requirements</li>
             </ul>
@@ -55,7 +55,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">5. Limitation of Liability</h2>
             <p className="mt-3">
-              In no event shall Research Nexus Score, its creator, or contributors be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service.
+              In no event shall Nexus-Index, its creator, or contributors be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service.
             </p>
           </section>
 
@@ -68,14 +68,14 @@ export default function TermsPage() {
               <li>Use the Service for any unlawful purpose</li>
               <li>Attempt to interfere with the proper operation of the Service</li>
               <li>Scrape or harvest data in a manner that impacts Service availability</li>
-              <li>Misrepresent scores or rankings in misleading ways</li>
+              <li>Misrepresent index values or benchmark comparisons in misleading ways</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-gray-900">7. Licensing</h2>
             <p className="mt-3">
-              Research Nexus Score is open source. Source code is licensed under <strong>AGPL-3.0</strong>. Derivative data and scores — including computed Nexus Scores, sub-scores, rankings, and derived metrics — are licensed under <strong>CC BY-NC 4.0</strong>, free for non-commercial use with attribution. Commercial use, including incorporation into paid products and commercial AI training or product integration, requires a separate written license. See our{' '}
+              Nexus-Index is open source. Source code is licensed under <strong>AGPL-3.0</strong>. Derivative data—including computed index values, dimension values, benchmark positions, and derived metrics—is licensed under <strong>CC BY-NC 4.0</strong>, free for non-commercial use with attribution. Commercial use, including incorporation into paid products and commercial AI training or product integration, requires a separate written license. See our{' '}
               <a
                 href="https://github.com/aadivar/nexus-score"
                 target="_blank"
@@ -94,7 +94,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">8. API and Automated Access</h2>
             <p className="mt-3">
-              Access to public endpoints does not change the license applicable to their contents. Automated access must respect published rate limits, access controls, robots directives, and machine-readable rights reservations. You may not evade technical restrictions, disrupt availability, or imply that API access grants commercial rights in Nexus Score data.
+              Access to public endpoints does not change the license applicable to their contents. Automated access must respect published rate limits, access controls, robots directives, and machine-readable rights reservations. You may not evade technical restrictions, disrupt availability, or imply that API access grants commercial rights in Nexus-Index data.
             </p>
           </section>
 

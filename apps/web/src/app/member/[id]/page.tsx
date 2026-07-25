@@ -29,7 +29,7 @@ import { TrackMemberView } from '@/components/track-member-view';
 import { CopyLinkButton } from '@/components/copy-link-button';
 import { formatNumber, cn } from '@/lib/utils';
 
-// Revalidate every 24 hours — keeps scores fresh between 15-day leaderboard refreshes
+// Revalidate every 24 hours — keeps index values fresh between data refreshes
 export const revalidate = 86400;
 
 interface PageProps {
@@ -40,7 +40,6 @@ interface LeaderboardContentType {
   type: string;
   label: string;
   score: number;
-  grade: string;
 }
 
 interface LeaderboardEntry {
@@ -49,7 +48,6 @@ interface LeaderboardEntry {
   name: string;
   location?: string;
   score: number;
-  grade: string;
   totalWorks: number;
   currentWorks?: number;
   currentScore?: number;
@@ -105,6 +103,11 @@ interface EraRanking {
   currentRank: number | null;
   currentTotal: number;
 }
+
+type MemberIndex = Pick<
+  NexusScore,
+  'total' | 'dimensions' | 'trend' | 'recommendations' | 'metadata'
+>;
 
 const client = new CrossrefClient({
   mailto: process.env.CROSSREF_MAILTO || 'varma2friend@gmail.com',
@@ -339,22 +342,13 @@ function getImprovementTips(dimensions: NexusScore['dimensions']): {
   return tips.slice(0, 3); // Return top 3
 }
 
-function scoreToGrade(score: number): 'A' | 'B' | 'C' | 'D' | 'F' {
-  if (score >= 80) return 'A';
-  if (score >= 65) return 'B';
-  if (score >= 50) return 'C';
-  if (score >= 35) return 'D';
-  return 'F';
-}
-
-function buildScoreFromLeaderboard(entry: LeaderboardEntry): NexusScore {
+function buildScoreFromLeaderboard(entry: LeaderboardEntry): MemberIndex {
   const currentScore = entry.currentScore ?? entry.score;
   const backfileScore = entry.backfileScore ?? entry.score;
   const change = currentScore - backfileScore;
 
   return {
     total: entry.score,
-    grade: scoreToGrade(entry.score),
     dimensions: {
       provenance: { score: Math.round(entry.dimensions.provenance * 25 / 100), maxScore: 25, percentage: entry.dimensions.provenance, metrics: [] },
       people: { score: Math.round(entry.dimensions.people * 20 / 100), maxScore: 20, percentage: entry.dimensions.people, metrics: [] },
@@ -475,7 +469,7 @@ function buildChangeInsights(
 }
 
 async function getMemberData(id: string): Promise<{
-  score: NexusScore;
+  score: MemberIndex;
   contentTypeScores: ContentTypeScore[] | null;
   changeInsights: ChangeInsights | null;
 } | null> {
@@ -528,16 +522,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!score) {
     return {
-      title: 'Member Not Found - Nexus Score',
+      title: 'Member Not Found - Nexus-Index',
     };
   }
 
   return {
-    title: `${score.metadata.entityName} - Nexus Score`,
-    description: `Nexus Score: ${score.total}/100. View metadata coverage breakdown and recommendations.`,
+    title: `${score.metadata.entityName} - Nexus-Index`,
+    description: `Index value: ${score.total}/100. Explore observed Crossref metadata coverage, context, and recommendations.`,
     openGraph: {
-      title: `${score.metadata.entityName} - Nexus Score: ${score.total}`,
-      description: `Score ${score.total}/100 - View metadata coverage breakdown and improvement recommendations.`,
+      title: `${score.metadata.entityName} - Nexus-Index: ${score.total}`,
+      description: `Diagnostic index ${score.total}/100 — explore observed Crossref metadata coverage, context, and recommendations.`,
     },
   };
 }
@@ -568,8 +562,7 @@ export default async function MemberPage({ params }: PageProps) {
     <div className="min-h-screen py-8">
       <TrackMemberView
         name={score.metadata.entityName}
-        grade={score.grade}
-        score={score.total}
+        indexValue={score.total}
       />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -639,7 +632,7 @@ export default async function MemberPage({ params }: PageProps) {
 
         {/* Main Content */}
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
-          {/* Left Column - Score and Dimensions */}
+          {/* Left Column - Index and Dimensions */}
           <div className="space-y-6 lg:col-span-2">
             <MemberScoreView
               total={score.total}
@@ -677,11 +670,11 @@ export default async function MemberPage({ params }: PageProps) {
               <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Score by Content Type</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Index by Content Type</h3>
                     <p className="mt-1 text-sm text-gray-500">
                       {contentTypeScores.length === 1
-                        ? `All works are ${contentTypeScores[0].label.toLowerCase()} \u2014 the aggregate score above is accurate.`
-                        : 'Scores calculated separately for each content type registered with Crossref. Score covers all years; Current and Backfile split it by era. The aggregate score above includes all types.'}
+                        ? `All works are ${contentTypeScores[0].label.toLowerCase()} \u2014 the aggregate index above reflects that content type.`
+                        : 'Index values are calculated separately for each content type registered with Crossref. The aggregate above includes all types; Current and Backfile show the two eras.'}
                     </p>
                   </div>
                 </div>
@@ -693,7 +686,7 @@ export default async function MemberPage({ params }: PageProps) {
                         <tr className="border-b text-left text-xs font-medium uppercase tracking-wide text-gray-500">
                           <th className="pb-2 pr-4">Content Type</th>
                           <th className="pb-2 pr-4 text-right">Works</th>
-                          <th className="pb-2 pr-4 text-center">Score</th>
+                          <th className="pb-2 pr-4 text-center">Index</th>
                           <th className="pb-2 pr-4 text-center text-blue-600">Current</th>
                           <th className="pb-2 pr-4 text-center">Backfile</th>
                           <th className="hidden pb-2 pr-2 text-center sm:table-cell">Prov</th>
@@ -763,7 +756,7 @@ export default async function MemberPage({ params }: PageProps) {
                         <line x1="12" y1="16" x2="12.01" y2="16"/>
                       </svg>
                       <span>
-                        Non-article content types (reviews, components, corrections) typically have lower metadata coverage, which can reduce the aggregate score above.
+                        Non-article content types (reviews, components, corrections) typically have different metadata patterns, which can reduce the aggregate index above.
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-500">
@@ -774,7 +767,7 @@ export default async function MemberPage({ params }: PageProps) {
                       </svg>
                       <span>
                         <strong className="text-gray-600">Want to compare by content type?</strong>{' '}
-                        The <Link href="/leaderboard/current" className="text-blue-600 hover:underline">leaderboard</Link> supports filtering by content type — use it to see how publishers rank for journal articles, peer reviews, or other types individually.
+                        The <Link href="/leaderboard/current" className="text-blue-600 hover:underline">benchmark</Link> supports filtering by content type—use it to compare like with like.
                       </span>
                     </div>
                   </div>
@@ -795,7 +788,7 @@ export default async function MemberPage({ params }: PageProps) {
                       <polyline points="22 4 12 14.01 9 11.01"/>
                     </svg>
                     <span>
-                      Your <strong>{contentTypeScores[0].label.toLowerCase()}</strong> score <strong>{contentTypeScores[0].score}/100</strong> — strong work on your primary research outputs! The tips below reflect your aggregate coverage across all content types, where there&apos;s still room to grow.
+                      Your <strong>{contentTypeScores[0].label.toLowerCase()}</strong> index is <strong>{contentTypeScores[0].score}/100</strong>. The fields below reflect aggregate coverage across all content types.
                     </span>
                   </div>
                 )}
@@ -813,11 +806,11 @@ export default async function MemberPage({ params }: PageProps) {
                       d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                     />
                   </svg>
-                  Quick Wins to Improve Your Ranking
+                  Highest-impact Metadata Improvements
                 </h3>
                 <p className="mt-2 text-sm text-blue-700">
-                  Small metadata improvements can significantly boost your score.
-                  Here are the highest-impact changes you can make:
+                  These changes would have the greatest effect on metadata
+                  discoverability and the diagnostic index:
                 </p>
                 <div className="mt-4 space-y-4">
                   {improvementTips.map((tip, index) => (
@@ -862,7 +855,7 @@ export default async function MemberPage({ params }: PageProps) {
                     <strong>Pro Tip:</strong> Focus on your current (recent)
                     publications first. Improving metadata on new deposits is easier
                     than updating backfiles, and it will immediately improve your
-                    &quot;current&quot; coverage scores.
+                    current-era coverage.
                   </p>
                 </div>
               </div>
@@ -875,12 +868,12 @@ export default async function MemberPage({ params }: PageProps) {
 
             {/* Additional Info */}
             <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900">About This Score</h3>
+              <h3 className="text-lg font-semibold text-gray-900">About This Index</h3>
               <dl className="mt-4 space-y-3 text-sm">
                 <div>
                   <dt className="text-gray-500">Data Source</dt>
                   <dd className="font-medium text-gray-900">
-                    {isCachedData ? 'Cached leaderboard data' : 'Crossref /members API'}
+                    {isCachedData ? 'Cached benchmark data' : 'Crossref /members API'}
                   </dd>
                 </div>
                 <div>
@@ -933,7 +926,7 @@ export default async function MemberPage({ params }: PageProps) {
             <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900">Share Results</h3>
               <p className="mt-2 text-sm text-gray-600">
-                Share your Research Nexus Score with stakeholders or use it in reports.
+                Share this diagnostic metadata health profile with stakeholders or use it in reports.
               </p>
               <div className="mt-4">
                 <CopyLinkButton />

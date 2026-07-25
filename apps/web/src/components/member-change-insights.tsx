@@ -148,7 +148,7 @@ export function MemberChangeInsights({
       </div>
       <p className="mt-1 text-sm text-gray-500">
         How metadata practice on recent works (last 2 years) compares with the
-        backfile, and how many score points each change is worth.
+        backfile, and how each change affects the index value.
       </p>
 
       {(improved.length > 0 || declined.length > 0) && (
@@ -195,7 +195,7 @@ export function MemberChangeInsights({
       {improved.length === 0 && declined.length === 0 && changes.length > 0 && (
         <p className="mt-4 text-sm text-gray-500">
           Metadata practice is roughly stable between eras — no metric moved
-          the score by more than half a point.
+          the index value by more than half a point.
         </p>
       )}
 
@@ -207,7 +207,7 @@ export function MemberChangeInsights({
           </h4>
           <p className="mt-1 text-xs text-gray-500">
             Member-level coverage counts every DOI equally, so a shift toward
-            content types with sparse metadata changes the score even when
+            content types with sparse metadata changes the aggregate index even when
             practice per type is unchanged.
           </p>
           <div className="mt-3 space-y-2">
@@ -231,8 +231,8 @@ export function MemberChangeInsights({
                   {grew && lowMetadata && (
                     <>
                       {' '}
-                      &mdash; this type scores {m.score}/100, so its growing
-                      share pulls the member-level score down
+                      &mdash; this type has an index value of {m.score}/100, so its growing
+                      share lowers the member-level aggregate
                     </>
                   )}
                 </div>

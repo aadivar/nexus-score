@@ -12,12 +12,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Nexus Score - Crossref Metadata Coverage',
+  title: 'Nexus-Index - Crossref Metadata Health',
   description:
-    'Measure your metadata completeness. Get scores, recommendations, and comparisons for Crossref members.',
+    'A diagnostic benchmark of Crossref metadata health, with actionable recommendations for improvement.',
   openGraph: {
-    title: 'Nexus Score - Crossref Metadata Coverage',
-    description: 'Measure your metadata completeness across 5 dimensions.',
+    title: 'Nexus-Index - Crossref Metadata Health',
+    description: 'Explore Crossref metadata health across five diagnostic dimensions.',
     type: 'website',
   },
 };
@@ -55,8 +55,8 @@ export default function RootLayout({
                   <path d="M12 12V8"/>
                 </svg>
               </div>
-              <span className="hidden text-xl font-semibold text-gray-900 sm:inline">Nexus Score</span>
-              <span className="text-base font-semibold text-gray-900 sm:hidden">Nexus Score</span>
+              <span className="hidden text-xl font-semibold text-gray-900 sm:inline">Nexus-Index</span>
+              <span className="text-base font-semibold text-gray-900 sm:hidden">Nexus-Index</span>
             </Link>
             <nav className="flex flex-wrap items-center gap-2.5 sm:gap-6">
               <Link
@@ -68,7 +68,7 @@ export default function RootLayout({
                   <path d="M12 20V4"/>
                   <path d="M6 20v-6"/>
                 </svg>
-                <span className="hidden sm:inline">Leaderboard</span>
+                <span className="hidden sm:inline">Benchmark</span>
               </Link>
               <Link
                 href="/leaderboard/current"
@@ -176,7 +176,7 @@ export default function RootLayout({
                 </Link>
               </div>
               <p className="text-center text-sm text-gray-500">
-                Research Nexus Score uses data from the{' '}
+                Nexus-Index uses data from the{' '}
                 <a
                   href="https://api.crossref.org"
                   target="_blank"
@@ -188,7 +188,7 @@ export default function RootLayout({
                 . Not affiliated with Crossref.
               </p>
               <p className="text-center text-xs text-gray-400">
-                If you use or mention Research Nexus Score, please{' '}
+                If you use or mention Nexus-Index, please{' '}
                 <a
                   href="https://github.com/aadivar/nexus-score#citation"
                   target="_blank"

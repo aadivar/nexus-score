@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - Nexus Score',
-  description: 'Privacy Policy for Nexus Score.',
+  title: 'Privacy Policy - Nexus-Index',
+  description: 'Privacy Policy for Nexus-Index.',
 };
 
 export default function PrivacyPage() {
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">The Short Version</h2>
             <p className="mt-3">
-              Research Nexus Score:
+              Nexus-Index:
             </p>
             <ul className="mt-3 list-inside list-disc space-y-2">
               <li><strong>Uses Vercel Analytics</strong> - Privacy-friendly, first-party analytics to understand site usage</li>
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
               >
                 Vercel Analytics
               </a>
-              {' '}to understand how visitors use Research Nexus Score. This helps us improve the site. Vercel Analytics is privacy-friendly and first-party — it does not use cookies or track visitors across sites. It may collect:
+              {' '}to understand how visitors use Nexus-Index. This helps us improve the site. Vercel Analytics is privacy-friendly and first-party — it does not use cookies or track visitors across sites. It may collect:
             </p>
             <ul className="mt-3 list-inside list-disc space-y-1">
               <li>Pages visited and time spent</li>
@@ -99,7 +99,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">Third-Party Services</h2>
             <p className="mt-3">
-              Research Nexus Score uses the following third-party services:
+              Nexus-Index uses the following third-party services:
             </p>
             <ul className="mt-3 space-y-3">
               <li>
@@ -141,7 +141,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900">Open Source</h2>
             <p className="mt-3">
-              Research Nexus Score is fully open source. You can inspect our code on{' '}
+              Nexus-Index is fully open source. You can inspect our code on{' '}
               <a
                 href="https://github.com/aadivar/nexus-score"
                 target="_blank"

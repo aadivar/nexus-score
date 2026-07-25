@@ -55,7 +55,7 @@ export function RecommendationsList({
     <div className={cn('rounded-xl border bg-white p-6 shadow-sm', className)}>
       <h3 className="text-lg font-semibold text-gray-900">Improvement Recommendations</h3>
       <p className="mt-1 text-sm text-gray-500">
-        Actionable steps to improve your Nexus Score
+        Actionable steps to improve observed metadata coverage
       </p>
 
       <div className="mt-6 space-y-4">

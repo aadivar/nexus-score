@@ -262,7 +262,7 @@ export default function InstitutionAnalysisPage() {
               <ul className="mt-1 list-disc list-inside space-y-0.5 text-gray-700">
                 <li>Gap counts are <strong>observed from each Crossref work record</strong>, not projected from publisher-wide averages.</li>
                 <li>If OpenAlex identifies a paper as institutional output but the Crossref deposit has no institutional ROR, that&apos;s counted as a gap — the affiliation exists, the publisher just didn&apos;t deposit it.</li>
-                <li>Only journal articles are inspected — no proceedings, book chapters, or peer reviews — to avoid the content-type dilution that inflates aggregate-style scores.</li>
+                <li>Only journal articles are inspected—no proceedings, book chapters, or peer reviews—to avoid mixing content types with different metadata expectations.</li>
                 <li>Publishers with fewer than 10 articles from this institution are shown but not measured (sample too small).</li>
                 <li>Every probed DOI is classified by evidence from its Crossref record — in Crossref as a journal article, in Crossref under another content type, or absent from Crossref entirely — and reported in &quot;Why N articles weren&apos;t measured&quot;. There is no hand-maintained publisher map; grouping uses the Crossref member on each record.</li>
                 <li>A single extra OpenAlex count call fetches the institution&apos;s full-year journal-article output; the cost calculator uses that number to extrapolate the observed 90-day gap to an annual rate at your chosen hourly rates.</li>
@@ -689,4 +689,3 @@ function StatCard({
     </div>
   );
 }
-

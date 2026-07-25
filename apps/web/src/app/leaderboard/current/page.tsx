@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { CurrentLeaderboardTable } from '@/components/current-leaderboard-table';
 
 export const metadata: Metadata = {
-  title: 'Current Era Leaderboard - Nexus Score',
+  title: 'Current Era Benchmark - Nexus-Index',
   description:
-    'See which publishers have the best metadata coverage on recent publications. Ranked by current content quality, not weighed down by historical backfiles.',
+    'Compare observed Crossref metadata coverage on recent publications without historical backfile effects.',
 };
 
 export const revalidate = 3600;
@@ -16,7 +16,6 @@ interface ContentTypeEntry {
   type: string;
   label: string;
   score: number;
-  grade: string;
 }
 
 interface CurrentLeaderboardEntry {
@@ -25,11 +24,9 @@ interface CurrentLeaderboardEntry {
   name: string;
   location?: string;
   score: number;
-  grade: string;
   totalWorks: number;
   currentWorks?: number;
   overallScore: number;
-  overallGrade: string;
   improvement: number | null;
   dimensions: {
     provenance: number;
@@ -76,14 +73,14 @@ export default function CurrentLeaderboardPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900">
-              Current Era Leaderboard
+              Current Era Metadata Benchmark
             </h1>
             <div className="mt-8 rounded-lg border border-yellow-200 bg-yellow-50 p-6">
               <p className="text-lg font-medium text-yellow-800">
-                Current-era leaderboard data not yet generated
+                Current-era benchmark data not yet generated
               </p>
               <p className="mt-2 text-yellow-700">
-                Run the leaderboard generator to produce this data:
+                Run the benchmark generator to produce this data:
               </p>
               <code className="mt-4 block rounded bg-yellow-100 p-3 font-mono text-sm text-yellow-900">
                 pnpm --filter web generate-leaderboard
@@ -97,7 +94,7 @@ export default function CurrentLeaderboardPage() {
 
   const { leaderboard, generatedAt, totalMembers, totalActive, availableContentTypes } = data;
 
-  // Score distribution across diagnostic bands (mirrors core thresholds)
+  // Index distribution across diagnostic bands (mirrors core thresholds)
   const scoreBands = [
     { label: '80–100', color: 'bg-green-100 text-green-800', min: 80, max: 101 },
     { label: '65–79', color: 'bg-blue-100 text-blue-800', min: 65, max: 80 },
@@ -113,7 +110,7 @@ export default function CurrentLeaderboardPage() {
     ? Math.round(leaderboard.reduce((sum, e) => sum + e.score, 0) / leaderboard.length)
     : 0;
 
-  // Publishers whose recent metadata outscores their overall record
+  // Publishers whose recent-work index is above their overall index
   const upgrades = leaderboard.filter((e) => e.score > e.overallScore).length;
 
   return (
@@ -129,10 +126,10 @@ export default function CurrentLeaderboardPage() {
             Current Era
           </div>
           <h1 className="mt-3 text-3xl font-bold text-gray-900">
-            Who&apos;s Getting It Right <em>Now</em>?
+            Current-era Metadata Health
           </h1>
           <p className="mt-2 text-gray-600">
-            Publishers ranked by metadata quality on recent publications — no backfile drag
+            Compare metadata visible in Crossref for publications from the last two years
           </p>
           <p className="mt-1 text-sm text-gray-500">
             <span className="font-semibold text-emerald-600">{totalActive.toLocaleString()}</span> active publishers
@@ -148,8 +145,9 @@ export default function CurrentLeaderboardPage() {
             <line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
           <p>
-            Default scores aggregate across all content types. Publishers registering non-article content (reviews, components, corrections) may show lower aggregate scores.{' '}
-            <span className="text-gray-500">Use the Content Type filter below to rank publishers by specific types like Journal Articles, Proceedings, or Books.</span>
+            Default index values aggregate across all content types. Non-article records can
+            follow different metadata patterns.{' '}
+            <span className="text-gray-500">Use the Content Type filter to compare like with like.</span>
           </p>
         </div>
 
@@ -184,13 +182,13 @@ export default function CurrentLeaderboardPage() {
               />
             </svg>
             <div className="text-sm text-emerald-800">
-              <p className="font-medium">How is this different from the overall leaderboard?</p>
+              <p className="font-medium">How is this different from the overall benchmark?</p>
               <p className="mt-1">
-                The <a href="/leaderboard" className="font-medium underline hover:text-emerald-900">overall leaderboard</a> averages
-                current and backfile metadata — meaning publishers with large historical catalogs
-                (some dating back centuries) get dragged down by old content they can&apos;t retroactively fix.
-                This view ranks purely on <strong>current-era content</strong> (last 2 years),
-                showing who&apos;s doing the best work <em>right now</em>.
+                The <a href="/leaderboard" className="font-medium underline hover:text-emerald-900">overall benchmark</a> averages
+                current and backfile metadata. Large historical catalogs often include
+                records created before modern identifier standards. This view focuses on{' '}
+                <strong>current-era content</strong> (last two years) to reflect current
+                deposit workflows.
               </p>
             </div>
           </div>
@@ -205,21 +203,21 @@ export default function CurrentLeaderboardPage() {
             </p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Average Score</p>
+            <p className="text-sm text-gray-500">Average Index</p>
             <p className="text-2xl font-bold text-gray-900">{avgScore}</p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Top Score</p>
+            <p className="text-sm text-gray-500">Highest Index</p>
             <p className="text-2xl font-bold text-emerald-600">
               {leaderboard[0]?.score || 0}
             </p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Scoring Higher Now</p>
+            <p className="text-sm text-gray-500">Higher on Recent Works</p>
             <p className="text-2xl font-bold text-emerald-600">
               {upgrades.toLocaleString()}
             </p>
-            <p className="text-xs text-gray-400">current score above overall</p>
+            <p className="text-xs text-gray-400">current index above overall</p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
             <p className="text-sm text-gray-500">Last Updated</p>
@@ -233,9 +231,9 @@ export default function CurrentLeaderboardPage() {
           </div>
         </div>
 
-        {/* Score Distribution */}
+        {/* Index Distribution */}
         <div className="mt-6 rounded-lg border bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-medium text-gray-700">Score Distribution (Current Era)</p>
+          <p className="mb-3 text-sm font-medium text-gray-700">Index Distribution (Current Era)</p>
           <div className="flex flex-wrap items-center gap-4">
             {scoreBands.map((band) => (
               <div key={band.label} className="flex items-center gap-2">

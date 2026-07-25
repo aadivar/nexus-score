@@ -4,8 +4,8 @@ import { join } from 'path';
 import { LeaderboardTable } from '@/components/leaderboard-table';
 
 export const metadata: Metadata = {
-  title: 'Leaderboard - Nexus Score',
-  description: 'See which publishers have the best metadata coverage scores.',
+  title: 'Metadata Health Benchmark - Nexus-Index',
+  description: 'Compare observed Crossref metadata health across publishers and content types.',
 };
 
 // Revalidate every hour (but data comes from static file)
@@ -15,7 +15,6 @@ interface ContentTypeEntry {
   type: string;
   label: string;
   score: number;
-  grade: string;
 }
 
 interface LeaderboardEntry {
@@ -24,7 +23,6 @@ interface LeaderboardEntry {
   name: string;
   location?: string;
   score: number;
-  grade: string;
   totalWorks: number;
   currentScore?: number;
   backfileScore?: number | null;
@@ -86,20 +84,20 @@ export default function LeaderboardPage() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-gray-900">
-              Nexus Score Leaderboard
+              Metadata Health Benchmark
             </h1>
             <div className="mt-8 rounded-lg border border-yellow-200 bg-yellow-50 p-6">
               <p className="text-lg font-medium text-yellow-800">
-                Leaderboard data not yet generated
+                Benchmark data not yet generated
               </p>
               <p className="mt-2 text-yellow-700">
-                Run the following command to generate leaderboard data:
+                Run the following command to generate benchmark data:
               </p>
               <code className="mt-4 block rounded bg-yellow-100 p-3 font-mono text-sm text-yellow-900">
                 pnpm --filter web generate-leaderboard
               </code>
               <p className="mt-4 text-sm text-yellow-600">
-                This will fetch all ~14,000 Crossref members and calculate their scores.
+                This will fetch Crossref members and calculate their index values.
               </p>
             </div>
           </div>
@@ -119,7 +117,7 @@ export default function LeaderboardPage() {
       entry.backfileScore > 0
   ).length;
 
-  // Score distribution across diagnostic bands (mirrors core thresholds)
+  // Index distribution across diagnostic bands (mirrors core thresholds)
   const scoreBands = [
     { label: '80–100', color: 'bg-green-100 text-green-800', min: 80, max: 101 },
     { label: '65–79', color: 'bg-blue-100 text-blue-800', min: 65, max: 80 },
@@ -137,13 +135,13 @@ export default function LeaderboardPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900">
-            Nexus Score Leaderboard
+            Metadata Health Benchmark
           </h1>
           <p className="mt-2 text-gray-600">
-            All publishers ranked by metadata coverage score
+            Compare the metadata currently visible in Crossref—not publisher or research quality
           </p>
           <p className="mt-1 text-sm text-gray-500">
-            Ranking <span className="font-semibold text-blue-600">{totalWithWorks.toLocaleString()}</span> publishers out of{' '}
+            Comparing <span className="font-semibold text-blue-600">{totalWithWorks.toLocaleString()}</span> members with registered works out of{' '}
             <span className="font-semibold text-blue-600">{totalMembers.toLocaleString()}</span> Crossref members
           </p>
         </div>
@@ -156,8 +154,9 @@ export default function LeaderboardPage() {
             <line x1="12" y1="8" x2="12.01" y2="8"/>
           </svg>
           <p>
-            Default scores aggregate across all content types. Publishers registering non-article content (reviews, components, corrections) may show lower aggregate scores.{' '}
-            <span className="text-gray-500">Use the Content Type filter below to rank publishers by specific types like Journal Articles, Proceedings, or Books.</span>
+            Default index values aggregate across all content types. Reviews, components,
+            corrections, and other non-article records can follow different metadata patterns.{' '}
+            <span className="text-gray-500">Use the Content Type filter to compare like with like.</span>
           </p>
         </div>
 
@@ -176,15 +175,14 @@ export default function LeaderboardPage() {
             <div className="text-sm text-emerald-800">
               <p className="font-medium">Looking for who&apos;s doing well <em>right now</em>?</p>
               <p className="mt-1">
-                This leaderboard averages current and backfile metadata. Publishers with large
-                historical catalogs — some dating back centuries — get dragged down by old content
-                they can&apos;t retroactively fix. For a fairer view of today&apos;s metadata
-                practices, see the{' '}
+                This benchmark averages current and backfile metadata. Large historical catalogs
+                can contain records created before today&apos;s identifier standards. To focus on
+                current deposit practices, see the{' '}
                 <a
                   href="/leaderboard/current"
                   className="inline-flex items-center gap-1 font-semibold text-emerald-700 underline hover:text-emerald-900"
                 >
-                  Current Era Leaderboard
+                  Current Era Benchmark
                   <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -211,21 +209,21 @@ export default function LeaderboardPage() {
               />
             </svg>
             <div className="text-sm text-amber-800">
-              <p className="font-medium">Limitations of this leaderboard</p>
+              <p className="font-medium">How to interpret this benchmark</p>
               <ul className="mt-1 list-inside list-disc space-y-1">
                 <li>
-                  <strong>Backfile drag:</strong> Publishers with large historical catalogs score lower because
+                  <strong>Historical context:</strong> Large backfiles can have lower index values because
                   old content (pre-ORCID, pre-ROR era) lacks modern metadata that didn&apos;t exist at the time.
                 </li>
                 <li>
                   <strong>Not all members are publishers:</strong> Digital archives (JSTOR), intergovernmental
                   organizations (UN, OECD), and data repositories register DOIs for different purposes. Their
-                  low scores reflect a different mission, not negligence.
+                  lower values can reflect a different mission or content model, not negligence.
                 </li>
                 <li>
                   <strong>Scale isn&apos;t accounted for:</strong> Achieving 100% metadata coverage on 172
                   articles is a different challenge than on 24 million. Small publishers have a structural
-                  advantage in this ranking.
+                  advantage in direct comparisons.
                 </li>
               </ul>
             </div>
@@ -254,9 +252,9 @@ export default function LeaderboardPage() {
               </p>
               <p className="mt-1">
                 Crossref members with <strong>zero registered DOIs</strong> are excluded from the
-                rankings. These are typically organizations that have registered as members but
+                comparisons. These are typically organizations that have registered as members but
                 haven&apos;t yet deposited any metadata, or legacy accounts that are no longer
-                active. Only members with at least one DOI are scored and ranked.
+                active. Only members with at least one DOI receive an index value.
               </p>
             </div>
           </div>
@@ -265,13 +263,13 @@ export default function LeaderboardPage() {
         {/* Stats */}
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Publishers Ranked</p>
+            <p className="text-sm text-gray-500">Members Compared</p>
             <p className="text-2xl font-bold text-gray-900">
               {totalWithWorks.toLocaleString()}
             </p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Average Score</p>
+            <p className="text-sm text-gray-500">Average Index</p>
             <p className="text-2xl font-bold text-gray-900">
               {leaderboard.length > 0
                 ? Math.round(
@@ -282,7 +280,7 @@ export default function LeaderboardPage() {
             </p>
           </div>
           <div className="rounded-lg border bg-white p-4 text-center shadow-sm">
-            <p className="text-sm text-gray-500">Top Score</p>
+            <p className="text-sm text-gray-500">Highest Index</p>
             <p className="text-2xl font-bold text-green-600">
               {leaderboard[0]?.score || 0}
             </p>
@@ -301,9 +299,9 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {/* Score Distribution */}
+        {/* Index Distribution */}
         <div className="mt-6 rounded-lg border bg-white p-4 shadow-sm">
-          <p className="mb-3 text-sm font-medium text-gray-700">Score Distribution</p>
+          <p className="mb-3 text-sm font-medium text-gray-700">Index Distribution</p>
           <div className="flex flex-wrap items-center gap-4">
             {scoreBands.map((band) => (
               <div key={band.label} className="flex items-center gap-2">

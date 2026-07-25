@@ -2,8 +2,8 @@ import { Metadata } from 'next';
 import { DIMENSION_WEIGHTS, METRICS_BY_DIMENSION } from '@nexus-score/core';
 
 export const metadata: Metadata = {
-  title: 'Methodology - Nexus Score',
-  description: 'Learn how Nexus Score calculates metadata coverage scores based on Crossref data.',
+  title: 'Methodology - Nexus-Index',
+  description: 'Learn how Nexus-Index diagnoses Crossref metadata health.',
 };
 
 export default function AboutPage() {
@@ -45,18 +45,18 @@ export default function AboutPage() {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900">Methodology</h1>
         <p className="mt-4 text-lg text-gray-600">
-          Research Nexus Score measures how well metadata contributes to Crossref&apos;s Research
-          Nexus vision - connecting research outputs, people, organizations, and funders
-          into a comprehensive scholarly graph.
+          Nexus-Index is an independent, diagnostic benchmark of metadata
+          deposited with Crossref. It examines how well records connect research outputs,
+          people, organizations, funders, and access information.
         </p>
 
-        {/* Total Score */}
+        {/* Index overview */}
         <section className="mt-12">
-          <h2 className="text-2xl font-semibold text-gray-900">Scoring Overview</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Index Overview</h2>
           <p className="mt-4 text-gray-600">
-            The total score is calculated out of <strong>100 points</strong>, divided
-            across five dimensions. Each dimension targets a specific aspect of the
-            Research Nexus vision.
+            The index value is calculated on a <strong>0–100 scale</strong> across five
+            dimensions. It describes observed Crossref metadata coverage, not publisher,
+            journal, or research quality.
           </p>
         </section>
 
@@ -89,22 +89,21 @@ export default function AboutPage() {
           </div>
         </section>
 
-        {/* Reading the Score */}
+        {/* Reading the Index */}
         <section className="mt-12">
-          <h2 className="text-2xl font-semibold text-gray-900">Reading the Score</h2>
+          <h2 className="text-2xl font-semibold text-gray-900">Reading the Index</h2>
           <p className="mt-4 text-gray-600">
-            The score is a diagnostic, not a grade. It answers one question: how
-            much of this publisher&apos;s metadata is complete enough for research to
-            be found, connected, and reused? These bands describe what a score
-            typically means in practice — every point below 100 maps to a
-            specific, fixable metadata field.
+            The index value is a diagnostic signal, not a grade. It asks how much of the
+            metadata visible in Crossref supports discovery, connection, and reuse. The
+            bands below describe metadata coverage—not institutional performance. Missing
+            fields may also reflect discipline, content type, or workflow context.
           </p>
           <div className="mt-6 overflow-x-auto rounded-lg border bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                    Score Range
+                    Index Range
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                     What It Typically Means
@@ -139,7 +138,7 @@ export default function AboutPage() {
                 <tr>
                   <td className="whitespace-nowrap px-6 py-4 font-bold text-red-600">0–34</td>
                   <td className="px-6 py-4 text-gray-600">
-                    Most metadata is missing from deposits — the biggest opportunities live here
+                    Limited observed coverage across most measured fields — review the dimension profile for context
                   </td>
                 </tr>
               </tbody>
@@ -151,7 +150,7 @@ export default function AboutPage() {
         <section className="mt-12">
           <h2 className="text-2xl font-semibold text-gray-900">Data Source</h2>
           <p className="mt-4 text-gray-600">
-            Research Nexus Score uses pre-computed coverage statistics from the{' '}
+            Nexus-Index uses pre-computed coverage statistics from the{' '}
             <a
               href="https://api.crossref.org/swagger-ui/index.html#/Members"
               target="_blank"
@@ -174,7 +173,7 @@ export default function AboutPage() {
         <section className="mt-12 rounded-lg bg-gray-100 p-6">
           <h2 className="text-xl font-semibold text-gray-900">Open Source</h2>
           <p className="mt-2 text-gray-600">
-            Nexus Score is open source. View the code, report issues, or contribute on{' '}
+            Nexus-Index is open source. View the code, report issues, or contribute on{' '}
             <a
               href="https://github.com/aadivar/nexus-score"
               target="_blank"

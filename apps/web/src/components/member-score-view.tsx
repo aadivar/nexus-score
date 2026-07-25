@@ -79,13 +79,6 @@ export function MemberScoreView({
       ? contentTypeScores.find((ct) => ct.type === contentTypeFilter) ?? null
       : null;
 
-  // A type can legitimately score 0 everywhere: works exist but no scoreable
-  // metadata was deposited for them. Flag it so the zeros read as a data gap.
-  const selectedHasNoMetadata =
-    selected !== null &&
-    selected.score === 0 &&
-    Object.values(selected.dimensions).every((v) => v === 0);
-
   // Per-type trend: current vs backfile era scores, same thresholds as the
   // aggregate trend in packages/core scoring/calculator.ts
   const selectedTrend =
@@ -129,7 +122,7 @@ export function MemberScoreView({
               htmlFor="member-content-type"
               className="text-sm font-medium text-gray-600"
             >
-              View score for:
+              View index for:
             </label>
             <select
               id="member-content-type"
@@ -159,7 +152,7 @@ export function MemberScoreView({
         score={selected ? selected.score : total}
         trend={selectedTrend ? selectedTrend.direction : trend.direction}
         change={selectedTrend ? selectedTrend.change : trend.change}
-        label={selected ? `Nexus Score — ${selected.label} (all years)` : 'Nexus Score'}
+        label={selected ? `Index — ${selected.label} (all years)` : 'Nexus-Index'}
         hideTrend={selected !== null && selectedTrend === null}
       />
 
@@ -184,8 +177,8 @@ export function MemberScoreView({
               ? `${formatNumber(selected.works)} ${selected.label.toLowerCase()} are registered with Crossref, but none of them carry any of the 11 scoreable metadata fields (ORCID iDs, licenses, references, etc.).`
               : `Works of this type are registered with Crossref, but none of them carry any of the 11 scoreable metadata fields (ORCID iDs, licenses, references, etc.).`}{' '}
             This is real signal, not missing data — these works dilute the
-            aggregate score above, and depositing metadata for them is the
-            fastest way to improve it.
+            aggregate index value above. Depositing metadata for them would
+            improve the observed coverage.
           </span>
         </div>
       )}
@@ -194,7 +187,7 @@ export function MemberScoreView({
       {selected ? (
         <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500 mb-4">
-            {selected.label} — Score Breakdown by Era
+            {selected.label} — Index by Era
           </h3>
           <div className="grid grid-cols-2 gap-4">
             {/* Current Era */}
@@ -283,7 +276,7 @@ export function MemberScoreView({
                 </svg>
               )}
               <span>
-                Recent {selected.label.toLowerCase()} score{' '}
+                The recent {selected.label.toLowerCase()} index is{' '}
                 <strong>
                   {Math.abs(selectedTrend.change)} points{' '}
                   {selectedTrend.direction === 'up' ? 'higher' : 'lower'}
@@ -294,14 +287,14 @@ export function MemberScoreView({
           )}
 
           <p className="mt-3 text-xs text-gray-400">
-            The current-era leaderboard ranks publishers by the current score
-            shown here; the overall leaderboard uses the all-years score.
+            The current-era benchmark compares the current index value shown
+            here; the overall benchmark uses the all-years value.
           </p>
         </div>
       ) : (
         <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
           <h3 className="text-sm font-medium text-gray-500 mb-4">
-            Score Breakdown by Era
+            Index by Era
           </h3>
           <div className="grid grid-cols-2 gap-4">
             {/* Current Era */}
@@ -317,7 +310,7 @@ export function MemberScoreView({
                   <Link
                     href="/leaderboard/current"
                     className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 hover:bg-blue-200 transition-colors"
-                    title={`Rank #${eraRanking.currentRank.toLocaleString()} of ${eraRanking.currentTotal.toLocaleString()} active publishers`}
+                    title={`Benchmark position #${eraRanking.currentRank.toLocaleString()} of ${eraRanking.currentTotal.toLocaleString()} active publishers`}
                   >
                     #{eraRanking.currentRank.toLocaleString()}
                   </Link>
@@ -346,7 +339,7 @@ export function MemberScoreView({
                   <Link
                     href="/leaderboard"
                     className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-semibold text-gray-600 hover:bg-gray-300 transition-colors"
-                    title={`Overall rank #${eraRanking.overallRank.toLocaleString()} of ${eraRanking.overallTotal.toLocaleString()} publishers`}
+                    title={`Overall benchmark position #${eraRanking.overallRank.toLocaleString()} of ${eraRanking.overallTotal.toLocaleString()} publishers`}
                   >
                     #{eraRanking.overallRank.toLocaleString()}
                   </Link>
@@ -401,14 +394,14 @@ export function MemberScoreView({
                   </svg>
                 )}
                 <span>
-                  Ranked{' '}
+                  Benchmark position{' '}
                   <strong>#{eraRanking.currentRank.toLocaleString()}</strong>{' '}
                   for recent publications vs{' '}
                   <strong>#{eraRanking.overallRank.toLocaleString()}</strong>{' '}
                   overall
                   {eraRanking.currentRank < eraRanking.overallRank
-                    ? ' — improving with recent work'
-                    : ' — recent work trailing historical performance'}
+                    ? ' — higher for recent work'
+                    : ' — lower for recent work'}
                 </span>
               </div>
             )}
@@ -454,7 +447,7 @@ export function MemberScoreView({
                   </svg>
                 )}
                 <span>
-                  Recent publications score{' '}
+                  The recent-publication index is{' '}
                   <strong>
                     {Math.abs(trend.change)} points{' '}
                     {trend.direction === 'up' ? 'higher' : 'lower'}

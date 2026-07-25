@@ -2,7 +2,7 @@ import { MemberSearch } from '@/components/member-search';
 import { PilotBanner } from '@/components/pilot-banner';
 import Link from 'next/link';
 
-// The 5 scoring dimensions (weights defined in @nexus-score/core scoring/weights.ts)
+// The five index dimensions (weights defined in @nexus-score/core scoring/weights.ts)
 const dimensionTable = [
   {
     name: 'Provenance',
@@ -66,7 +66,8 @@ export default function HomePage() {
             completeness
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg text-blue-100">
-            Nexus Score evaluates how well publishers deposit their metadata into{' '}
+            Nexus-Index is a diagnostic benchmark of the metadata publishers
+            deposit into{' '}
             <a
               href="https://www.crossref.org/"
               target="_blank"
@@ -75,8 +76,8 @@ export default function HomePage() {
             >
               Crossref
             </a>{' '}
-            — and how well those deposits contribute to connecting research across 5
-            dimensions.
+            . It shows what is visible, what is missing, and what can be improved across
+            five dimensions.
           </p>
           <div className="mt-10">
             <MemberSearch
@@ -165,23 +166,19 @@ export default function HomePage() {
           </div>
 
           <div className="mx-auto mt-12 max-w-3xl rounded-lg border bg-gray-100 p-6">
-            <h3 className="font-semibold text-gray-900">How Scores Are Calculated</h3>
+            <h3 className="font-semibold text-gray-900">How the Index Is Calculated</h3>
             <div className="mt-3 space-y-2 text-sm text-gray-700">
               <p>
                 <strong>1. Coverage Data:</strong> We use Crossref&apos;s pre-computed
                 coverage percentages for each metadata field (current and backfile).
               </p>
               <p>
-                <strong>2. Dimension Score:</strong> Each dimension&apos;s percentage is
+                <strong>2. Dimension value:</strong> Each dimension&apos;s percentage is
                 the average of its current and backfile coverage values.
               </p>
               <p>
-                <strong>3. Weighted Total:</strong> Final score = (Provenance × 25% +
-                People × 20% + Organizations × 15% + Funding × 20% + Access × 20%)
-              </p>
-              <p>
-                <strong>4. Grading:</strong> A (80-100), B (60-79), C (40-59), D (20-39),
-                F (0-19)
+                <strong>3. Index value:</strong> Provenance × 25% +
+                People × 20% + Organizations × 15% + Funding × 20% + Access × 20%
               </p>
             </div>
           </div>
@@ -197,18 +194,19 @@ export default function HomePage() {
             </h2>
             <div className="mt-5 space-y-4 text-gray-600">
               <p>
-                Nexus Score measures the machine interpretability of scholarly records.
+                Nexus-Index measures the machine interpretability of scholarly
+                metadata records.
               </p>
               <p>
                 The current implementation begins with metadata deposited in Crossref
                 because Crossref is open, publisher-contributed infrastructure and one of
-                the most important public sources of scholarly metadata. But Nexus Score
+                the most important public sources of scholarly metadata. But the Index
                 is not limited to Crossref, nor is it a replacement for Crossref&apos;s own
                 participation reports, metadata health checks, or community
                 infrastructure work.
               </p>
               <p>
-                The broader purpose of Nexus Score is to evaluate how well a scholarly
+                The broader purpose of the Index is to examine how well a scholarly
                 object can be discovered, connected, attributed, verified, and reused
                 across the research information ecosystem.
               </p>
@@ -225,7 +223,7 @@ export default function HomePage() {
 
           <div className="my-8 rounded-lg border border-blue-100 bg-blue-50 p-6 text-center">
             <p className="text-sm font-medium uppercase tracking-wide text-blue-700">
-              Nexus Score asks a larger question
+              The Index asks a larger question
             </p>
             <p className="mt-3 text-xl font-semibold leading-relaxed text-gray-900">
               How interpretable is this scholarly record to humans, systems, and AI
@@ -235,36 +233,36 @@ export default function HomePage() {
 
           <div className="space-y-4 text-gray-600">
             <p>
-              A high score does not measure research quality, journal prestige,
+              A high index value does not measure research quality, journal prestige,
               publisher reputation, or scholarly impact. It measures whether the record
               contains enough structured, connected, and trustworthy metadata to support
               discovery, attribution, accountability, and AI-mediated research
               workflows.
             </p>
             <p className="font-medium text-gray-900">
-              Nexus Score is an AI-readiness and interoperability signal for the
+              Nexus-Index is an AI-readiness and interoperability signal for the
               scholarly record.
             </p>
           </div>
         </div>
       </section>
 
-      {/* What Nexus Score Is — and What It Is Not */}
+      {/* What Nexus-Index is — and what it is not */}
       <section className="py-16">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-center text-2xl font-semibold text-gray-900">
-            What Nexus Score Is — and What It Is Not
+            What Nexus-Index Is — and Is Not
           </h2>
           <p className="mx-auto mt-6 max-w-3xl text-center text-gray-600">
-            The number is not the point. Nexus Score is a diagnostic — a way to
+            The number is not the verdict. The Index is a diagnostic — a way to
             find where metadata breaks down between a publisher&apos;s workflow and
-            the open research infrastructure that depends on it. Every score
+            the open research infrastructure that depends on it. Every index value
             exists to answer one question: what specific, fixable gap is keeping
             this research from being found, connected, and reused?
           </p>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
             <div className="rounded-lg border border-green-200 bg-green-50 p-6">
-              <h3 className="font-semibold text-green-800">Nexus Score is</h3>
+              <h3 className="font-semibold text-green-800">The Index is</h3>
               <ul className="mt-4 space-y-3 text-sm text-gray-700">
                 <li className="flex gap-2">
                   <span className="text-green-600">✓</span>
@@ -293,21 +291,21 @@ export default function HomePage() {
                   <span className="text-green-600">✓</span>
                   <span>
                     <strong>A recognition of best open-science practice</strong> —
-                    complete, open metadata is invisible work, and the score makes
+                    complete, open metadata is invisible work, and the Index makes
                     it visible and rewarded
                   </span>
                 </li>
               </ul>
             </div>
             <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-              <h3 className="font-semibold text-red-800">Nexus Score is not</h3>
+              <h3 className="font-semibold text-red-800">The Index is not</h3>
               <ul className="mt-4 space-y-3 text-sm text-gray-700">
                 <li className="flex gap-2">
                   <span className="text-red-600">✗</span>
                   <span>
-                    <strong>A league table</strong> — the leaderboard exists to
-                    make gaps visible and progress trackable, not to crown
-                    winners; two publishers with the same score can have
+                    <strong>A measure of publisher quality</strong> — the benchmark
+                    makes gaps visible and progress trackable; two publishers with the
+                    same index value can have
                     completely different gaps
                   </span>
                 </li>
@@ -328,7 +326,7 @@ export default function HomePage() {
             </div>
           </div>
           <p className="mx-auto mt-8 max-w-2xl text-center text-sm font-medium text-gray-500">
-            Every score is a starting point, not a verdict. Every gap has a fix.
+            Every index value is a starting point, not a verdict. Every gap has a fix.
             The only direction is forward.
           </p>
         </div>
@@ -341,7 +339,7 @@ export default function HomePage() {
             In the Conversation
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
-            Nexus Score is part of an ongoing community discussion about metadata
+            Nexus-Index is part of an ongoing community discussion about metadata
             quality and open research infrastructure.
           </p>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -408,7 +406,7 @@ export default function HomePage() {
             Aligned with the Open Research Information Movement
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-gray-600">
-            Nexus Score supports the open research information movement by making
+            Nexus-Index supports the open research information movement by making
             metadata coverage visible, measurable, and improvable. Better metadata means
             better connections across the scholarly ecosystem.
           </p>
@@ -444,7 +442,7 @@ export default function HomePage() {
               href="/leaderboard"
               className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50"
             >
-              View Leaderboard
+              Explore the Benchmark
             </Link>
           </div>
         </div>
@@ -463,7 +461,7 @@ export default function HomePage() {
             >
               Crossref REST API
             </a>
-            . Nexus Score analyzes metadata coverage for{' '}
+            . Nexus-Index analyzes observed metadata coverage for{' '}
             <strong>27,000+ publishers</strong> registered with Crossref.
           </p>
         </div>

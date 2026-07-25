@@ -2,9 +2,9 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Current Era Insights - Nexus Score',
+  title: 'Current Era Insights - Nexus-Index',
   description:
-    'Key findings from the current-era leaderboard. How publishers are improving their metadata practices on recent content.',
+    'Contextual findings from the current-era Crossref metadata health benchmark.',
 };
 
 export default function CurrentEraInsightsPage() {
@@ -20,10 +20,10 @@ export default function CurrentEraInsightsPage() {
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
             </svg>
-            Back to Current Era Leaderboard
+            Back to Current Era Benchmark
           </Link>
           <h1 className="mt-3 text-3xl font-bold text-gray-900">
-            Leaderboard Insights
+            Benchmark Insights
           </h1>
           <p className="mt-2 text-gray-600">
             Three lenses on the same data — each tells a different story
@@ -85,16 +85,16 @@ export default function CurrentEraInsightsPage() {
           <div className="rounded-lg border-l-4 border-blue-400 bg-blue-50 p-4 not-prose mb-6">
             <p className="text-sm text-blue-800">
               <strong>What this shows:</strong> How the picture changes when you strip away historical backfiles
-              and judge publishers only on content from the last 2 years.
+              and focus on deposits from the last two years.
             </p>
           </div>
 
           <p>
-            The <Link href="/leaderboard" className="font-medium underline">overall leaderboard</Link> averages
-            current and backfile metadata. Publishers with large historical catalogs get dragged down by old
-            content they can&apos;t retroactively fix. The{' '}
-            <Link href="/leaderboard/current" className="font-medium underline">current era leaderboard</Link> ranks
-            purely on recent content, showing who&apos;s doing the best work <em>right now</em>.
+            The <Link href="/leaderboard" className="font-medium underline">overall benchmark</Link> averages
+            current and backfile metadata. Large historical catalogs often include records created before
+            modern identifier standards. The{' '}
+            <Link href="/leaderboard/current" className="font-medium underline">current-era benchmark</Link> focuses
+            on recent deposits and offers a clearer view of current metadata workflows.
           </p>
 
           <div className="not-prose my-6 overflow-hidden rounded-lg border">
@@ -109,25 +109,25 @@ export default function CurrentEraInsightsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 <tr>
-                  <td className="px-4 py-3">Average score</td>
+                  <td className="px-4 py-3">Average index</td>
                   <td className="px-4 py-3 text-center">19</td>
                   <td className="px-4 py-3 text-center font-semibold text-blue-700">23</td>
                   <td className="px-4 py-3 text-center text-emerald-600">+4</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3">Publishers scoring 80+</td>
+                  <td className="px-4 py-3">Members with index 80+</td>
                   <td className="px-4 py-3 text-center">2</td>
                   <td className="px-4 py-3 text-center font-semibold text-blue-700">11</td>
                   <td className="px-4 py-3 text-center text-emerald-600">+9</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3">Publishers scoring 65–79</td>
+                  <td className="px-4 py-3">Members with index 65–79</td>
                   <td className="px-4 py-3 text-center">41</td>
                   <td className="px-4 py-3 text-center font-semibold text-blue-700">251</td>
                   <td className="px-4 py-3 text-center text-emerald-600">+210</td>
                 </tr>
                 <tr>
-                  <td className="px-4 py-3">Publishers scoring below 35</td>
+                  <td className="px-4 py-3">Members with index below 35</td>
                   <td className="px-4 py-3 text-center">19,547</td>
                   <td className="px-4 py-3 text-center font-semibold text-blue-700">17,665</td>
                   <td className="px-4 py-3 text-center text-emerald-600">-1,882</td>
@@ -137,13 +137,13 @@ export default function CurrentEraInsightsPage() {
           </div>
 
           <p>
-            <strong>2,844 publishers</strong> (12.4%) score meaningfully higher on current content than overall.
+            <strong>2,844 publishers</strong> (12.4%) have meaningfully higher index values for current content than overall.
             The industry <em>is</em> improving — it&apos;s just buried under decades of legacy metadata.
           </p>
 
           <h3>The Biggest Transformations</h3>
           <p>
-            These large publishers look completely different when judged on recent work:
+            These large publishers have substantially different metadata profiles on recent work:
           </p>
 
           <div className="not-prose my-6 overflow-hidden rounded-lg border">
@@ -185,9 +185,9 @@ export default function CurrentEraInsightsPage() {
           </div>
 
           <p>
-            <strong>APS</strong> is the standout — scoring 58 overall but 81 on current content
+            <strong>APS</strong> moves from an index of 58 overall to 81 on current content
             (#6 among all active publishers). <strong>ASM</strong> jumps from 67 to 86
-            (#3 in current era). Only <strong>135 publishers</strong> (0.6%) actually score
+            (#3 in current era). Only <strong>135 publishers</strong> (0.6%) have a meaningfully lower index
             lower on current content than overall.
           </p>
 
@@ -200,18 +200,18 @@ export default function CurrentEraInsightsPage() {
           </div>
           <div className="rounded-lg border-l-4 border-purple-400 bg-purple-50 p-4 not-prose mb-6">
             <p className="text-sm text-purple-800">
-              <strong>What this shows:</strong> Aggregate scores mix content types with fundamentally different metadata
+              <strong>What this shows:</strong> Aggregate index values mix content types with fundamentally different metadata
               expectations. The{' '}
               <Link href="/leaderboard/current" className="font-medium underline">content-type filter</Link> on
-              both leaderboards lets you rank publishers by specific types — and the rankings shift dramatically.
+              both benchmarks enables like-for-like comparisons—and the picture changes substantially.
             </p>
           </div>
 
-          <h3>The Aggregate Lies</h3>
+          <h3>Why the Aggregate Needs Context</h3>
           <p>
             A publisher registering journal articles, peer reviews, components, and corrections gets one
-            blended score — but peer reviews don&apos;t have abstracts by design, and components rarely carry
-            funding metadata. The aggregate punishes publishers for depositing <em>more</em> content types.
+            blended index value—but peer reviews do not have abstracts by design, and components rarely carry
+            funding metadata. The aggregate can therefore obscure strong coverage on a publisher&apos;s primary content.
           </p>
 
           <div className="not-prose my-6 overflow-hidden rounded-lg border">
@@ -226,9 +226,9 @@ export default function CurrentEraInsightsPage() {
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
                 {[
-                  ['eLife', '31 (F)', '97 (A)', 'Peer Reviews: 13 (F)'],
-                  ['APS', '81 (A)', '81 (A)', 'Proceedings: 7 (F)'],
-                  ['MDPI', '68 (B)', '71 (B)', 'Consistent across types'],
+                  ['eLife', '31', '97', 'Peer Reviews: 13'],
+                  ['APS', '81', '81', 'Proceedings: 7'],
+                  ['MDPI', '68', '71', 'Consistent across types'],
                 ].map(([name, aggregate, ja, diluter]) => (
                   <tr key={name}>
                     <td className="px-4 py-3 font-medium">{name}</td>
@@ -242,26 +242,25 @@ export default function CurrentEraInsightsPage() {
           </div>
 
           <p>
-            <strong>eLife</strong> is the most dramatic example. Their aggregate current score is 31/F —
-            but filter to journal articles and they&apos;re <strong>97/A</strong>, jumping
-            from #2,581 to <strong>#2 in the entire leaderboard</strong>. The aggregate was being
-            destroyed by peer reviews (13/F) — content that by design doesn&apos;t carry abstracts or
+            <strong>eLife</strong> is the most dramatic example. Its aggregate current index is 31,
+            while journal articles have an index of <strong>97</strong>, moving
+            from #2,581 to <strong>#2 in the filtered benchmark</strong>. Peer reviews have an index
+            of 13—content that by design does not carry abstracts or
             funding metadata.
           </p>
 
-          <h3>Rankings Shift Dramatically</h3>
+          <h3>Benchmark Positions Shift Dramatically</h3>
           <p>
             Six of the journal-article top 10 weren&apos;t even in the overall top 2,000. The content-type
-            filter doesn&apos;t just adjust scores — it tells a completely different story about who&apos;s
-            actually doing well.
+            filter does not just adjust index values—it reveals a different metadata profile.
           </p>
 
           <h3>Pipeline Per Type, Not Per Discipline</h3>
           <p>
             The finding is consistent across every publisher analyzed: <strong>metadata quality is driven
             by the deposit pipeline per content type</strong>, not by the discipline of the research.
-            When APS invests in their journal article pipeline, it shows immediately at 81/A. Their
-            proceedings pipeline, untouched, sits at 7/F. Same publisher, same era, two completely
+            APS&apos;s journal-article pipeline has an index of 81, while its proceedings pipeline
+            has an index of 7. Same publisher, same era, two completely
             different investments.
           </p>
 
@@ -274,7 +273,7 @@ export default function CurrentEraInsightsPage() {
           </div>
           <div className="rounded-lg border-l-4 border-amber-400 bg-amber-50 p-4 not-prose mb-6">
             <p className="text-sm text-amber-800">
-              <strong>What this shows:</strong> The five dimensions of the Nexus Score are not equally adopted.
+              <strong>What this shows:</strong> The five dimensions of Nexus-Index are not equally adopted.
               Some are nearly solved, others are essentially empty — even on current content. This is where the gaps are.
             </p>
           </div>
@@ -357,17 +356,17 @@ export default function CurrentEraInsightsPage() {
           </div>
           <div className="rounded-lg border-l-4 border-emerald-400 bg-emerald-50 p-4 not-prose mb-6">
             <p className="text-sm text-emerald-800">
-              <strong>What this shows:</strong> Who is leading on metadata quality — scholarly societies,
-              commercial publishers, or small independents? The answer depends on how you measure.
+              <strong>What this shows:</strong> Metadata coverage patterns differ among scholarly societies,
+              commercial publishers, and small independents. Interpretation depends on scale and context.
             </p>
           </div>
 
-          <h3>Scholarly Societies Are Quietly Leading</h3>
+          <h3>Scholarly Societies Show Strong Current-era Coverage</h3>
           <p>
-            US-based scholarly societies dominate the current-era large publisher rankings.
-            ASM, APS, AAS, PNAS, AGU, and ACS all score B or higher — while the commercial giants
-            (Elsevier, Springer, Wiley) remain D&apos;s. These societies, not the publishing conglomerates,
-            are setting the standard for metadata quality at scale.
+            US-based scholarly societies are prominent among large publishers with high
+            current-era index values. ASM, APS, AAS, PNAS, AGU, and ACS show stronger observed
+            coverage than several large commercial publishers. This comparison describes Crossref
+            deposits, not overall publisher quality.
           </p>
 
           <h3>Commercial Publishers: Improved, But Far From Solved</h3>
@@ -377,7 +376,7 @@ export default function CurrentEraInsightsPage() {
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Publisher</th>
                   <th className="px-4 py-3 text-right font-medium text-gray-700">Current Works</th>
-                  <th className="px-4 py-3 text-center font-medium text-emerald-700">Current Score</th>
+                  <th className="px-4 py-3 text-center font-medium text-emerald-700">Current Index</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
@@ -402,22 +401,22 @@ export default function CurrentEraInsightsPage() {
           </div>
 
           <p>
-            MDPI leads the commercial-scale publishers at 68. <strong>OUP is the worst
-            performer among major publishers even on current content</strong> — still just 29.
+            Among the commercial-scale publishers shown here, index values range from 29 to 68.
+            These differences identify metadata workflow gaps; they are not assessments of publishing quality.
           </p>
 
           <h3>South Korea Still Dominates the Top 50</h3>
           <p>
             <strong>33 of the top 50</strong> current-era publishers are South Korean — nearly identical
-            to the overall leaderboard. The pattern holds across eras and content types.
+            to the overall benchmark. The pattern holds across eras and content types.
           </p>
 
-          <h3>Small Publishers: High Scores, Different Challenge</h3>
+          <h3>Small Publishers: High Index Values, Different Scale</h3>
           <p>
-            Many top-scoring publishers have fewer than 10,000 DOIs. Achieving 100% metadata coverage on
+            Many publishers with high index values have fewer than 10,000 DOIs. Achieving 100% metadata coverage on
             172 articles is a different challenge than on 24 million. Small publishers have a structural
-            advantage in rankings — but the ones actively working to improve (like i-manager Publications
-            at score 25) demonstrate that awareness of the gap is the first step.
+            advantage in direct comparisons—but active improvement at any scale demonstrates that
+            awareness of the gap is the first step.
           </p>
 
           <div className="not-prose my-8 border-t border-gray-200" />
@@ -430,26 +429,26 @@ export default function CurrentEraInsightsPage() {
           <ul>
             <li>
               <strong>Overall vs Current:</strong> The industry is getting better — 2,844 publishers
-              score meaningfully higher on recent content. The backfile drags the picture down.
+              have meaningfully higher index values on recent content. Historical records change the aggregate picture.
             </li>
             <li>
-              <strong>By Content Type:</strong> Aggregate scores mislead. eLife scores in the 30s in
-              aggregate but near-perfect on journal articles. The pipeline per content type, not the discipline, determines quality.
+              <strong>By Content Type:</strong> Aggregate values need context. eLife&apos;s aggregate is in the
+              30s while its journal-article value is near 100. Deposit pipelines differ by content type.
             </li>
             <li>
               <strong>By Dimension:</strong> Access is nearly solved. ORCIDs are unevenly adopted.
               Organizations and Funding are essentially empty across the board — the two biggest
-              opportunities for the industry.
+              areas where clearer metadata signals would help.
             </li>
             <li>
-              <strong>By Publisher Type:</strong> Scholarly societies lead. Commercial giants are stuck
-              in D territory. Small publishers score high but at low volume.
+              <strong>By Publisher Type:</strong> Several scholarly societies show high current-era
+              coverage. Large commercial and small independent publishers face different workflow and scale contexts.
             </li>
           </ul>
           <p>
             Use the{' '}
             <Link href="/leaderboard/current" className="font-medium underline">content-type filter</Link> on
-            the leaderboard to explore these patterns for any publisher.
+            the benchmark to explore these patterns for any publisher.
           </p>
         </article>
 
@@ -463,13 +462,13 @@ export default function CurrentEraInsightsPage() {
               href="/leaderboard/current"
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
             >
-              Current Era Leaderboard
+              Current Era Benchmark
             </Link>
             <Link
               href="/leaderboard"
               className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
             >
-              Overall Leaderboard
+              Overall Benchmark
             </Link>
           </div>
         </div>

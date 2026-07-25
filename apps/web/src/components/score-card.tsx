@@ -32,15 +32,15 @@ export function ScoreCard({ score, trend, change, label, hideTrend, className }:
     <div className={cn('rounded-xl border bg-white p-4 sm:p-6 shadow-sm', className)}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-gray-500">{label ?? 'Nexus Score'}</p>
+          <p className="text-sm font-medium text-gray-500">{label ?? 'Nexus-Index'}</p>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-4xl sm:text-5xl font-bold text-gray-900">{score}</span>
             <span className="text-base sm:text-lg text-gray-400">/ 100</span>
           </div>
         </div>
         <p className="max-w-[180px] text-right text-xs text-gray-400">
-          A diagnosis, not a judgment — every point lost is a fixable metadata
-          field.
+          A diagnostic view of metadata visible in Crossref—not a judgment of
+          publisher or research quality.
         </p>
       </div>
 

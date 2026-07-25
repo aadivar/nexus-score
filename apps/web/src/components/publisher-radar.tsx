@@ -46,6 +46,7 @@ export function PublisherRadar({ id, name, score, dimensions, contentTypeFilter,
           <div className="flex items-center gap-2 mt-1">
             <span className="text-2xl font-bold text-gray-900">{score}</span>
             <span className="text-sm text-gray-400">/100</span>
+            <span className="text-xs font-medium text-gray-500">index</span>
           </div>
           <Link href={`/member/${id}`} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-1">
             View full profile <ExternalLink className="h-3 w-3" />
@@ -105,13 +106,13 @@ export function PublisherRadar({ id, name, score, dimensions, contentTypeFilter,
 
         <div className="mt-6 rounded-lg bg-gray-50 p-4 space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Strongest</span>
+            <span className="text-gray-500">Highest coverage</span>
             <span className="font-medium text-green-700">
               {DIMENSION_LABELS[strongest[0]]?.label} ({strongest[1]}%)
             </span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Weakest</span>
+            <span className="text-gray-500">Largest coverage gap</span>
             <span className="font-medium text-red-700">
               {DIMENSION_LABELS[weakest[0]]?.label} ({weakest[1]}%)
             </span>

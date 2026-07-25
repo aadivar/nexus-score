@@ -10,7 +10,6 @@ interface ContentTypeEntry {
   type: string;
   label: string;
   score: number;
-  grade: string;
 }
 
 interface CurrentLeaderboardEntry {
@@ -19,11 +18,9 @@ interface CurrentLeaderboardEntry {
   name: string;
   location?: string;
   score: number;
-  grade: string;
   totalWorks: number;
   currentWorks?: number;
   overallScore: number;
-  overallGrade: string;
   improvement: number | null;
   dimensions: {
     provenance: number;
@@ -307,7 +304,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Rank
+                Position
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 Publisher
@@ -317,7 +314,7 @@ export function CurrentLeaderboardTable({ leaderboard, totalActive, availableCon
                   onClick={() => handleSortToggle('score')}
                   className="inline-flex items-center gap-1 hover:text-gray-700"
                 >
-                  Current Score
+                  Current Index
                   {getSortIcon('score')}
                 </button>
               </th>

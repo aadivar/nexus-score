@@ -4,9 +4,9 @@ import { TrackAnchor } from '@/components/tracked-link';
 import { FilloutTrigger } from '@/components/fillout-trigger';
 
 export const metadata: Metadata = {
-  title: 'Gap Fixer · Nexus Score',
+  title: 'Gap Fixer · Nexus-Index',
   description:
-    'A local diagnostic tool that turns a journal article PDF/DOCX into a Research Nexus scorecard plus a Crossref-ready DOI deposit XML. Self-hosted, AGPL-3.0, no vendor lock-in.',
+    'A local diagnostic tool that turns a journal article PDF/DOCX into a metadata health profile plus Crossref-ready DOI deposit XML. Self-hosted, AGPL-3.0, no vendor lock-in.',
 };
 
 const layers = [
@@ -88,11 +88,11 @@ export default function GapFixerPage() {
           </h1>
           <p className="mt-4 text-lg text-gray-700">
             A local diagnostic tool that turns a journal article PDF/DOCX into a
-            Research Nexus scorecard plus a Crossref-ready DOI deposit XML.
+            metadata health profile plus a Crossref-ready DOI deposit XML.
             Self-hosted. AGPL-3.0. No vendor lock-in.
           </p>
           <p className="mt-4 text-base text-gray-600">
-            Where the score tells you <em>what&apos;s missing</em>, this tool helps
+            Where the Index shows <em>what&apos;s missing</em>, this tool helps
             you <em>fix it</em> — one paper at a time, with every paid LLM call
             metered in USD and gated behind an explicit editor click.
           </p>
@@ -207,21 +207,21 @@ export default function GapFixerPage() {
         </div>
       </section>
 
-      {/* Scoring alignment */}
+      {/* Index alignment */}
       <section className="bg-gray-50 py-16">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-semibold text-gray-900">
-            Scored on the same Research Nexus rubric as the leaderboard
+            Aligned with the Nexus-Index methodology
           </h2>
           <p className="mt-3 text-gray-600">
             One Mandatory deposit gate, then five Research Nexus dimensions
             using the exact weights you see on{' '}
             <Link href="/" className="text-blue-600 hover:underline">
-              nexus-score
+              Nexus-Index
             </Link>
-            . The hero score on every paper is the same weighted percentage —
-            so what an editor sees on a single article maps directly to what
-            their publisher sees on the leaderboard.
+            . The article-level index uses the same weighted dimensions, so an
+            editor can connect individual metadata gaps with the publisher-level
+            diagnostic benchmark.
           </p>
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
