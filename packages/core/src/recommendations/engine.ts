@@ -18,10 +18,35 @@ export function generateRecommendations(
   dimensions: DimensionScores,
   coverage: MemberCoverage
 ): Recommendation[] {
+  void dimensions;
+  return buildRecommendations((metric) => (
+    (coverage[metric as keyof MemberCoverage] as number) || 0
+  ));
+}
+
+/**
+ * Generate the same actionable recommendations from preserved metric details.
+ * This lets content-type views use the canonical templates without changing
+ * targets, weights, priority thresholds, or recommendation wording.
+ */
+export function generateRecommendationsFromMetricDetails(
+  dimensions: DimensionScores
+): Recommendation[] {
+  const values = new Map<string, number>();
+  for (const dimension of Object.values(dimensions)) {
+    for (const metric of dimension.metrics) values.set(metric.key, metric.value);
+  }
+
+  return buildRecommendations((metric) => values.get(metric) || 0);
+}
+
+function buildRecommendations(
+  getCurrentValue: (metric: string) => number
+): Recommendation[] {
   const recommendations: Recommendation[] = [];
 
   for (const template of RECOMMENDATION_TEMPLATES) {
-    const currentValue = (coverage[template.metric as keyof MemberCoverage] as number) || 0;
+    const currentValue = getCurrentValue(template.metric);
 
     // Skip if already at or above target
     if (currentValue >= template.targetValue) {

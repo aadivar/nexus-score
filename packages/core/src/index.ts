@@ -42,9 +42,17 @@ export {
   calculateMemberScore,
   calculateJournalScore,
   calculateScoreFromCoverage,
+  calculateDimensionsForPeriod,
   calculateContentTypeScores,
+  calculateScorableMemberScore,
+  scoreFromSimplifiedCoverage,
   getMaxScore,
 } from './scoring/calculator.js';
+
+export {
+  SCORABLE_CONTENT_TYPES,
+  isScorableContentType,
+} from './scoring/content-types.js';
 
 export {
   DIMENSION_WEIGHTS,
@@ -70,17 +78,22 @@ export type {
   TrendInfo,
   TrendDirection,
   Recommendation,
+  ScopedRecommendationSet,
   Priority,
   ScoreMetadata,
   Grade,
   DataSource,
   ContentTypeCoverage,
   ContentTypeScore,
+  ContentTypeEraScore,
+  ScorableEraScore,
+  ScorableMemberScore,
 } from './scoring/types.js';
 
 // Recommendations
 export {
   generateRecommendations,
+  generateRecommendationsFromMetricDetails,
   getTopRecommendations,
   getRecommendationsByPriority,
   getTotalPotentialGain,
@@ -99,6 +112,9 @@ export {
   analyzeInstitution,
   searchInstitutions,
 } from './institution/index.js';
+
+// Benchmark ranking
+export { rankByScore, type CompetitionRank } from './ranking/competition.js';
 
 export type {
   CoverageMetrics,

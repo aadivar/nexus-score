@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
 import { X, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { buildMemberHref, type BenchmarkScope } from '@/lib/benchmark-scope';
 
 interface PublisherRadarProps {
   id: number;
@@ -16,7 +17,7 @@ interface PublisherRadarProps {
     funding: number;
     access: number;
   };
-  contentTypeFilter?: string;
+  scope: BenchmarkScope;
   onClose: () => void;
 }
 
@@ -28,7 +29,7 @@ const DIMENSION_LABELS: Record<string, { label: string; description: string }> =
   access: { label: 'Access', description: 'Licenses, full-text links, abstracts' },
 };
 
-export function PublisherRadar({ id, name, score, dimensions, contentTypeFilter, onClose }: PublisherRadarProps) {
+export function PublisherRadar({ id, name, score, dimensions, scope, onClose }: PublisherRadarProps) {
   const data = Object.entries(dimensions).map(([key, value]) => ({
     dimension: DIMENSION_LABELS[key]?.label || key,
     value,
@@ -48,7 +49,7 @@ export function PublisherRadar({ id, name, score, dimensions, contentTypeFilter,
             <span className="text-sm text-gray-400">/100</span>
             <span className="text-xs font-medium text-gray-500">index</span>
           </div>
-          <Link href={`/member/${id}`} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-1">
+          <Link href={buildMemberHref(id, scope)} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-1">
             View full profile <ExternalLink className="h-3 w-3" />
           </Link>
         </div>
@@ -59,9 +60,6 @@ export function PublisherRadar({ id, name, score, dimensions, contentTypeFilter,
 
       <div className="px-6 py-6">
         <h3 className="text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Dimension Profile</h3>
-        {contentTypeFilter && contentTypeFilter !== 'all' && (
-          <p className="text-[10px] text-amber-600 bg-amber-50 rounded px-2 py-1 mb-2">Dimensions reflect overall coverage — per-content-type breakdown is not available from Crossref.</p>
-        )}
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data} cx="50%" cy="50%" outerRadius="75%">

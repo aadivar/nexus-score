@@ -9,7 +9,7 @@
  * Values are percentages (0.0 to 1.0)
  */
 export interface MemberCoverage {
-  // Current = published in last 2 calendar years
+  // Current = current calendar year plus the two preceding calendar years
   'affiliations-current': number;
   'abstracts-current': number;
   'orcids-current': number;
@@ -22,7 +22,7 @@ export interface MemberCoverage {
   'resource-links-current': number;
   'ror-ids-current': number;
 
-  // Backfile = older than 2 calendar years
+  // Backfile = published before the three-year current window
   'affiliations-backfile': number;
   'abstracts-backfile': number;
   'orcids-backfile': number;

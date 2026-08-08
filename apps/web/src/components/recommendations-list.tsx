@@ -8,6 +8,9 @@ import { useState } from 'react';
 interface RecommendationsListProps {
   recommendations: Recommendation[];
   limit?: number;
+  scopeLabel?: string;
+  title?: string;
+  emptyMessage?: string;
   className?: string;
 }
 
@@ -35,6 +38,9 @@ const priorityConfig: Record<
 export function RecommendationsList({
   recommendations,
   limit = 5,
+  scopeLabel,
+  title = 'Improvement Recommendations',
+  emptyMessage = 'No observed gaps in this scope are below the recommendation targets.',
   className,
 }: RecommendationsListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -43,22 +49,28 @@ export function RecommendationsList({
   if (recommendations.length === 0) {
     return (
       <div className={cn('rounded-xl border bg-white p-6 shadow-sm', className)}>
-        <h3 className="text-lg font-semibold text-gray-900">Recommendations</h3>
+        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+        {scopeLabel && (
+          <p className="mt-1 text-xs font-medium text-gray-500">{scopeLabel}</p>
+        )}
         <p className="mt-4 text-gray-500">
-          Great job! No recommendations at this time - metadata coverage is excellent.
+          {emptyMessage}
         </p>
       </div>
     );
   }
 
   return (
-    <div className={cn('rounded-xl border bg-white p-6 shadow-sm', className)}>
-      <h3 className="text-lg font-semibold text-gray-900">Improvement Recommendations</h3>
+    <div className={cn('rounded-xl border bg-white p-6 shadow-sm print:p-4', className)}>
+      <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+      {scopeLabel && (
+        <p className="mt-1 text-xs font-medium text-gray-500">{scopeLabel}</p>
+      )}
       <p className="mt-1 text-sm text-gray-500">
         Actionable steps to improve observed metadata coverage
       </p>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-6 space-y-4 print:mt-3 print:space-y-2">
         {displayedRecs.map((rec) => {
           const config = priorityConfig[rec.priority];
           const Icon = config.icon;
@@ -67,7 +79,7 @@ export function RecommendationsList({
           return (
             <div
               key={rec.id}
-              className={cn('rounded-lg border p-4', config.color)}
+              className={cn('rounded-lg border p-4 print:p-3', config.color)}
             >
               <button
                 onClick={() => setExpandedId(isExpanded ? null : rec.id)}
@@ -80,7 +92,7 @@ export function RecommendationsList({
                     <p className="mt-1 text-sm opacity-80">
                       Currently {rec.currentValue}% → Target {rec.targetValue}%
                       <span className="ml-2 font-medium">
-                        (+{rec.potentialGain} points)
+                        ({rec.potentialGain > 0 ? `+${rec.potentialGain} points` : '<1 point'})
                       </span>
                     </p>
                   </div>

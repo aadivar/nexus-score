@@ -1,5 +1,6 @@
 import { MemberSearch } from '@/components/member-search';
 import { PilotBanner } from '@/components/pilot-banner';
+import { DataEnvironmentNotice } from '@/components/data-environment-notice';
 import Link from 'next/link';
 
 // The five index dimensions (weights defined in @nexus-score/core scoring/weights.ts)
@@ -56,8 +57,12 @@ export default function HomePage() {
     <div className="min-h-screen">
       <PilotBanner />
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-blue-600 to-blue-700 py-20 text-white">
+      <section className="relative overflow-hidden bg-blue-700 py-24 text-white sm:py-28">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.16),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.25),transparent_42%)]" />
+        <div className="absolute -left-24 top-20 h-72 w-72 rounded-full border border-white/10" />
+        <div className="absolute -right-20 -top-24 h-96 w-96 rounded-full border border-white/10" />
         <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">An actionable intelligence layer to enhance trust and reuse of a research record</p>
           <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
             Measure your{' '}
             <span className="relative whitespace-nowrap underline decoration-2 underline-offset-4">
@@ -84,15 +89,23 @@ export default function HomePage() {
               placeholder="Search for a publisher (e.g., Elsevier, Nature)..."
               className="mx-auto max-w-xl"
             />
+            <p className="mt-3 text-sm text-blue-100">
+              Opens Journal Articles - Current ({new Date().getFullYear() - 2}-{new Date().getFullYear()}). The profile keeps Overall and Backfile visible for comparison and labels other record schemas as Not benchmarked.
+            </p>
           </div>
         </div>
       </section>
 
+      <div className="bg-white px-4 py-6 sm:px-6 lg:px-8">
+        <DataEnvironmentNotice className="mx-auto max-w-6xl" />
+      </div>
+
       {/* Dimensions Table */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-2xl font-semibold text-gray-900">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">The framework</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">
               Dimensions (100 points total)
             </h2>
             <p className="mt-4 text-gray-600">
@@ -104,7 +117,7 @@ export default function HomePage() {
           {/* Mobile: stacked cards */}
           <div className="mt-10 space-y-4 lg:hidden">
             {dimensionTable.map((dim) => (
-              <div key={dim.name} className="rounded-lg border bg-white p-5 shadow-sm">
+              <div key={dim.name} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <span
                     className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${dim.badgeClass}`}
@@ -134,7 +147,7 @@ export default function HomePage() {
           </div>
 
           {/* Desktop: full table */}
-          <div className="mt-10 hidden overflow-x-auto rounded-lg border shadow-sm lg:block">
+          <div className="mt-10 hidden overflow-x-auto rounded-xl border border-slate-200 shadow-sm lg:block">
             <table className="w-full min-w-[900px] divide-y divide-gray-200 bg-white text-left text-sm">
               <thead className="bg-gray-50">
                 <tr>
@@ -165,7 +178,7 @@ export default function HomePage() {
             </table>
           </div>
 
-          <div className="mx-auto mt-12 max-w-3xl rounded-lg border bg-gray-100 p-6">
+          <div className="mx-auto mt-12 max-w-3xl rounded-xl border border-slate-200 bg-slate-50 p-6">
             <h3 className="font-semibold text-gray-900">How the Index Is Calculated</h3>
             <div className="mt-3 space-y-2 text-sm text-gray-700">
               <p>
@@ -186,10 +199,11 @@ export default function HomePage() {
       </section>
 
       {/* Beyond a Single Metadata Source */}
-      <section className="bg-white py-16">
+      <section className="border-y border-slate-200 bg-slate-50 py-20 sm:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="border-l-4 border-blue-600 pl-6">
-            <h2 className="text-2xl font-semibold text-gray-900">
+          <div className="border-l-4 border-blue-600 pl-6 sm:pl-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">The wider ecosystem</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">
               Beyond a Single Metadata Source
             </h2>
             <div className="mt-5 space-y-4 text-gray-600">
@@ -221,7 +235,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="my-8 rounded-lg border border-blue-100 bg-blue-50 p-6 text-center">
+          <div className="my-10 rounded-xl border border-blue-200 bg-white p-7 text-center shadow-sm">
             <p className="text-sm font-medium uppercase tracking-wide text-blue-700">
               The Index asks a larger question
             </p>
@@ -248,9 +262,10 @@ export default function HomePage() {
       </section>
 
       {/* What Nexus-Index is — and what it is not */}
-      <section className="py-16">
+      <section className="bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-2xl font-semibold text-gray-900">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">The boundaries</p>
+          <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight text-gray-900">
             What Nexus-Index Is — and Is Not
           </h2>
           <p className="mx-auto mt-6 max-w-3xl text-center text-gray-600">
@@ -261,7 +276,7 @@ export default function HomePage() {
             this research from being found, connected, and reused?
           </p>
           <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <div className="rounded-lg border border-green-200 bg-green-50 p-6">
+            <div className="rounded-xl border border-green-200 bg-green-50 p-6 shadow-sm">
               <h3 className="font-semibold text-green-800">The Index is</h3>
               <ul className="mt-4 space-y-3 text-sm text-gray-700">
                 <li className="flex gap-2">
@@ -297,7 +312,7 @@ export default function HomePage() {
                 </li>
               </ul>
             </div>
-            <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
               <h3 className="font-semibold text-red-800">The Index is not</h3>
               <ul className="mt-4 space-y-3 text-sm text-gray-700">
                 <li className="flex gap-2">
@@ -333,9 +348,10 @@ export default function HomePage() {
       </section>
 
       {/* Media Mentions */}
-      <section className="bg-white py-16">
+      <section className="border-y border-slate-200 bg-slate-50 py-20 sm:py-24">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-2xl font-semibold text-gray-900">
+          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Community and dialogue</p>
+          <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight text-gray-900">
             In the Conversation
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-center text-gray-600">
@@ -382,7 +398,7 @@ export default function HomePage() {
                 href={mention.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-lg border bg-gray-50 p-5 transition-shadow hover:shadow-md"
+                className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wide text-blue-600">
@@ -400,9 +416,10 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gray-50 py-16">
+      <section className="bg-blue-50 py-20 sm:py-24">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-semibold text-gray-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Open infrastructure</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">
             Aligned with the Open Research Information Movement
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-gray-600">
@@ -449,15 +466,15 @@ export default function HomePage() {
       </section>
 
       {/* Data Source */}
-      <section className="border-t py-8">
+      <section className="border-t border-slate-800 bg-slate-950 py-9">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-slate-300">
             Data sourced from the{' '}
             <a
               href="https://api.crossref.org"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
+              className="text-blue-300 hover:text-blue-200 hover:underline"
             >
               Crossref REST API
             </a>

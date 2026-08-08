@@ -1,207 +1,164 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readFileSync, existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { rankByScore } from '@nexus-score/core';
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'F';
+type Era = 'overall' | 'current';
 type DimensionKey = 'provenance' | 'people' | 'organizations' | 'funding' | 'access';
 type SortField = 'default' | 'score' | 'works' | 'improvement' | DimensionKey;
 type SortDirection = 'asc' | 'desc';
-type ViewMode = 'overall' | 'progress';
 
-interface ContentTypeEntry {
-  type: string;
-  label: string;
-  score: number;
-  grade: string;
+interface ContentTypeEntry { type: string; label: string; score: number; grade: Grade; works?: number }
+interface Dimensions { provenance: number; people: number; organizations: number; funding: number; access: number }
+
+interface OverallEntry {
+  rank: number; id: number; name: string; location?: string; score: number; grade: Grade;
+  totalWorks: number; currentWorks?: number; currentScore?: number; backfileScore?: number | null;
+  improvement?: number | null; dimensions: Dimensions; contentTypes?: ContentTypeEntry[];
 }
 
-interface DimensionScores {
-  provenance: number;
-  people: number;
-  organizations: number;
-  funding: number;
-  access: number;
+interface CurrentEntry {
+  rank: number; id: number; name: string; location?: string; score: number; grade: Grade;
+  totalWorks: number; currentWorks?: number; overallScore: number; improvement?: number | null;
+  dimensions: Dimensions; contentTypes?: ContentTypeEntry[];
 }
 
-export interface LeaderboardEntry {
-  rank: number;
-  id: number;
-  name: string;
-  location?: string;
-  score: number;
-  grade: string;
-  totalWorks: number;
-  currentWorks?: number;
-  currentScore?: number;
-  backfileScore?: number | null;
-  improvement?: number | null;
-  dimensions: DimensionScores;
-  currentDimensions?: DimensionScores;
-  contentTypes?: ContentTypeEntry[];
-  currentContentTypes?: ContentTypeEntry[];
+interface OverallData {
+  generatedAt: string; totalMembers: number; totalWithWorks: number;
+  leaderboard: OverallEntry[];
 }
 
-interface LeaderboardData {
-  generatedAt: string;
-  totalMembers: number;
-  totalWithWorks: number;
-  leaderboard: LeaderboardEntry[];
+interface CurrentData {
+  generatedAt: string; totalMembers: number; totalActive: number;
+  leaderboard: CurrentEntry[];
 }
 
 const GRADES = new Set<Grade>(['A', 'B', 'C', 'D', 'F']);
-const DIMENSIONS = new Set<DimensionKey>([
-  'provenance',
-  'people',
-  'organizations',
-  'funding',
-  'access',
-]);
-const SORT_FIELDS = new Set<SortField>([
-  'default',
-  'score',
-  'works',
-  'improvement',
-  ...DIMENSIONS,
-]);
+const DIMENSIONS = new Set<DimensionKey>(['provenance', 'people', 'organizations', 'funding', 'access']);
+let overallCache: OverallData | null | undefined;
+let currentCache: CurrentData | null | undefined;
 
-let cachedData: LeaderboardData | null | undefined;
-
-function getLeaderboardData(): LeaderboardData | null {
-  if (cachedData !== undefined) return cachedData;
-
-  const dataPath = join(process.cwd(), 'data', 'leaderboard.json');
-
-  if (!existsSync(dataPath)) {
-    cachedData = null;
-    return cachedData;
-  }
-
-  try {
-    cachedData = JSON.parse(readFileSync(dataPath, 'utf-8')) as LeaderboardData;
-  } catch {
-    cachedData = null;
-  }
-
-  return cachedData;
+function readData<T>(filename: string): T | null {
+  const path = join(process.cwd(), 'data', filename);
+  if (!existsSync(path)) return null;
+  try { return JSON.parse(readFileSync(path, 'utf8')) as T; } catch { return null; }
 }
 
-function parseBoundedInteger(
-  value: string | null,
-  fallback: number,
-  minimum: number,
-  maximum: number
-): number {
-  if (value === null) return fallback;
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(maximum, Math.max(minimum, parsed));
+function getOverallData() { return overallCache ??= readData<OverallData>('leaderboard.json'); }
+function getCurrentData() { return currentCache ??= readData<CurrentData>('current-leaderboard.json'); }
+
+function integer(value: string | null, fallback: number, min: number, max: number) {
+  const parsed = value === null ? fallback : Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
 }
 
-function getContentType(entry: LeaderboardEntry, contentType: string): ContentTypeEntry | undefined {
-  return entry.contentTypes?.find((item) => item.type === contentType);
-}
-
-function hasBackfileData(entry: LeaderboardEntry): boolean {
-  return (
-    entry.improvement !== undefined &&
-    entry.improvement !== null &&
-    entry.backfileScore !== undefined &&
-    entry.backfileScore !== null &&
-    entry.backfileScore > 0
-  );
+function gradeFor(score: number): Grade {
+  if (score >= 80) return 'A';
+  if (score >= 65) return 'B';
+  if (score >= 50) return 'C';
+  if (score >= 35) return 'D';
+  return 'F';
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = request.nextUrl;
-  const limit = parseBoundedInteger(searchParams.get('limit'), 50, 1, 500);
-  const offset = parseBoundedInteger(searchParams.get('offset'), 0, 0, Number.MAX_SAFE_INTEGER);
-  const search = (searchParams.get('search') || '').trim().slice(0, 200).toLocaleLowerCase();
-  const gradeParam = searchParams.get('grade');
-  const grade = gradeParam && GRADES.has(gradeParam as Grade) ? (gradeParam as Grade) : null;
-  const contentType = (searchParams.get('contentType') || 'all').slice(0, 100);
-  const view: ViewMode = searchParams.get('view') === 'progress' ? 'progress' : 'overall';
-  const sortParam = searchParams.get('sort') as SortField | null;
-  const sort: SortField = sortParam && SORT_FIELDS.has(sortParam) ? sortParam : 'default';
-  const direction: SortDirection = searchParams.get('direction') === 'asc' ? 'asc' : 'desc';
+  const params = request.nextUrl.searchParams;
+  const era: Era = params.get('era') === 'current' ? 'current' : 'overall';
+  const contentType = (params.get('contentType') || 'all').slice(0, 100);
+  const search = (params.get('search') || '').trim().slice(0, 200).toLocaleLowerCase();
+  const gradeParam = params.get('grade');
+  const grade = gradeParam && GRADES.has(gradeParam as Grade) ? gradeParam as Grade : null;
+  const sort = (params.get('sort') || 'default') as SortField;
+  const direction: SortDirection = params.get('direction') === 'asc' ? 'asc' : 'desc';
+  const limit = integer(params.get('limit'), 50, 1, 500);
+  const offset = integer(params.get('offset'), 0, 0, Number.MAX_SAFE_INTEGER);
+  const overall = getOverallData();
+  const current = getCurrentData();
 
-  const data = getLeaderboardData();
-
-  if (!data) {
-    return NextResponse.json(
-      {
-        error: 'Leaderboard data not generated',
-        message: 'Run `pnpm --filter web generate-leaderboard` to generate data',
-      },
-      { status: 503 }
-    );
+  if (!overall || !current) {
+    return NextResponse.json({ error: 'Benchmark data not generated' }, { status: 503 });
   }
 
-  let results = data.leaderboard.filter((entry) => {
-    const selectedContentType = contentType === 'all' ? undefined : getContentType(entry, contentType);
+  const primary = era === 'current' ? current.leaderboard : overall.leaderboard;
+  const comparison = new Map((era === 'current' ? overall.leaderboard : current.leaderboard).map((entry) => [entry.id, entry]));
 
-    if (contentType !== 'all' && !selectedContentType) return false;
-    if (view === 'progress' && !hasBackfileData(entry)) return false;
+  let scoped = primary.flatMap((entry) => {
+    const selected = contentType === 'all' ? null : entry.contentTypes?.find((item) => item.type === contentType);
+    if (contentType !== 'all' && !selected) return [];
+    const other = comparison.get(entry.id);
+    const otherType = contentType === 'all' ? null : other?.contentTypes?.find((item) => item.type === contentType);
+    const score = selected?.score ?? entry.score;
+    const comparisonScore = contentType === 'all'
+      ? (era === 'current' ? (entry as CurrentEntry).overallScore : (entry as OverallEntry).currentScore ?? null)
+      : otherType?.score ?? null;
+    const improvement = era === 'current'
+      ? (entry as CurrentEntry).improvement ?? null
+      : (entry as OverallEntry).improvement ?? null;
+    const currentVsOverall = comparisonScore === null
+      ? null
+      : era === 'current'
+        ? score - comparisonScore
+        : comparisonScore - score;
+    const publisherPeriodWorks = era === 'current'
+      ? (entry as CurrentEntry).currentWorks ?? null
+      : entry.totalWorks;
+    const selectedTypeWorks = selected?.works ?? null;
+
+    return [{
+      rank: entry.rank,
+      id: entry.id,
+      name: entry.name,
+      location: entry.location,
+      score,
+      grade: selected?.grade ?? gradeFor(score),
+      totalWorks: entry.totalWorks,
+      scopeWorks: contentType === 'all' ? publisherPeriodWorks : selectedTypeWorks ?? publisherPeriodWorks,
+      scopeWorksExact: contentType === 'all' || selectedTypeWorks !== null,
+      comparisonScore,
+      comparisonLabel: era === 'current' ? 'Overall' : 'Current',
+      improvement,
+      currentVsOverall,
+      dimensions: contentType === 'all' ? entry.dimensions : null,
+    }];
+  });
+
+  // Re-rank inside the selected era/content-type cohort. Equal scores share
+  // one competition rank instead of receiving arbitrary sequential ranks.
+  scoped = rankByScore(scoped, (entry) => entry.score);
+
+  const scopeTotal = scoped.length;
+  const averageScore = scopeTotal > 0 ? Math.round(scoped.reduce((sum, entry) => sum + entry.score, 0) / scopeTotal) : 0;
+  const highestScore = scoped[0]?.score ?? 0;
+  const distribution = [
+    { label: '80-100', min: 80, max: 101 },
+    { label: '65-79', min: 65, max: 80 },
+    { label: '50-64', min: 50, max: 65 },
+    { label: '35-49', min: 35, max: 50 },
+    { label: '0-34', min: 0, max: 35 },
+  ].map((band) => ({ ...band, count: scoped.filter((entry) => entry.score >= band.min && entry.score < band.max).length }));
+
+  let filtered = scoped.filter((entry) => {
     if (search && !entry.name.toLocaleLowerCase().includes(search)) return false;
-
-    if (grade) {
-      const entryGrade = selectedContentType?.grade || entry.grade;
-      if (entryGrade !== grade) return false;
-    }
-
+    if (grade && entry.grade !== grade) return false;
     return true;
   });
 
-  let comparator: ((left: LeaderboardEntry, right: LeaderboardEntry) => number) | null = null;
-  const directed = (left: number, right: number) =>
-    direction === 'desc' ? right - left : left - right;
-
-  if (sort === 'works') {
-    comparator = (left, right) => directed(left.totalWorks, right.totalWorks);
-  } else if (sort === 'score') {
-    comparator = (left, right) => {
-      const leftScore = contentType === 'all'
-        ? left.score
-        : (getContentType(left, contentType)?.score ?? 0);
-      const rightScore = contentType === 'all'
-        ? right.score
-        : (getContentType(right, contentType)?.score ?? 0);
-      return directed(leftScore, rightScore);
-    };
-  } else if (sort === 'improvement') {
-    comparator = (left, right) => directed(left.improvement ?? 0, right.improvement ?? 0);
-  } else if (DIMENSIONS.has(sort as DimensionKey)) {
+  const directed = (left: number, right: number) => direction === 'desc' ? right - left : left - right;
+  if (sort === 'works') filtered = [...filtered].sort((a, b) => directed(a.scopeWorks ?? -1, b.scopeWorks ?? -1));
+  else if (sort === 'improvement') filtered = [...filtered].sort((a, b) => directed(a.currentVsOverall ?? 0, b.currentVsOverall ?? 0));
+  else if (DIMENSIONS.has(sort as DimensionKey) && contentType === 'all') {
     const dimension = sort as DimensionKey;
-    comparator = (left, right) => directed(left.dimensions[dimension], right.dimensions[dimension]);
-  } else if (contentType !== 'all') {
-    comparator = (left, right) =>
-      (getContentType(right, contentType)?.score ?? 0) -
-      (getContentType(left, contentType)?.score ?? 0);
-  } else if (view === 'progress') {
-    comparator = (left, right) => (right.improvement ?? 0) - (left.improvement ?? 0);
-  }
+    filtered = [...filtered].sort((a, b) => directed(a.dimensions?.[dimension] ?? 0, b.dimensions?.[dimension] ?? 0));
+  } else if (sort === 'score') filtered = [...filtered].sort((a, b) => directed(a.score, b.score));
 
-  if (comparator) {
-    results = [...results].sort((left, right) => comparator!(left, right) || left.rank - right.rank);
-  }
-
-  const total = results.length;
-  const paginatedLeaderboard = results.slice(offset, offset + limit);
-
-  return NextResponse.json(
-    {
-      total,
-      totalWithWorks: data.totalWithWorks,
-      totalMembers: data.totalMembers,
-      generatedAt: data.generatedAt,
-      offset,
-      limit,
-      leaderboard: paginatedLeaderboard,
-    },
-    {
-      headers: {
-        // Each query is cached independently for one hour, with a stale response available for 24 hours.
-        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      },
-    }
-  );
+  return NextResponse.json({
+    scope: { era, contentType },
+    generatedAt: era === 'current' ? current.generatedAt : overall.generatedAt,
+    totalMembers: era === 'current' ? current.totalMembers : overall.totalMembers,
+    summary: { scopeTotal, averageScore, highestScore, distribution },
+    total: filtered.length,
+    offset,
+    limit,
+    leaderboard: filtered.slice(offset, offset + limit),
+  }, { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } });
 }

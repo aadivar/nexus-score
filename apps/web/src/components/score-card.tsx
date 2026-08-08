@@ -49,8 +49,8 @@ export function ScoreCard({ score, trend, change, label, hideTrend, className }:
           <TrendIcon className="h-4 w-4" />
           <span>
             {trend === 'stable'
-              ? 'Stable vs historical'
-              : `${change > 0 ? '+' : ''}${change} points vs historical`}
+              ? 'Stable vs Backfile'
+              : `${change > 0 ? '+' : ''}${change} points: Current vs Backfile`}
           </span>
         </div>
       )}

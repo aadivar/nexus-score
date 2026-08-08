@@ -1,688 +1,268 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { PublisherRadar } from './publisher-radar';
-import { trackEvent, normalizeQuery } from '@/lib/analytics';
+import { PublisherRadar } from '@/components/publisher-radar';
+import { buildMemberHref, formatDataDate, getEraRange, type BenchmarkEra } from '@/lib/benchmark-scope';
+import { normalizeQuery, trackEvent } from '@/lib/analytics';
 
-interface ContentTypeEntry {
-  type: string;
-  label: string;
-  score: number;
+interface Dimensions { provenance: number; people: number; organizations: number; funding: number; access: number }
+interface Entry {
+  rank: number; id: number; name: string; location?: string; score: number;
+  totalWorks: number; scopeWorks: number | null; scopeWorksExact: boolean; comparisonScore: number | null;
+  comparisonLabel: string; improvement: number | null; currentVsOverall: number | null; dimensions: Dimensions | null;
+}
+interface Summary {
+  scopeTotal: number; averageScore: number; highestScore: number;
+  distribution: { label: string; count: number }[];
+}
+interface ApiResponse {
+  generatedAt: string; totalMembers: number; total: number; summary: Summary; leaderboard: Entry[];
+}
+interface Props {
+  availableContentTypes: { type: string; label: string; count: number; benchmarked: boolean }[];
+  initialEra: BenchmarkEra;
+  initialContentType: string;
 }
 
-interface LeaderboardEntry {
-  rank: number;
-  id: number;
-  name: string;
-  location?: string;
-  score: number;
-  totalWorks: number;
-  currentScore?: number;
-  backfileScore?: number | null;
-  improvement?: number | null;
-  dimensions: {
-    provenance: number;
-    people: number;
-    organizations: number;
-    funding: number;
-    access: number;
-  };
-  contentTypes?: ContentTypeEntry[];
-}
-
-interface LeaderboardTableProps {
-  initialLeaderboard: LeaderboardEntry[];
-  initialTotal: number;
-  totalWithWorks: number;
-  publishersWithBackfile: number;
-  availableContentTypes: { type: string; label: string; count: number }[];
-}
-
-interface LeaderboardApiResponse {
-  total: number;
-  leaderboard: LeaderboardEntry[];
-}
-
-const ITEMS_PER_PAGE = 50;
-
-const rankStyles: Record<number, string> = {
-  1: 'text-yellow-500',
-  2: 'text-gray-400',
-  3: 'text-amber-600',
-};
-
-type DimensionKey = 'provenance' | 'people' | 'organizations' | 'funding' | 'access';
-type SortField = 'default' | 'score' | 'works' | 'improvement' | DimensionKey;
+type SortField = 'default' | 'score' | 'works' | 'improvement' | keyof Dimensions;
 type SortDirection = 'desc' | 'asc';
-type ViewMode = 'overall' | 'progress';
+const ITEMS_PER_PAGE = 50;
+function ProgressSignal({ change }: { change: number | null }) {
+  if (change === null) return <span className="text-xs text-gray-400">Not available</span>;
+  if (change > 0) return <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-800"><span aria-hidden="true">↗</span> +{change} vs Overall</span>;
+  if (change < 0) return <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-800"><span aria-hidden="true">↘</span> {change} vs Overall</span>;
+  return <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-600"><span aria-hidden="true">→</span> No change</span>;
+}
 
-export function LeaderboardTable({
-  initialLeaderboard,
-  initialTotal,
-  totalWithWorks,
-  publishersWithBackfile,
-  availableContentTypes,
-}: LeaderboardTableProps) {
-  const [leaderboard, setLeaderboard] = useState(initialLeaderboard);
-  const [resultTotal, setResultTotal] = useState(initialTotal);
-  const [searchQuery, setSearchQuery] = useState('');
+function SortableHeader({
+  field,
+  label,
+  activeField,
+  direction,
+  onSort,
+}: {
+  field: SortField;
+  label: string;
+  activeField: SortField;
+  direction: SortDirection;
+  onSort: (field: SortField) => void;
+}) {
+  const active = activeField === field;
+  const indicator = active ? (direction === 'desc' ? '↓' : '↑') : '↕';
+  const nextAction = !active
+    ? `Sort ${label} high to low`
+    : direction === 'desc'
+      ? `Sort ${label} low to high`
+      : `Restore benchmark order`;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(field)}
+      title={nextAction}
+      aria-label={`${label}. ${nextAction}.`}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded px-1.5 py-1 transition-colors hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500',
+        active && 'bg-blue-100 font-semibold text-blue-800'
+      )}
+    >
+      <span>{label}</span>
+      <span aria-hidden="true" className={cn('text-sm leading-none', active ? 'text-blue-700' : 'text-gray-400')}>{indicator}</span>
+    </button>
+  );
+}
+
+export function LeaderboardTable({ availableContentTypes, initialEra, initialContentType }: Props) {
+  const router = useRouter();
+  const [era, setEra] = useState<BenchmarkEra>(initialEra);
+  const [contentType, setContentType] = useState(initialContentType);
+  const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortField, setSortField] = useState<SortField>('default');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const [viewMode, setViewMode] = useState<ViewMode>('overall');
-  const [contentTypeFilter, setContentTypeFilter] = useState<string>('all');
-  const [radarEntry, setRadarEntry] = useState<LeaderboardEntry | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const skipInitialFetch = useRef(true);
+  const [sort, setSort] = useState<SortField>('default');
+  const [direction, setDirection] = useState<SortDirection>('desc');
+  const [page, setPage] = useState(1);
+  const [entries, setEntries] = useState<Entry[]>([]);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [resultTotal, setResultTotal] = useState(0);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [radarEntry, setRadarEntry] = useState<Entry | null>(null);
+  const range = getEraRange();
+  const contentLabel = contentType === 'all' ? 'Legacy All-Record Snapshot' : availableContentTypes.find((entry) => entry.type === contentType)?.label ?? contentType;
 
-  const hasImprovementData = publishersWithBackfile > 0;
-
-  // Helper to get content-type score for an entry
-  const getCtScore = (entry: LeaderboardEntry): number | null => {
-    if (contentTypeFilter === 'all') return null;
-    const ct = entry.contentTypes?.find((c) => c.type === contentTypeFilter);
-    return ct ? ct.score : null;
+  const updateScopeUrl = (nextEra: BenchmarkEra, nextContentType: string) => {
+    const params = new URLSearchParams({ era: nextEra });
+    if (nextContentType !== 'all') params.set('contentType', nextContentType);
+    router.replace(`/leaderboard?${params.toString()}`, { scroll: false });
   };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setDebouncedSearch(searchQuery.trim());
-      setCurrentPage(1);
-    }, 300);
-
+    const timer = window.setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1); }, 300);
     return () => window.clearTimeout(timer);
-  }, [searchQuery]);
+  }, [search]);
 
   useEffect(() => {
-    if (skipInitialFetch.current) {
-      skipInitialFetch.current = false;
-      return;
-    }
-
     const controller = new AbortController();
     const params = new URLSearchParams({
+      era,
+      contentType,
+      comparisonModel: 'current-v-overall-v2-volume',
       limit: ITEMS_PER_PAGE.toString(),
-      offset: ((currentPage - 1) * ITEMS_PER_PAGE).toString(),
-      view: viewMode,
-      sort: sortField,
-      direction: sortDirection,
+      offset: ((page - 1) * ITEMS_PER_PAGE).toString(),
+      sort,
+      direction,
     });
-
     if (debouncedSearch) params.set('search', debouncedSearch);
-    if (contentTypeFilter !== 'all') params.set('contentType', contentTypeFilter);
 
-    async function loadLeaderboard() {
-      setIsLoading(true);
-      setLoadError(null);
-
+    async function load() {
+      setLoading(true); setError(null);
       try {
-        const response = await fetch(`/api/leaderboard?${params.toString()}`, {
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Leaderboard request failed with status ${response.status}`);
-        }
-
-        const result = (await response.json()) as LeaderboardApiResponse;
-        setLeaderboard(result.leaderboard);
-        setResultTotal(result.total);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        setLoadError('Could not update the benchmark. Please try again.');
-      } finally {
-        if (!controller.signal.aborted) setIsLoading(false);
-      }
+        const response = await fetch(`/api/leaderboard?${params.toString()}`, { signal: controller.signal });
+        if (!response.ok) throw new Error(String(response.status));
+        const data = await response.json() as ApiResponse;
+        setEntries(data.leaderboard); setSummary(data.summary); setResultTotal(data.total);
+        setGeneratedAt(data.generatedAt); setTotalMembers(data.totalMembers);
+      } catch (loadError) {
+        if (loadError instanceof DOMException && loadError.name === 'AbortError') return;
+        setError('Could not load this benchmark scope. Please try again.');
+      } finally { if (!controller.signal.aborted) setLoading(false); }
     }
-
-    void loadLeaderboard();
+    void load();
     return () => controller.abort();
-  }, [contentTypeFilter, currentPage, debouncedSearch, sortDirection, sortField, viewMode]);
+  }, [contentType, debouncedSearch, direction, era, page, sort]);
 
-  // Track leaderboard searches, debounced so we log the settled query and how
-  // many publishers it matched — not every keystroke.
   useEffect(() => {
-    const q = debouncedSearch;
-    if (q.length < 2) return;
-    const timer = setTimeout(() => {
-      trackEvent('leaderboard_search', {
-        query: normalizeQuery(q),
-        results: resultTotal,
-        era: viewMode === 'progress' ? 'progress' : 'aggregate',
-        contentType: contentTypeFilter,
-      });
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [debouncedSearch, resultTotal, contentTypeFilter, viewMode]);
+    if (debouncedSearch.length < 2) return;
+    const timer = window.setTimeout(() => trackEvent('leaderboard_search', {
+      query: normalizeQuery(debouncedSearch), results: resultTotal, era, contentType,
+    }), 700);
+    return () => window.clearTimeout(timer);
+  }, [contentType, debouncedSearch, era, resultTotal]);
 
-  // Pagination
-  const totalPages = Math.ceil(resultTotal / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedLeaderboard = leaderboard;
+  const totalPages = Math.max(1, Math.ceil(resultTotal / ITEMS_PER_PAGE));
+  const scope = useMemo(() => ({ era, contentType }), [era, contentType]);
 
-  // Reset to page 1 when filters change
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
+  const changeEra = (next: BenchmarkEra) => {
+    setEra(next); setPage(1); setSort('default'); setDirection('desc'); setRadarEntry(null);
+    updateScopeUrl(next, contentType);
   };
-
-  const handleContentTypeChange = (value: string) => {
-    setContentTypeFilter(value);
-    setSortField('default');
-    setSortDirection('desc');
-    setCurrentPage(1);
-    // Reset to overall view when content-type filter is active — improvement data is aggregate only
-    if (value !== 'all' && viewMode === 'progress') {
-      setViewMode('overall');
-    }
+  const changeContentType = (next: string) => {
+    setContentType(next); setPage(1); setSort('default'); setDirection('desc'); setRadarEntry(null);
+    updateScopeUrl(era, next);
   };
-
-  const handleSortToggle = (field: 'score' | 'works' | 'improvement' | DimensionKey) => {
-    if (sortField === field) {
-      // Toggle direction or reset to default
-      if (sortDirection === 'desc') {
-        setSortDirection('asc');
-      } else {
-        setSortField('default');
-        setSortDirection('desc');
-      }
-    } else {
-      // New field, start with descending
-      setSortField(field);
-      setSortDirection('desc');
-    }
-    setCurrentPage(1);
-  };
-
-  const handleViewModeChange = (mode: ViewMode) => {
-    setViewMode(mode);
-    setSortField('default');
-    setSortDirection('desc');
-    setCurrentPage(1);
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return (
-        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-        </svg>
-      );
-    }
-    if (sortDirection === 'desc') {
-      return (
-        <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-      );
-    }
-    return (
-      <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-      </svg>
-    );
-  };
-
-  // Generate page numbers to show
-  const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
-    const maxVisiblePages = 7;
-
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      pages.push(1);
-
-      if (currentPage > 3) {
-        pages.push('...');
-      }
-
-      const start = Math.max(2, currentPage - 1);
-      const end = Math.min(totalPages - 1, currentPage + 1);
-
-      for (let i = start; i <= end; i++) {
-        pages.push(i);
-      }
-
-      if (currentPage < totalPages - 2) {
-        pages.push('...');
-      }
-
-      pages.push(totalPages);
-    }
-
-    return pages;
+  const toggleSort = (field: SortField) => {
+    if (sort === field && direction === 'desc') setDirection('asc');
+    else if (sort === field) { setSort('default'); setDirection('desc'); }
+    else { setSort(field); setDirection('desc'); }
+    setPage(1);
   };
 
   return (
     <div>
-      {/* View Mode Toggle */}
-      {hasImprovementData && (
-        <div className="mb-6">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleViewModeChange('overall')}
-              className={cn(
-                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                viewMode === 'overall'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              )}
-            >
-              Overall Index
-            </button>
-            <button
-              onClick={() => handleViewModeChange('progress')}
-              disabled={contentTypeFilter !== 'all'}
-              title={contentTypeFilter !== 'all' ? 'Trend data is only available for aggregate index values' : undefined}
-              className={cn(
-                'rounded-lg px-4 py-2 text-sm font-medium transition-colors',
-                viewMode === 'progress'
-                  ? 'bg-green-600 text-white'
-                  : contentTypeFilter !== 'all'
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              )}
-            >
-              Recent vs Backfile
-            </button>
-          </div>
-          {viewMode === 'progress' && (
-            <p className="mt-2 text-sm text-gray-500">
-              Trend = Current Index − Backfile Index. Positive values indicate better metadata
-              coverage on recent publications (&lt;2 years) compared to older content (&gt;2 years).
-              Showing {publishersWithBackfile.toLocaleString()} publishers with historical data.
-            </p>
-          )}
-        </div>
-      )}
+      <section className="grid grid-cols-2 overflow-hidden rounded-xl border bg-white shadow-sm" aria-label="Benchmark era">
+        <button onClick={() => changeEra('current')} className={cn('px-4 py-4 text-left sm:px-6', era === 'current' ? 'bg-blue-600 text-white' : 'hover:bg-blue-50')}>
+          <span className="block text-sm font-semibold">Current</span>
+          <span className={cn('block text-xs', era === 'current' ? 'text-blue-100' : 'text-gray-500')}>{range.currentStart}-{range.currentEnd}</span>
+        </button>
+        <button onClick={() => changeEra('overall')} className={cn('border-l px-4 py-4 text-left sm:px-6', era === 'overall' ? 'bg-gray-900 text-white' : 'hover:bg-gray-50')}>
+          <span className="block text-sm font-semibold">Overall</span>
+          <span className={cn('block text-xs', era === 'overall' ? 'text-gray-300' : 'text-gray-500')}>All years</span>
+        </button>
+      </section>
 
-      {/* Search and Filters */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 rounded-xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 sm:max-w-md">
-          <input
-            type="text"
-            placeholder="Search publishers..."
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-          <svg
-            className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          {searchQuery && (
-            <button
-              onClick={() => handleSearchChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search publishers..." className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          <svg className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          {availableContentTypes.length > 0 && (
-            <>
-              <label className="text-sm text-gray-600">Content:</label>
-              <select
-                value={contentTypeFilter}
-                onChange={(e) => handleContentTypeChange(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="all">All Content Types</option>
-                {availableContentTypes
-                  .filter((ct) => ct.count >= 100)
-                  .map((ct) => (
-                    <option key={ct.type} value={ct.type}>
-                      {ct.label} ({ct.count.toLocaleString()})
-                    </option>
-                  ))}
-              </select>
-            </>
-          )}
+        <div className="flex items-center gap-2">
+          <label htmlFor="benchmark-content-type" className="text-sm text-gray-600">Content type</label>
+          <select id="benchmark-content-type" value={contentType} onChange={(event) => changeContentType(event.target.value)} className="max-w-64 rounded-lg border border-gray-300 px-3 py-2 text-sm">
+            <option value="all">All Registered Records (legacy)</option>
+            <optgroup label="Available now">
+              {availableContentTypes.filter((entry) => entry.benchmarked).map((entry) => <option key={entry.type} value={entry.type}>{entry.label} ({entry.count.toLocaleString()})</option>)}
+            </optgroup>
+            <optgroup label="Coming soon - not yet benchmarked">
+              {availableContentTypes.filter((entry) => !entry.benchmarked).map((entry) => <option key={entry.type} value={entry.type} disabled>{entry.label} ({entry.count.toLocaleString()}) - Coming soon</option>)}
+            </optgroup>
+          </select>
         </div>
       </div>
 
-      {/* Results count */}
-      <div className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-600">
-        <span>
-          {searchQuery || contentTypeFilter !== 'all' ? (
-            <>
-              Showing {resultTotal.toLocaleString()} results
-              {contentTypeFilter !== 'all' && ` for ${availableContentTypes.find(ct => ct.type === contentTypeFilter)?.label || contentTypeFilter}`}
-              {searchQuery && ` matching "${searchQuery}"`}
-            </>
-          ) : viewMode === 'progress' ? (
-            <>Showing all {publishersWithBackfile.toLocaleString()} publishers with historical data</>
-          ) : (
-            <>Showing all {totalWithWorks.toLocaleString()} publishers</>
-          )}
-        </span>
-        {sortField !== 'default' && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-            Sorted by {sortField === 'organizations' ? 'orgs' : sortField} {sortDirection === 'desc' ? '(high to low)' : '(low to high)'}
-            <button
-              onClick={() => {
-                setSortField('default');
-                setSortDirection('desc');
-                setCurrentPage(1);
-              }}
-              className="ml-1 hover:text-blue-900"
-            >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </span>
-        )}
-        {isLoading && (
-          <span className="inline-flex items-center gap-1 text-xs text-gray-500" role="status">
-            <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-blue-600" />
-            Updating
+      <div className={cn('mt-4 rounded-xl border px-4 py-3 text-sm', contentType === 'all' ? 'border-amber-200 bg-amber-50 text-amber-900' : 'border-blue-100 bg-blue-50 text-blue-900')}>
+        <strong>{contentLabel} - {era === 'overall' ? 'Overall, all years' : `Current, ${range.currentStart}-${range.currentEnd}`}</strong>
+        {contentType === 'all' ? (
+          <span className="ml-2">This saved benchmark predates schema-aware aggregation and includes unsupported record types. Use a specific supported content type for valid like-for-like benchmark positions; aggregate benchmark positions are withheld on live publisher profiles until regeneration.</span>
+        ) : (
+          <span className="ml-2 text-blue-700">
+            All statistics and benchmark positions below use this exact supported content type.{' '}
+            <Link href="/about#future-directions" className="font-medium underline underline-offset-2">See how Coming soon types will evolve.</Link>
           </span>
         )}
       </div>
 
-      {loadError && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
-          {loadError}
+      {summary && (
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border bg-white p-4 shadow-sm"><p className="text-xs uppercase text-gray-500">Publishers in scope</p><p className="mt-1 text-2xl font-bold">{summary.scopeTotal.toLocaleString()}</p><p className="text-xs text-gray-400">of {totalMembers.toLocaleString()} members</p></div>
+          <div className={cn('rounded-xl border p-4 shadow-sm', era === 'current' ? 'border-blue-200 bg-blue-50' : 'bg-white')}><p className="text-xs uppercase text-gray-500">{era === 'current' ? 'Average current index' : 'Average overall index'}</p><p className={cn('mt-1 text-2xl font-bold', era === 'current' && 'text-blue-700')}>{summary.averageScore}</p></div>
+          <div className={cn('rounded-xl border p-4 shadow-sm', era === 'current' ? 'border-green-200 bg-green-50' : 'bg-white')}><p className="text-xs uppercase text-gray-500">{era === 'current' ? 'Current excellence mark' : 'Highest overall index'}</p><p className={cn('mt-1 text-2xl font-bold', era === 'current' ? 'text-green-700' : 'text-blue-700')}>{era === 'current' ? `★ ${summary.highestScore}` : summary.highestScore}</p></div>
+          <div className="rounded-xl border bg-white p-4 shadow-sm"><p className="text-xs uppercase text-gray-500">Benchmark snapshot</p><p className="mt-1 text-base font-semibold">{generatedAt ? formatDataDate(generatedAt) : 'Not available'}</p></div>
         </div>
       )}
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border bg-white shadow-sm" aria-busy={isLoading}>
+      {summary && (
+        <div className="mt-3 flex flex-wrap gap-2 rounded-xl border bg-white p-4 text-xs shadow-sm">
+          <span className="font-medium text-gray-600">Index distribution:</span>
+          {summary.distribution.map((band) => <span key={band.label} className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700">{band.label}: {band.count.toLocaleString()}</span>)}
+        </div>
+      )}
+
+      <div className="mt-5 flex items-center justify-between text-sm text-gray-600">
+        <p>{loading ? 'Updating...' : `${resultTotal.toLocaleString()} publishers`}</p>
+        {contentType !== 'all' && <p className="text-xs text-amber-700">Volume adds scale and context to the benchmark. Benchmark positions compare metadata coverage independently of publisher size. Until the refreshed snapshot contains exact per-type counts, rows clearly show publisher-wide volume across all registered types.</p>}
+      </div>
+      <p className="mt-2 text-xs text-gray-500"><span aria-hidden="true" className="font-semibold">↕</span> Sortable columns: select once for high-to-low, again for low-to-high, and a third time to restore benchmark order.</p>
+      {error && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+
+      <div className="mt-3 overflow-x-auto rounded-xl border bg-white shadow-sm" aria-busy={loading}>
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                {viewMode === 'progress' ? '#' : 'Position'}
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Publisher
-              </th>
-              {viewMode === 'progress' ? (
-                <>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                    <button
-                      onClick={() => handleSortToggle('improvement')}
-                      className="inline-flex items-center gap-1 hover:text-gray-700"
-                    >
-                      Improvement
-                      {getSortIcon('improvement')}
-                    </button>
-                  </th>
-                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 sm:table-cell">
-                    Current
-                  </th>
-                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 sm:table-cell">
-                    Backfile
-                  </th>
-                </>
-              ) : (
-                <>
-                  <th className="px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                    <button
-                      onClick={() => handleSortToggle('score')}
-                      className="inline-flex items-center gap-1 hover:text-gray-700"
-                    >
-                      Index
-                      {getSortIcon('score')}
-                    </button>
-                  </th>
-                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                    <button onClick={() => handleSortToggle('provenance')} className="inline-flex items-center gap-1 hover:text-gray-700">
-                      Provenance{getSortIcon('provenance')}
-                    </button>
-                  </th>
-                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 md:table-cell">
-                    <button onClick={() => handleSortToggle('people')} className="inline-flex items-center gap-1 hover:text-gray-700">
-                      People{getSortIcon('people')}
-                    </button>
-                  </th>
-                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                    <button onClick={() => handleSortToggle('organizations')} className="inline-flex items-center gap-1 hover:text-gray-700">
-                      Orgs{getSortIcon('organizations')}
-                    </button>
-                  </th>
-                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                    <button onClick={() => handleSortToggle('funding')} className="inline-flex items-center gap-1 hover:text-gray-700">
-                      Funding{getSortIcon('funding')}
-                    </button>
-                  </th>
-                  <th className="hidden px-4 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 lg:table-cell">
-                    <button onClick={() => handleSortToggle('access')} className="inline-flex items-center gap-1 hover:text-gray-700">
-                      Access{getSortIcon('access')}
-                    </button>
-                  </th>
-                </>
-              )}
-              <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                <button
-                  onClick={() => handleSortToggle('works')}
-                  className="inline-flex items-center gap-1 hover:text-gray-700"
-                >
-                  Works
-                  {getSortIcon('works')}
-                </button>
-              </th>
+              <th className="px-4 py-3 text-left">Benchmark position</th><th className="px-4 py-3 text-left">Publisher</th>
+              <th className="px-4 py-3 text-center" aria-sort={sort === 'score' ? direction === 'desc' ? 'descending' : 'ascending' : 'none'}><SortableHeader field="score" label={era === 'current' ? 'Current index' : 'Overall index'} activeField={sort} direction={direction} onSort={toggleSort} /></th>
+              <th className="px-4 py-3 text-center">{era === 'overall' ? 'Current' : 'Overall'}</th>
+              <th className="px-4 py-3 text-center" aria-sort={sort === 'improvement' ? direction === 'desc' ? 'descending' : 'ascending' : 'none'}><SortableHeader field="improvement" label="Current vs Overall" activeField={sort} direction={direction} onSort={toggleSort} /></th>
+              {contentType === 'all' && (['provenance','people','organizations','funding','access'] as (keyof Dimensions)[]).map((dimension) => <th key={dimension} className="hidden px-3 py-3 text-center xl:table-cell" aria-sort={sort === dimension ? direction === 'desc' ? 'descending' : 'ascending' : 'none'}><SortableHeader field={dimension} label={dimension === 'organizations' ? 'Orgs' : dimension} activeField={sort} direction={direction} onSort={toggleSort} /></th>)}
+              <th className="px-4 py-3 text-right" aria-sort={sort === 'works' ? direction === 'desc' ? 'descending' : 'ascending' : 'none'}><SortableHeader field="works" label="Volume context" activeField={sort} direction={direction} onSort={toggleSort} /></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
-            {paginatedLeaderboard.length === 0 ? (
-              <tr>
-                <td colSpan={viewMode === 'progress' ? 6 : 9} className="px-4 py-8 text-center text-gray-500">
-                  No publishers found matching your search.
+          <tbody className="divide-y">
+            {entries.map((entry) => (
+              <tr key={entry.id} className={cn('hover:bg-gray-50', entry.dimensions && 'cursor-pointer')} onClick={() => entry.dimensions && setRadarEntry(entry)}>
+                <td className="px-4 py-4 text-lg font-bold text-gray-400">#{entry.rank.toLocaleString()}</td>
+                <td className="px-4 py-4"><Link href={buildMemberHref(entry.id, scope)} onClick={(event) => event.stopPropagation()} className="font-medium text-gray-900 hover:text-blue-600">{entry.name}</Link>{entry.location && <p className="text-xs text-gray-500">{entry.location}</p>}</td>
+                <td className="px-4 py-4 text-center"><span className="text-lg font-bold">{entry.score}</span>{era === 'current' && entry.score >= 80 && <span className="ml-1.5 inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800" title="Current excellence: index 80 or above">★ Excellence</span>}</td>
+                <td className="px-4 py-4 text-center text-sm text-gray-600">{entry.comparisonScore ?? 'Not available'}</td>
+                <td className="px-4 py-4 text-center"><ProgressSignal change={entry.currentVsOverall ?? (entry.comparisonScore === null ? null : era === 'current' ? entry.score - entry.comparisonScore : entry.comparisonScore - entry.score)} /></td>
+                {contentType === 'all' && (['provenance','people','organizations','funding','access'] as (keyof Dimensions)[]).map((dimension) => <td key={dimension} className="hidden px-3 py-4 text-center text-sm text-gray-600 xl:table-cell">{entry.dimensions?.[dimension] ?? '-'}%</td>)}
+                <td className="px-4 py-4 text-right text-sm text-gray-600">
+                  {entry.scopeWorks === null ? 'Not available' : <><span className="font-semibold text-gray-800">{entry.scopeWorks.toLocaleString()}</span><span className="block text-[11px] text-gray-400">{entry.scopeWorksExact ? (contentType === 'all' ? 'works in scope' : `${contentLabel.toLowerCase()} works`) : `${era === 'current' ? 'current' : 'all-years'} works · all types`}</span></>}
                 </td>
               </tr>
-            ) : (
-              paginatedLeaderboard.map((entry, index) => {
-                const useOriginalRank = contentTypeFilter === 'all' && sortField === 'default' && !searchQuery;
-                const displayRank = useOriginalRank ? entry.rank : startIndex + index + 1;
-                return (
-                <tr key={entry.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setRadarEntry(entry)}>
-                  <td className="whitespace-nowrap px-4 py-4">
-                    {viewMode === 'progress' ? (
-                      <span className="text-lg font-bold text-gray-400">
-                        #{(startIndex + index + 1).toLocaleString()}
-                      </span>
-                    ) : (
-                      <span
-                        className={cn(
-                          'text-lg font-bold',
-                          useOriginalRank ? (rankStyles[displayRank] || 'text-gray-400') : 'text-gray-400'
-                        )}
-                      >
-                        {useOriginalRank && displayRank <= 3 ? (
-                          <>
-                            {displayRank === 1 && '🥇'}
-                            {displayRank === 2 && '🥈'}
-                            {displayRank === 3 && '🥉'}
-                          </>
-                        ) : (
-                          `#${displayRank.toLocaleString()}`
-                        )}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    <Link
-                      href={`/member/${entry.id}`}
-                      className="font-medium text-gray-900 hover:text-blue-600"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {entry.name}
-                    </Link>
-                    {entry.location && (
-                      <p className="mt-0.5 text-xs text-gray-500">{entry.location}</p>
-                    )}
-                  </td>
-                  {viewMode === 'progress' ? (
-                    <>
-                      <td className="whitespace-nowrap px-4 py-4 text-center">
-                        <span
-                          className={cn(
-                            'inline-flex items-center gap-1 text-lg font-bold',
-                            (entry.improvement ?? 0) > 0
-                              ? 'text-green-600'
-                              : (entry.improvement ?? 0) < 0
-                              ? 'text-red-600'
-                              : 'text-gray-500'
-                          )}
-                        >
-                          {(entry.improvement ?? 0) > 0 && (
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-                            </svg>
-                          )}
-                          {(entry.improvement ?? 0) < 0 && (
-                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                            </svg>
-                          )}
-                          {(entry.improvement ?? 0) > 0 ? '+' : ''}{entry.improvement ?? 0}
-                        </span>
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 sm:table-cell">
-                        {entry.currentScore ?? '-'}
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 sm:table-cell">
-                        {entry.backfileScore ?? '-'}
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td className="whitespace-nowrap px-4 py-4 text-center">
-                        <span className="text-lg font-bold text-gray-900">
-                          {getCtScore(entry) ?? entry.score}
-                        </span>
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 md:table-cell">
-                        {entry.dimensions.provenance}%
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 md:table-cell">
-                        {entry.dimensions.people}%
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
-                        {entry.dimensions.organizations}%
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
-                        {entry.dimensions.funding}%
-                      </td>
-                      <td className="hidden whitespace-nowrap px-4 py-4 text-center text-sm text-gray-600 lg:table-cell">
-                        {entry.dimensions.access}%
-                      </td>
-                    </>
-                  )}
-                  <td className="whitespace-nowrap px-4 py-4 text-right text-sm text-gray-500">
-                    {entry.totalWorks.toLocaleString()}
-                  </td>
-                </tr>
-                );
-              })
-            )}
+            ))}
+            {!loading && entries.length === 0 && <tr><td colSpan={10} className="px-4 py-10 text-center text-gray-500">No publishers match this scope.</td></tr>}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="mt-6 flex flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-sm text-gray-600">
-            Showing {startIndex + 1} to{' '}
-            {Math.min(startIndex + ITEMS_PER_PAGE, resultTotal)} of{' '}
-            {resultTotal.toLocaleString()} publishers
-          </p>
+      {totalPages > 1 && <div className="mt-5 flex items-center justify-between"><button disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Previous</button><span className="text-sm text-gray-600">Page {page} of {totalPages}</span><button disabled={page === totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))} className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40">Next</button></div>}
 
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              First
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Prev
-            </button>
-
-            <div className="hidden items-center gap-1 sm:flex">
-              {getPageNumbers().map((page, index) =>
-                typeof page === 'string' ? (
-                  <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
-                    {page}
-                  </span>
-                ) : (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={cn(
-                      'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                      currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    )}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
-            </div>
-
-            <span className="px-2 text-sm text-gray-600 sm:hidden">
-              Page {currentPage} of {totalPages}
-            </span>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Next
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Last
-            </button>
-          </div>
-        </div>
-      )}
-      {radarEntry && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setRadarEntry(null)} />
-          <PublisherRadar
-            id={radarEntry.id}
-            name={radarEntry.name}
-            score={getCtScore(radarEntry) ?? radarEntry.score}
-            dimensions={radarEntry.dimensions}
-            contentTypeFilter={contentTypeFilter}
-            onClose={() => setRadarEntry(null)}
-          />
-        </>
-      )}
+      {radarEntry?.dimensions && <><div className="fixed inset-0 z-40 bg-black/20" onClick={() => setRadarEntry(null)} /><PublisherRadar id={radarEntry.id} name={radarEntry.name} score={radarEntry.score} dimensions={radarEntry.dimensions} scope={scope} onClose={() => setRadarEntry(null)} /></>}
     </div>
   );
 }

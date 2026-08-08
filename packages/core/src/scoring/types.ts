@@ -64,9 +64,9 @@ export interface TrendInfo {
   direction: TrendDirection;
   /** Point change (current - backfile) */
   change: number;
-  /** Score for current works (last 2 years) */
+  /** Score for works in Crossref's rolling current three-year window */
   currentScore: number;
-  /** Score for backfile works (older than 2 years) */
+  /** Score for works before Crossref's rolling current window */
   backfileScore: number;
 }
 
@@ -95,6 +95,18 @@ export interface Recommendation {
   documentationUrl: string;
 }
 
+export interface ScopedRecommendationSet {
+  /** Crossref content type key, or "all" for the member-wide scope */
+  contentType: string;
+  /** Human-readable scope label */
+  label: string;
+  /** Recommendations deliberately focus on current deposit practice */
+  era: 'current';
+  /** Number of current works in scope, when Crossref provides it */
+  works?: number;
+  recommendations: Recommendation[];
+}
+
 export interface ScoreMetadata {
   /** Member/journal ID */
   entityId: number | string;
@@ -108,7 +120,7 @@ export interface ScoreMetadata {
   calculatedAt: string;
   /** Total DOI count */
   totalWorks: number;
-  /** Current works count (last 2 years) */
+  /** Current works count (current calendar year plus the preceding two) */
   currentWorks: number;
   /** Backfile works count */
   backfileWorks: number;
@@ -150,6 +162,8 @@ export interface ContentTypeEraScore {
     funding: number;
     access: number;
   };
+  /** Full per-metric scoring details for this content type and era */
+  metricDetails: DimensionScores;
   /** Number of works of this type in this era, when counts are available */
   works?: number;
 }
@@ -163,6 +177,8 @@ export interface ContentTypeScore {
   type: string;
   /** Human-readable label, e.g. 'Journal Articles' */
   label: string;
+  /** Whether this type is supported by Crossref Participation Reports */
+  scorable: boolean;
   /** Weighted score 0-100 (all years) */
   score: number;
   /** Letter grade (all years) */
@@ -175,10 +191,28 @@ export interface ContentTypeScore {
     funding: number;
     access: number;
   };
+  /** Full per-metric scoring details for this content type across all years */
+  metricDetails: DimensionScores;
   /** Number of works of this type across all years, when counts are available */
   works?: number;
-  /** Score for works from the last 2 years, when the era has works */
+  /** Score for works in Crossref's rolling current three-year window */
   current?: ContentTypeEraScore;
-  /** Score for works older than 2 years, when the era has works */
+  /** Score for works before Crossref's rolling current window */
   backfile?: ContentTypeEraScore;
+}
+
+/** A member-wide score aggregated only across Participation Report work types. */
+export interface ScorableEraScore extends ContentTypeEraScore {
+  /** Weighted metric coverage used to calculate this era score */
+  coverage: ContentTypeCoverage;
+  /** Number of supported works included in the calculation */
+  works: number;
+  /** Other registered Crossref records excluded because their schemas differ */
+  excludedWorks: number;
+}
+
+export interface ScorableMemberScore {
+  all: ScorableEraScore | null;
+  current: ScorableEraScore | null;
+  backfile: ScorableEraScore | null;
 }

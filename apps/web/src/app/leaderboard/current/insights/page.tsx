@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Current Era Insights - Nexus-Index',
+  title: 'Current Benchmark Insights - Nexus-Index',
   description:
     'Contextual findings from the current-era Crossref metadata health benchmark.',
 };
@@ -14,13 +14,13 @@ export default function CurrentEraInsightsPage() {
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/leaderboard/current"
+            href="/leaderboard?era=current"
             className="inline-flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-800"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
             </svg>
-            Back to Current Era Benchmark
+            Back to Benchmark Explorer
           </Link>
           <h1 className="mt-3 text-3xl font-bold text-gray-900">
             Benchmark Insights
@@ -60,7 +60,7 @@ export default function CurrentEraInsightsPage() {
             <p className="mb-3 text-sm font-medium text-gray-500 uppercase tracking-wider">Jump to</p>
             <div className="flex flex-wrap gap-2">
               <a href="#overall-vs-current" className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100">
-                1. Overall vs Current Era
+                1. Overall vs Current
               </a>
               <a href="#by-content-type" className="rounded-full border border-purple-200 bg-purple-50 px-3 py-1.5 text-sm font-medium text-purple-700 hover:bg-purple-100">
                 2. By Content Type
@@ -80,20 +80,20 @@ export default function CurrentEraInsightsPage() {
           {/* ======== SECTION 1: OVERALL VS CURRENT ERA ======== */}
           <div id="overall-vs-current" className="not-prose mb-4 flex items-center gap-3">
             <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">1</span>
-            <h2 className="text-2xl font-bold text-gray-900 m-0">Overall vs Current Era</h2>
+            <h2 className="text-2xl font-bold text-gray-900 m-0">Overall vs Current</h2>
           </div>
           <div className="rounded-lg border-l-4 border-blue-400 bg-blue-50 p-4 not-prose mb-6">
             <p className="text-sm text-blue-800">
-              <strong>What this shows:</strong> How the picture changes when you strip away historical backfiles
-              and focus on deposits from the last two years.
+              <strong>What this shows:</strong> How the picture changes when you separate Backfile records
+              and focus on deposits from the rolling Current three-year window.
             </p>
           </div>
 
           <p>
             The <Link href="/leaderboard" className="font-medium underline">overall benchmark</Link> averages
-            current and backfile metadata. Large historical catalogs often include records created before
+            Current and Backfile metadata. Large catalogs often include records created before
             modern identifier standards. The{' '}
-            <Link href="/leaderboard/current" className="font-medium underline">current-era benchmark</Link> focuses
+            <Link href="/leaderboard?era=current" className="font-medium underline">Current benchmark</Link> focuses
             on recent deposits and offers a clearer view of current metadata workflows.
           </p>
 
@@ -103,7 +103,7 @@ export default function CurrentEraInsightsPage() {
                 <tr>
                   <th className="px-4 py-3 text-left font-medium text-gray-700">Metric</th>
                   <th className="px-4 py-3 text-center font-medium text-gray-700">Overall</th>
-                  <th className="px-4 py-3 text-center font-medium text-blue-700">Current Era</th>
+                  <th className="px-4 py-3 text-center font-medium text-blue-700">Current</th>
                   <th className="px-4 py-3 text-center font-medium text-gray-700">Change</th>
                 </tr>
               </thead>
@@ -202,7 +202,7 @@ export default function CurrentEraInsightsPage() {
             <p className="text-sm text-purple-800">
               <strong>What this shows:</strong> Aggregate index values mix content types with fundamentally different metadata
               expectations. The{' '}
-              <Link href="/leaderboard/current" className="font-medium underline">content-type filter</Link> on
+              <Link href="/leaderboard?era=current" className="font-medium underline">content-type filter</Link> on
               both benchmarks enables like-for-like comparisons—and the picture changes substantially.
             </p>
           </div>
@@ -429,7 +429,7 @@ export default function CurrentEraInsightsPage() {
           <ul>
             <li>
               <strong>Overall vs Current:</strong> The industry is getting better — 2,844 publishers
-              have meaningfully higher index values on recent content. Historical records change the aggregate picture.
+              have meaningfully higher index values on recent content. Backfile records change the aggregate picture.
             </li>
             <li>
               <strong>By Content Type:</strong> Aggregate values need context. eLife&apos;s aggregate is in the
@@ -447,7 +447,7 @@ export default function CurrentEraInsightsPage() {
           </ul>
           <p>
             Use the{' '}
-            <Link href="/leaderboard/current" className="font-medium underline">content-type filter</Link> on
+            <Link href="/leaderboard?era=current" className="font-medium underline">content-type filter</Link> on
             the benchmark to explore these patterns for any publisher.
           </p>
         </article>
@@ -459,10 +459,10 @@ export default function CurrentEraInsightsPage() {
           </p>
           <div className="flex gap-3">
             <Link
-              href="/leaderboard/current"
+              href="/leaderboard?era=current"
               className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
             >
-              Current Era Benchmark
+              Current Benchmark
             </Link>
             <Link
               href="/leaderboard"

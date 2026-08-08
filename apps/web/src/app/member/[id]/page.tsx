@@ -6,10 +6,15 @@ import { join } from 'path';
 import {
   CrossrefClient,
   calculateMemberScore,
+  calculateDimensionsForPeriod,
   calculateContentTypeScores,
+  calculateScorableMemberScore,
+  rankByScore,
   CrossrefNotFoundError,
+  type DimensionScores,
   type NexusScore,
   type ContentTypeScore,
+  type ScorableMemberScore,
 } from '@nexus-score/core';
 import { MemberScoreView } from '@/components/member-score-view';
 import {
@@ -18,22 +23,25 @@ import {
   type MixShiftEntry,
 } from '@/components/member-change-insights';
 import { MemberContentTypeProvider } from '@/components/member-content-type-context';
+import { MemberScopeControls } from '@/components/member-scope-controls';
 import {
   MemberRankingBanner,
   type RankingData,
 } from '@/components/member-ranking-banner';
 import { MetricsTable } from '@/components/metrics-table';
-import { RecommendationsList } from '@/components/recommendations-list';
-import { MemberSearch } from '@/components/member-search';
+import { MemberScopedSearch } from '@/components/member-scoped-search';
+import { MemberActionPlan } from '@/components/member-action-plan';
 import { TrackMemberView } from '@/components/track-member-view';
 import { CopyLinkButton } from '@/components/copy-link-button';
 import { formatNumber, cn } from '@/lib/utils';
+import { formatDataDate, parseBenchmarkEra, parseContentType } from '@/lib/benchmark-scope';
 
 // Revalidate every 24 hours — keeps index values fresh between data refreshes
 export const revalidate = 86400;
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ era?: string | string[]; contentType?: string | string[] }>;
 }
 
 interface LeaderboardContentType {
@@ -78,10 +86,11 @@ interface LeaderboardData {
 }
 
 interface RankingInfo {
+  score: number;
   rank: number;
   totalPublishers: number;
   percentile: number;
-  nearbyPublishers: LeaderboardEntry[];
+  nearbyPublishers: RankingData['nearbyPublishers'];
   topGap: number | null; // points needed to reach top 10%
 }
 
@@ -90,18 +99,18 @@ interface CurrentLeaderboardEntry {
   id: number;
   name: string;
   score: number;
+  contentTypes?: LeaderboardContentType[];
 }
 
 interface CurrentLeaderboardData {
+  generatedAt: string;
   totalActive: number;
   leaderboard: CurrentLeaderboardEntry[];
 }
 
-interface EraRanking {
-  overallRank: number | null;
-  overallTotal: number;
-  currentRank: number | null;
-  currentTotal: number;
+interface EraDimensions {
+  current: DimensionScores;
+  backfile: DimensionScores | null;
 }
 
 type MemberIndex = Pick<
@@ -135,28 +144,14 @@ function getCurrentLeaderboardData(): CurrentLeaderboardData | null {
   }
 }
 
-function getEraRanking(memberId: number): EraRanking | null {
-  const overallData = getLeaderboardData();
-  const currentData = getCurrentLeaderboardData();
-  if (!overallData && !currentData) return null;
-
-  const overallEntry = overallData?.leaderboard.find((e) => e.id === memberId);
-  const currentEntry = currentData?.leaderboard.find((e) => e.id === memberId);
-
-  return {
-    overallRank: overallEntry?.rank ?? null,
-    overallTotal: overallData?.totalWithWorks ?? 0,
-    currentRank: currentEntry?.rank ?? null,
-    currentTotal: currentData?.totalActive ?? 0,
-  };
-}
-
 function getRankingInfo(memberId: number, score: number): RankingInfo | null {
   const data = getLeaderboardData();
   if (!data) return null;
 
   const { leaderboard, totalWithWorks } = data;
-  const memberEntry = leaderboard.find((e) => e.id === memberId);
+  const ranked = rankByScore(leaderboard, (entry) => entry.score);
+  const memberIndex = ranked.findIndex((entry) => entry.id === memberId);
+  const memberEntry = memberIndex >= 0 ? ranked[memberIndex] : null;
 
   if (!memberEntry) {
     // Member not in leaderboard (maybe 0 works) - estimate rank by score
@@ -168,6 +163,7 @@ function getRankingInfo(memberId: number, score: number): RankingInfo | null {
     const topGap = top10Entry ? Math.max(0, top10Entry.score - score) : null;
 
     return {
+      score,
       rank,
       totalPublishers: totalWithWorks,
       percentile: Math.max(0, percentile),
@@ -180,29 +176,72 @@ function getRankingInfo(memberId: number, score: number): RankingInfo | null {
   const percentile = Math.round((1 - rank / totalWithWorks) * 100);
 
   // Get nearby publishers (2 above, 2 below)
-  const nearbyPublishers = leaderboard
-    .filter(
-      (e) =>
-        e.id !== memberId &&
-        e.rank >= Math.max(1, rank - 2) &&
-        e.rank <= rank + 2
-    )
+  const nearbyPublishers = ranked
+    .slice(Math.max(0, memberIndex - 2), memberIndex + 3)
+    .filter((entry) => entry.id !== memberId)
     .slice(0, 4);
 
   // Calculate gap to top 10%
   const top10PercentRank = Math.ceil(totalWithWorks * 0.1);
-  const top10Entry = leaderboard[top10PercentRank - 1];
+  const top10Entry = ranked[top10PercentRank - 1];
   const topGap =
     rank > top10PercentRank && top10Entry
       ? Math.max(0, top10Entry.score - score)
       : null;
 
   return {
+    score: memberEntry.score,
     rank,
     totalPublishers: totalWithWorks,
     percentile: Math.max(0, percentile),
     nearbyPublishers,
     topGap,
+  };
+}
+
+function getCurrentRankingInfo(memberId: number, score: number): RankingInfo | null {
+  const data = getCurrentLeaderboardData();
+  if (!data) return null;
+
+  const { leaderboard, totalActive } = data;
+  const ranked = rankByScore(leaderboard, (entry) => entry.score);
+  const memberIndex = ranked.findIndex((entry) => entry.id === memberId);
+  const memberEntry = memberIndex >= 0 ? ranked[memberIndex] : null;
+
+  if (!memberEntry) {
+    const betterCount = leaderboard.filter((entry) => entry.score > score).length;
+    const rank = betterCount + 1;
+    const percentile = Math.round((1 - rank / totalActive) * 100);
+    const top10Entry = ranked[Math.ceil(totalActive * 0.1) - 1];
+
+    return {
+      score,
+      rank,
+      totalPublishers: totalActive,
+      percentile: Math.max(0, percentile),
+      nearbyPublishers: [],
+      topGap: top10Entry ? Math.max(0, top10Entry.score - score) : null,
+    };
+  }
+
+  const rank = memberEntry.rank;
+  const percentile = Math.round((1 - rank / totalActive) * 100);
+  const nearbyPublishers = ranked
+    .slice(Math.max(0, memberIndex - 2), memberIndex + 3)
+    .filter((entry) => entry.id !== memberId)
+    .slice(0, 4);
+  const top10Entry = ranked[Math.ceil(totalActive * 0.1) - 1];
+
+  return {
+    score: memberEntry.score,
+    rank,
+    totalPublishers: totalActive,
+    percentile: Math.max(0, percentile),
+    nearbyPublishers,
+    topGap:
+      rank > Math.ceil(totalActive * 0.1) && top10Entry
+        ? Math.max(0, top10Entry.score - score)
+        : null,
   };
 }
 
@@ -213,25 +252,27 @@ function getRankingInfo(memberId: number, score: number): RankingInfo | null {
  */
 function getContentTypeRankings(
   memberId: number,
-  types: string[]
+  types: string[],
+  era: 'overall' | 'current' = 'overall'
 ): Record<string, RankingData> {
-  const data = getLeaderboardData();
+  const data = era === 'current' ? getCurrentLeaderboardData() : getLeaderboardData();
   const rankings: Record<string, RankingData> = {};
   if (!data || types.length === 0) return rankings;
 
   for (const type of types) {
-    const ranked = data.leaderboard
+    const ranked = rankByScore(data.leaderboard
       .map((entry) => {
         const ct = entry.contentTypes?.find((c) => c.type === type);
         return ct ? { entry, ctScore: ct.score } : null;
       })
-      .filter((x): x is { entry: LeaderboardEntry; ctScore: number } => x !== null)
-      .sort((a, b) => b.ctScore - a.ctScore);
+      .filter((x): x is { entry: LeaderboardEntry; ctScore: number } => x !== null),
+      (entry) => entry.ctScore
+    );
 
     const index = ranked.findIndex((x) => x.entry.id === memberId);
     if (index === -1) continue;
 
-    const rank = index + 1;
+    const rank = ranked[index].rank;
     const total = ranked.length;
     const percentile = Math.round((1 - rank / total) * 100);
 
@@ -242,7 +283,7 @@ function getContentTypeRankings(
       .map((x) => ({
         id: x.entry.id,
         name: x.entry.name,
-        rank: ranked.indexOf(x) + 1,
+        rank: x.rank,
         score: x.ctScore,
       }));
 
@@ -254,6 +295,7 @@ function getContentTypeRankings(
         : null;
 
     rankings[type] = {
+      score: ranked[index].ctScore,
       rank,
       totalPublishers: total,
       percentile: Math.max(0, percentile),
@@ -263,83 +305,6 @@ function getContentTypeRankings(
   }
 
   return rankings;
-}
-
-function getImprovementTips(dimensions: NexusScore['dimensions']): {
-  dimension: string;
-  currentPercent: number;
-  potentialGain: number;
-  tip: string;
-  docUrl: string;
-}[] {
-  const tips: {
-    dimension: string;
-    currentPercent: number;
-    potentialGain: number;
-    tip: string;
-    docUrl: string;
-  }[] = [];
-
-  // Calculate potential gains for each dimension
-  if (dimensions.provenance.percentage < 80) {
-    const gain = Math.round((80 - dimensions.provenance.percentage) * 0.25);
-    tips.push({
-      dimension: 'Provenance',
-      currentPercent: dimensions.provenance.percentage,
-      potentialGain: gain,
-      tip: 'Add reference lists to your DOI deposits. Even partial references help establish citation links.',
-      docUrl: 'https://www.crossref.org/documentation/cited-by/',
-    });
-  }
-
-  if (dimensions.people.percentage < 80) {
-    const gain = Math.round((80 - dimensions.people.percentage) * 0.2);
-    tips.push({
-      dimension: 'People',
-      currentPercent: dimensions.people.percentage,
-      potentialGain: gain,
-      tip: 'Include ORCID iDs for authors. Encourage authors to authenticate their ORCID during submission.',
-      docUrl: 'https://www.crossref.org/documentation/member-setup/orcid/',
-    });
-  }
-
-  if (dimensions.organizations.percentage < 80) {
-    const gain = Math.round((80 - dimensions.organizations.percentage) * 0.15);
-    tips.push({
-      dimension: 'Organizations',
-      currentPercent: dimensions.organizations.percentage,
-      potentialGain: gain,
-      tip: 'Add author affiliations with ROR IDs. The ROR API can help match institution names to IDs.',
-      docUrl: 'https://www.crossref.org/documentation/schema-library/markup-guide-metadata-segments/affiliations/',
-    });
-  }
-
-  if (dimensions.funding.percentage < 80) {
-    const gain = Math.round((80 - dimensions.funding.percentage) * 0.2);
-    tips.push({
-      dimension: 'Funding',
-      currentPercent: dimensions.funding.percentage,
-      potentialGain: gain,
-      tip: 'Include funder information using Open Funder Registry IDs and grant/award numbers.',
-      docUrl: 'https://www.crossref.org/documentation/funder-registry/',
-    });
-  }
-
-  if (dimensions.access.percentage < 80) {
-    const gain = Math.round((80 - dimensions.access.percentage) * 0.2);
-    tips.push({
-      dimension: 'Access',
-      currentPercent: dimensions.access.percentage,
-      potentialGain: gain,
-      tip: 'Add abstracts, license URLs (using SPDX identifiers), and full-text links to your metadata.',
-      docUrl: 'https://www.crossref.org/documentation/schema-library/markup-guide-metadata-segments/abstracts/',
-    });
-  }
-
-  // Sort by potential gain (highest first)
-  tips.sort((a, b) => b.potentialGain - a.potentialGain);
-
-  return tips.slice(0, 3); // Return top 3
 }
 
 function buildScoreFromLeaderboard(entry: LeaderboardEntry): MemberIndex {
@@ -419,13 +384,15 @@ function buildMetricChanges(
 
 function buildChangeInsights(
   member: Awaited<ReturnType<CrossrefClient['getMember']>>,
-  contentTypeScores: ContentTypeScore[]
+  contentTypeScores: ContentTypeScore[],
+  scorableScore: ScorableMemberScore
 ): ChangeInsights {
-  const coverage = member.coverage as unknown as Record<string, number>;
-  const aggregate = buildMetricChanges(
-    (key) => coverage[`${key}-current`] || 0,
-    (key) => coverage[`${key}-backfile`] || 0
-  );
+  const aggregate = scorableScore.current && scorableScore.backfile
+    ? buildMetricChanges(
+        (key) => (scorableScore.current!.coverage as unknown as Record<string, number>)[key] || 0,
+        (key) => (scorableScore.backfile!.coverage as unknown as Record<string, number>)[key] || 0
+      )
+    : [];
 
   const perType: Record<string, MetricChange[]> = {};
   const coverageType = member['coverage-type'] as unknown as {
@@ -434,7 +401,7 @@ function buildChangeInsights(
   };
   for (const ct of contentTypeScores) {
     // Only meaningful when the type exists in both eras
-    if (!ct.current || !ct.backfile) continue;
+    if (!ct.scorable || !ct.current || !ct.backfile) continue;
     const cur = coverageType.current?.[ct.type];
     const back = coverageType.backfile?.[ct.type];
     if (!cur || !back) continue;
@@ -446,10 +413,11 @@ function buildChangeInsights(
 
   const mixShift: MixShiftEntry[] = [];
   const counts = member['counts-type'];
-  const currentTotal = member.counts['current-dois'];
-  const backfileTotal = member.counts['backfile-dois'];
+  const currentTotal = scorableScore.current?.works ?? 0;
+  const backfileTotal = scorableScore.backfile?.works ?? 0;
   if (counts && currentTotal > 0 && backfileTotal > 0) {
     for (const ct of contentTypeScores) {
+      if (!ct.scorable) continue;
       const currentWorks = counts.current?.[ct.type] ?? 0;
       const backfileWorks = counts.backfile?.[ct.type] ?? 0;
       if (currentWorks === 0 && backfileWorks === 0) continue;
@@ -472,6 +440,8 @@ async function getMemberData(id: string): Promise<{
   score: MemberIndex;
   contentTypeScores: ContentTypeScore[] | null;
   changeInsights: ChangeInsights | null;
+  eraDimensions: EraDimensions | null;
+  scorableScore: ScorableMemberScore | null;
 } | null> {
   try {
     const member = await client.getMember(id);
@@ -480,8 +450,16 @@ async function getMemberData(id: string): Promise<{
       member['coverage-type'],
       member['counts-type']
     );
-    const changeInsights = buildChangeInsights(member, contentTypeScores);
-    return { score, contentTypeScores, changeInsights };
+    const scorableScore = calculateScorableMemberScore(member);
+    const changeInsights = buildChangeInsights(member, contentTypeScores, scorableScore);
+    const eraDimensions: EraDimensions = {
+      current: calculateDimensionsForPeriod(member.coverage, 'current'),
+      backfile:
+        member.counts['backfile-dois'] > 0
+          ? calculateDimensionsForPeriod(member.coverage, 'backfile')
+          : null,
+    };
+    return { score, contentTypeScores, changeInsights, eraDimensions, scorableScore };
   } catch (error) {
     if (error instanceof CrossrefNotFoundError) {
       return null;
@@ -496,6 +474,8 @@ async function getMemberData(id: string): Promise<{
           score: buildScoreFromLeaderboard(entry),
           contentTypeScores: null,
           changeInsights: null,
+          eraDimensions: null,
+          scorableScore: null,
         };
       }
     }
@@ -528,41 +508,66 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${score.metadata.entityName} - Nexus-Index`,
-    description: `Index value: ${score.total}/100. Explore observed Crossref metadata coverage, context, and recommendations.`,
+    description: `Index value: ${result?.scorableScore?.all?.score ?? score.total}/100. Explore observed Crossref metadata coverage, context, and recommendations.`,
     openGraph: {
-      title: `${score.metadata.entityName} - Nexus-Index: ${score.total}`,
-      description: `Diagnostic index ${score.total}/100 — explore observed Crossref metadata coverage, context, and recommendations.`,
+      title: `${score.metadata.entityName} - Nexus-Index: ${result?.scorableScore?.all?.score ?? score.total}`,
+      description: `Diagnostic index ${result?.scorableScore?.all?.score ?? score.total}/100 — explore observed Crossref metadata coverage, context, and recommendations.`,
     },
   };
 }
 
-export default async function MemberPage({ params }: PageProps) {
+export default async function MemberPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const requestedScope = await searchParams;
   const result = await getMemberData(id);
 
   if (!result) {
     notFound();
   }
 
-  const { score, contentTypeScores, changeInsights } = result;
+  const { score, contentTypeScores, changeInsights, eraDimensions, scorableScore } = result;
   const rankingInfo = getRankingInfo(parseInt(id), score.total);
-  const improvementTips = getImprovementTips(score.dimensions);
+  const currentRankingInfo = getCurrentRankingInfo(
+    parseInt(id),
+    score.trend.currentScore
+  );
   const isCachedData = score.metadata.dataSource === 'leaderboard-cache';
-  const eraRanking = getEraRanking(parseInt(id));
   const contentTypeRankings = getContentTypeRankings(
     parseInt(id),
-    contentTypeScores?.map((ct) => ct.type) ?? []
+    contentTypeScores?.filter((ct) => ct.scorable).map((ct) => ct.type) ?? []
+  );
+  const currentContentTypeRankings = getContentTypeRankings(
+    parseInt(id),
+    contentTypeScores?.filter((ct) => ct.scorable).map((ct) => ct.type) ?? [],
+    'current'
   );
   const contentTypeLabels = Object.fromEntries(
     (contentTypeScores ?? []).map((ct) => [ct.type, ct.label])
   );
+  const requestedContentType = parseContentType(requestedScope.contentType);
+  const defaultContentType = contentTypeScores?.find((entry) => entry.type === 'journal-article' && entry.scorable)?.type
+    ?? contentTypeScores?.find((entry) => entry.scorable)?.type
+    ?? 'all';
+  const hasExplicitContentType = typeof requestedScope.contentType === 'string';
+  const contentType = !hasExplicitContentType
+    ? defaultContentType
+    : requestedContentType === 'all' || contentTypeScores?.some((entry) => entry.type === requestedContentType && entry.scorable)
+      ? requestedContentType
+      : defaultContentType;
+  const initialScope = {
+    contentType,
+    era: parseBenchmarkEra(requestedScope.era),
+  } as const;
+  const benchmarkGeneratedAt = getLeaderboardData()?.generatedAt ?? null;
+  const currentBenchmarkGeneratedAt = getCurrentLeaderboardData()?.generatedAt ?? null;
+  const topScorableType = contentTypeScores?.find((entry) => entry.scorable)?.type;
 
   return (
-    <MemberContentTypeProvider>
+    <MemberContentTypeProvider key={`${initialScope.contentType}-${initialScope.era}`} initialScope={initialScope}>
     <div className="min-h-screen py-8">
       <TrackMemberView
         name={score.metadata.entityName}
-        indexValue={score.total}
+        indexValue={scorableScore?.all?.score ?? score.total}
       />
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Header */}
@@ -588,10 +593,7 @@ export default async function MemberPage({ params }: PageProps) {
               {formatNumber(score.metadata.totalWorks)} total works
             </p>
           </div>
-          <MemberSearch
-            placeholder="Search another publisher..."
-            className="w-full sm:w-80"
-          />
+          <MemberScopedSearch />
         </div>
 
         {/* Cached Data Notice */}
@@ -604,29 +606,28 @@ export default async function MemberPage({ params }: PageProps) {
             </svg>
             <p>
               Showing cached data from{' '}
-              {new Date(score.metadata.calculatedAt).toLocaleDateString()}.
+              {formatDataDate(score.metadata.calculatedAt)}.
               Live data from Crossref is temporarily unavailable. Detailed metrics and recommendations are not available in cached mode.
             </p>
           </div>
         )}
 
+        <MemberScopeControls contentTypeScores={contentTypeScores} />
+
         {/* Ranking Banner — reacts to the content-type filter */}
-        {rankingInfo && (
+        {(rankingInfo || currentRankingInfo) && (
           <MemberRankingBanner
-            aggregate={{
-              rank: rankingInfo.rank,
-              totalPublishers: rankingInfo.totalPublishers,
-              percentile: rankingInfo.percentile,
-              nearbyPublishers: rankingInfo.nearbyPublishers.map((pub) => ({
-                id: pub.id,
-                name: pub.name,
-                rank: pub.rank,
-                score: pub.score,
-              })),
-              topGap: rankingInfo.topGap,
-            }}
-            perContentType={contentTypeRankings}
+            historical={rankingInfo}
+            current={currentRankingInfo}
+            historicalByContentType={contentTypeRankings}
+            currentByContentType={currentContentTypeRankings}
             contentTypeLabels={contentTypeLabels}
+            benchmarkGeneratedAt={benchmarkGeneratedAt}
+            currentBenchmarkGeneratedAt={currentBenchmarkGeneratedAt}
+            liveOverallScore={scorableScore?.all?.score ?? score.total}
+            liveCurrentScore={scorableScore?.current?.score ?? score.trend.currentScore}
+            contentTypeScores={contentTypeScores}
+            aggregateBenchmarkAvailable={false}
           />
         )}
 
@@ -641,7 +642,8 @@ export default async function MemberPage({ params }: PageProps) {
               currentWorks={score.metadata.currentWorks}
               backfileWorks={score.metadata.backfileWorks}
               contentTypeScores={contentTypeScores}
-              eraRanking={eraRanking}
+              eraDimensions={eraDimensions}
+              scorableScore={scorableScore}
             />
 
             {/* What changed between backfile and current era, and why */}
@@ -650,8 +652,14 @@ export default async function MemberPage({ params }: PageProps) {
                 aggregate={changeInsights.aggregate}
                 perType={changeInsights.perType}
                 mixShift={changeInsights.mixShift}
-                currentScore={score.trend.currentScore}
-                backfileScore={score.trend.backfileScore}
+                currentScore={scorableScore?.current?.score ?? score.trend.currentScore}
+                backfileScore={scorableScore?.backfile?.score ?? score.trend.backfileScore}
+                aggregateScope={scorableScore?.current && scorableScore.backfile ? {
+                  currentWorks: scorableScore.current.works,
+                  backfileWorks: scorableScore.backfile.works,
+                  currentExcludedWorks: scorableScore.current.excludedWorks,
+                  backfileExcludedWorks: scorableScore.backfile.excludedWorks,
+                } : undefined}
                 perTypeScores={Object.fromEntries(
                   (contentTypeScores ?? []).map((ct) => [
                     ct.type,
@@ -667,14 +675,14 @@ export default async function MemberPage({ params }: PageProps) {
 
             {/* Content Type Breakdown */}
             {contentTypeScores && contentTypeScores.length > 0 && (
-              <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm">
+              <div className="rounded-xl border bg-white p-4 sm:p-6 shadow-sm print:break-inside-avoid">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">Index by Content Type</h3>
                     <p className="mt-1 text-sm text-gray-500">
                       {contentTypeScores.length === 1
                         ? `All works are ${contentTypeScores[0].label.toLowerCase()} \u2014 the aggregate index above reflects that content type.`
-                        : 'Index values are calculated separately for each content type registered with Crossref. The aggregate above includes all types; Current and Backfile show the two eras.'}
+                        : 'Index values are calculated separately for each content type registered with Crossref. Overall is all years; Current and Backfile show the two deposit eras.'}
                     </p>
                   </div>
                 </div>
@@ -697,17 +705,18 @@ export default async function MemberPage({ params }: PageProps) {
                         </tr>
                       </thead>
                       <tbody>
-                        {contentTypeScores.map((ct, idx) => (
+                        {contentTypeScores.map((ct) => (
                           <tr
                             key={ct.type}
                             className={cn(
                               'border-b last:border-0',
-                              idx === 0 && 'bg-blue-50/50'
+                              ct.type === topScorableType && 'bg-blue-50/50',
+                              !ct.scorable && 'bg-slate-50 text-slate-500'
                             )}
                           >
                             <td className="py-2.5 pr-4 font-medium text-gray-900">
                               {ct.label}
-                              {idx === 0 && contentTypeScores.length > 1 && (
+                              {ct.type === topScorableType && contentTypeScores.length > 1 && (
                                 <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
                                   TOP
                                 </span>
@@ -717,28 +726,28 @@ export default async function MemberPage({ params }: PageProps) {
                               {ct.works !== undefined ? formatNumber(ct.works) : '\u2014'}
                             </td>
                             <td className="py-2.5 pr-4 text-center font-semibold text-gray-900">
-                              {ct.score}
+                              {ct.scorable ? ct.score : <span className="text-xs font-medium text-slate-500">Not benchmarked</span>}
                             </td>
                             <td className="py-2.5 pr-4 text-center font-medium text-blue-700">
-                              {ct.current ? ct.current.score : '\u2014'}
+                              {ct.scorable && ct.current ? ct.current.score : '\u2014'}
                             </td>
                             <td className="py-2.5 pr-4 text-center text-gray-600">
-                              {ct.backfile ? ct.backfile.score : '\u2014'}
+                              {ct.scorable && ct.backfile ? ct.backfile.score : '\u2014'}
                             </td>
                             <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
-                              {ct.dimensions.provenance}%
+                              {ct.scorable ? `${ct.dimensions.provenance}%` : '\u2014'}
                             </td>
                             <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
-                              {ct.dimensions.people}%
+                              {ct.scorable ? `${ct.dimensions.people}%` : '\u2014'}
                             </td>
                             <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
-                              {ct.dimensions.organizations}%
+                              {ct.scorable ? `${ct.dimensions.organizations}%` : '\u2014'}
                             </td>
                             <td className="hidden py-2.5 pr-2 text-center text-gray-600 sm:table-cell">
-                              {ct.dimensions.funding}%
+                              {ct.scorable ? `${ct.dimensions.funding}%` : '\u2014'}
                             </td>
                             <td className="hidden py-2.5 text-center text-gray-600 sm:table-cell">
-                              {ct.dimensions.access}%
+                              {ct.scorable ? `${ct.dimensions.access}%` : '\u2014'}
                             </td>
                           </tr>
                         ))}
@@ -756,7 +765,7 @@ export default async function MemberPage({ params }: PageProps) {
                         <line x1="12" y1="16" x2="12.01" y2="16"/>
                       </svg>
                       <span>
-                        Non-article content types (reviews, components, corrections) typically have different metadata patterns, which can reduce the aggregate index above.
+                        Only Crossref Participation Report work types are benchmarked. Peer reviews, journal issues, and other schema-specific records remain visible as <strong>Not benchmarked</strong> and do not reduce the aggregate.
                       </span>
                     </div>
                     <div className="flex items-start gap-1.5 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-500">
@@ -767,7 +776,7 @@ export default async function MemberPage({ params }: PageProps) {
                       </svg>
                       <span>
                         <strong className="text-gray-600">Want to compare by content type?</strong>{' '}
-                        The <Link href="/leaderboard/current" className="text-blue-600 hover:underline">benchmark</Link> supports filtering by content type—use it to compare like with like.
+                        The <Link href="/leaderboard?era=current" className="text-blue-600 hover:underline">Benchmark Explorer</Link> supports filtering by content type - use it to compare like with like.
                       </span>
                     </div>
                   </div>
@@ -775,99 +784,29 @@ export default async function MemberPage({ params }: PageProps) {
               </div>
             )}
 
-            {!isCachedData && <MetricsTable dimensions={score.dimensions} />}
+            {!isCachedData && (
+              <MetricsTable
+                contentTypeScores={contentTypeScores}
+                eraDimensions={eraDimensions}
+                currentWorks={score.metadata.currentWorks}
+                backfileWorks={score.metadata.backfileWorks}
+                scorableScore={scorableScore}
+              />
+            )}
 
-            {/* Improvement Tips CTA */}
-            {!isCachedData && improvementTips.length > 0 && (
-              <div className="rounded-xl border-2 border-blue-200 bg-blue-50 p-6">
-                {/* Context note when primary content type scores much higher than aggregate */}
-                {contentTypeScores && contentTypeScores.length > 1 && contentTypeScores[0].score - score.total >= 15 && (
-                  <div className="mb-4 flex items-start gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
-                    <svg className="mt-0.5 h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                      <polyline points="22 4 12 14.01 9 11.01"/>
-                    </svg>
-                    <span>
-                      Your <strong>{contentTypeScores[0].label.toLowerCase()}</strong> index is <strong>{contentTypeScores[0].score}/100</strong>. The fields below reflect aggregate coverage across all content types.
-                    </span>
-                  </div>
-                )}
-                <h3 className="flex items-center gap-2 text-lg font-semibold text-blue-900">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                    />
-                  </svg>
-                  Highest-impact Metadata Improvements
-                </h3>
-                <p className="mt-2 text-sm text-blue-700">
-                  These changes would have the greatest effect on metadata
-                  discoverability and the diagnostic index:
-                </p>
-                <div className="mt-4 space-y-4">
-                  {improvementTips.map((tip, index) => (
-                    <div
-                      key={tip.dimension}
-                      className="rounded-lg bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-600">
-                              {index + 1}
-                            </span>
-                            <h4 className="font-semibold text-gray-900">
-                              Improve {tip.dimension}
-                            </h4>
-                            <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                              +{tip.potentialGain} pts potential
-                            </span>
-                          </div>
-                          <p className="mt-2 text-sm text-gray-600">{tip.tip}</p>
-                          <div className="mt-2 flex items-center gap-4">
-                            <span className="text-xs text-gray-500">
-                              Current: {tip.currentPercent}% coverage
-                            </span>
-                            <a
-                              href={tip.docUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-medium text-blue-600 hover:underline"
-                            >
-                              View Crossref Documentation &rarr;
-                            </a>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 rounded-lg bg-blue-100 p-3">
-                  <p className="text-sm text-blue-800">
-                    <strong>Pro Tip:</strong> Focus on your current (recent)
-                    publications first. Improving metadata on new deposits is easier
-                    than updating backfiles, and it will immediately improve your
-                    current-era coverage.
-                  </p>
-                </div>
-              </div>
+            {!isCachedData && (
+              <MemberActionPlan
+                memberCurrentDimensions={scorableScore?.current?.metricDetails ?? null}
+                memberCurrentWorks={scorableScore?.current?.works}
+                contentTypeScores={contentTypeScores}
+              />
             )}
           </div>
 
-          {/* Right Column - Recommendations */}
+          {/* Right Column - provenance and sharing */}
           <div>
-            {!isCachedData && <RecommendationsList recommendations={score.recommendations} limit={5} />}
-
             {/* Additional Info */}
-            <div className="mt-6 rounded-xl border bg-white p-6 shadow-sm">
+            <div className="rounded-xl border bg-white p-6 shadow-sm print:break-inside-avoid">
               <h3 className="text-lg font-semibold text-gray-900">About This Index</h3>
               <dl className="mt-4 space-y-3 text-sm">
                 <div>
@@ -877,9 +816,21 @@ export default async function MemberPage({ params }: PageProps) {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Last Updated</dt>
+                  <dt className="text-gray-500">Live profile retrieved</dt>
                   <dd className="font-medium text-gray-900">
-                    {new Date(score.metadata.calculatedAt).toLocaleDateString()}
+                    {formatDataDate(score.metadata.calculatedAt)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Overall benchmark snapshot</dt>
+                  <dd className="font-medium text-gray-900">
+                    {benchmarkGeneratedAt ? formatDataDate(benchmarkGeneratedAt) : 'Not available'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Current benchmark snapshot</dt>
+                  <dd className="font-medium text-gray-900">
+                    {currentBenchmarkGeneratedAt ? formatDataDate(currentBenchmarkGeneratedAt) : 'Not available'}
                   </dd>
                 </div>
               </dl>

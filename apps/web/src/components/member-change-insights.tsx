@@ -10,7 +10,7 @@ export interface MetricChange {
   name: string;
   /** Metric weight in the 100-point system */
   weight: number;
-  /** Coverage percentage 0-100 in the current era (last 2 years) */
+  /** Coverage percentage 0-100 in the current three-calendar-year window */
   current: number;
   /** Coverage percentage 0-100 in the backfile era */
   backfile: number;
@@ -42,9 +42,15 @@ interface MemberChangeInsightsProps {
   backfileScore: number;
   /** Per-type era scores for the filtered header */
   perTypeScores: Record<string, { current?: number; backfile?: number; label: string }>;
+  aggregateScope?: {
+    currentWorks: number;
+    backfileWorks: number;
+    currentExcludedWorks: number;
+    backfileExcludedWorks: number;
+  };
 }
 
-const IMPACT_THRESHOLD = 0.5; // score points — hide noise below this
+const IMPACT_THRESHOLD = 0.1; // score points — preserve visible metric movement
 
 function ChangeRow({ change }: { change: MetricChange }) {
   const up = change.impact > 0;
@@ -88,8 +94,10 @@ export function MemberChangeInsights({
   currentScore,
   backfileScore,
   perTypeScores,
+  aggregateScope,
 }: MemberChangeInsightsProps) {
   const { contentTypeFilter } = useMemberContentType();
+  const currentYear = new Date().getFullYear();
   const filtered = contentTypeFilter !== 'all';
 
   const changes = filtered ? (perType[contentTypeFilter] ?? []) : aggregate;
@@ -147,9 +155,14 @@ export function MemberChangeInsights({
         )}
       </div>
       <p className="mt-1 text-sm text-gray-500">
-        How metadata practice on recent works (last 2 years) compares with the
-        backfile, and how each change affects the index value.
+        How metadata practice on current records ({currentYear - 2}–{currentYear})
+        compares with the backfile, and how each change affects the index value.
       </p>
+      {!filtered && aggregateScope && (
+        <p className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs leading-5 text-blue-900">
+          Like-for-like aggregate: {formatNumber(aggregateScope.backfileWorks)} scorable Backfile works versus {formatNumber(aggregateScope.currentWorks)} scorable Current works. {formatNumber(aggregateScope.backfileExcludedWorks)} Backfile and {formatNumber(aggregateScope.currentExcludedWorks)} Current records with different schemas are excluded from this comparison.
+        </p>
+      )}
 
       {(improved.length > 0 || declined.length > 0) && (
         <div className="mt-4 grid gap-6 sm:grid-cols-2">
@@ -195,7 +208,7 @@ export function MemberChangeInsights({
       {improved.length === 0 && declined.length === 0 && changes.length > 0 && (
         <p className="mt-4 text-sm text-gray-500">
           Metadata practice is roughly stable between eras — no metric moved
-          the index value by more than half a point.
+          the index value by at least one tenth of a point.
         </p>
       )}
 
@@ -206,9 +219,8 @@ export function MemberChangeInsights({
             Content Mix Shift
           </h4>
           <p className="mt-1 text-xs text-gray-500">
-            Member-level coverage counts every DOI equally, so a shift toward
-            content types with sparse metadata changes the aggregate index even when
-            practice per type is unchanged.
+            The scorable aggregate weights each supported DOI equally, so changes
+            in the mix of supported content types can still affect the index.
           </p>
           <div className="mt-3 space-y-2">
             {notableMixShifts.map((m) => {
@@ -231,8 +243,8 @@ export function MemberChangeInsights({
                   {grew && lowMetadata && (
                     <>
                       {' '}
-                      &mdash; this type has an index value of {m.score}/100, so its growing
-                      share lowers the member-level aggregate
+                      &mdash; this supported type has an index value of {m.score}/100, so its growing
+                      share lowers the scorable aggregate
                     </>
                   )}
                 </div>

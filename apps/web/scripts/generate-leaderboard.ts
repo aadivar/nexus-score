@@ -12,6 +12,7 @@
 import { writeFileSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { rankByScore } from '@nexus-score/core';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -65,6 +66,11 @@ interface CrossrefMember {
     current?: Record<string, Record<string, number>>;
     backfile?: Record<string, Record<string, number>>;
   };
+  'counts-type'?: {
+    all?: Record<string, number>;
+    current?: Record<string, number>;
+    backfile?: Record<string, number>;
+  };
 }
 
 interface DimensionScores {
@@ -80,6 +86,7 @@ interface ContentTypeEntry {
   label: string;
   score: number;
   grade: string;
+  works?: number;
 }
 
 interface LeaderboardEntry {
@@ -173,7 +180,8 @@ function toGrade(score: number): string {
 }
 
 function calculateContentTypes(
-  coverageType: Record<string, Record<string, number>> | undefined
+  coverageType: Record<string, Record<string, number>> | undefined,
+  countsType?: Record<string, number>
 ): ContentTypeEntry[] {
   if (!coverageType) return [];
 
@@ -196,6 +204,7 @@ function calculateContentTypes(
       label: CONTENT_TYPE_LABELS[type] || type.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
       score,
       grade: toGrade(score),
+      works: countsType?.[type],
     });
   }
 
@@ -456,7 +465,7 @@ async function main() {
 
   const scored = membersWithWorks.map((member) => {
     const score = calculateScore(member);
-    const contentTypes = calculateContentTypes(member['coverage-type']?.all);
+    const contentTypes = calculateContentTypes(member['coverage-type']?.all, member['counts-type']?.all);
     return {
       id: member.id,
       name: member['primary-name'],
@@ -471,18 +480,12 @@ async function main() {
       dimensions: score.dimensions,
       currentDimensions: score.currentDimensions,
       contentTypes: contentTypes.length > 0 ? contentTypes : undefined,
-      currentContentTypes: calculateContentTypes(member['coverage-type']?.current),
+      currentContentTypes: calculateContentTypes(member['coverage-type']?.current, member['counts-type']?.current),
     };
   });
 
-  // Sort by score descending
-  scored.sort((a, b) => b.score - a.score);
-
-  // Add ranks
-  const leaderboard: LeaderboardEntry[] = scored.map((entry, index) => ({
-    rank: index + 1,
-    ...entry,
-  }));
+  // Sort by score and assign standard competition ranks (1, 2, 2, 4).
+  const leaderboard: LeaderboardEntry[] = rankByScore(scored, (entry) => entry.score);
 
   // Collect available content types across all publishers
   const contentTypeCounts = new Map<string, { label: string; count: number }>();
@@ -521,10 +524,10 @@ async function main() {
   // Generate current-era leaderboard (ranked by currentScore, only active publishers)
   console.log('\n📊 Generating current-era leaderboard...');
 
-  const currentEra = scored
-    .filter((entry) => entry.currentWorks > 0)
-    .sort((a, b) => b.currentScore - a.currentScore)
-    .map((entry, index) => {
+  const currentEra = rankByScore(
+    scored.filter((entry) => entry.currentWorks > 0),
+    (entry) => entry.currentScore
+  ).map((entry) => {
       let currentGrade: string;
       if (entry.currentScore >= 80) currentGrade = 'A';
       else if (entry.currentScore >= 65) currentGrade = 'B';
@@ -532,9 +535,9 @@ async function main() {
       else if (entry.currentScore >= 35) currentGrade = 'D';
       else currentGrade = 'F';
 
-      const currentCT = (entry as any).currentContentTypes as ContentTypeEntry[] | undefined;
+      const currentCT = entry.currentContentTypes as ContentTypeEntry[] | undefined;
       return {
-        rank: index + 1,
+        rank: entry.rank,
         id: entry.id,
         name: entry.name,
         location: entry.location,

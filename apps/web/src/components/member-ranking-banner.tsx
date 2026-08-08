@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useMemberContentType } from '@/components/member-content-type-context';
+import { buildLeaderboardHref, buildMemberHref, formatDataDate, getEraRange, type BenchmarkEra } from '@/lib/benchmark-scope';
+import type { ContentTypeScore } from '@nexus-score/core';
 
 export interface NearbyPublisher {
   id: number;
@@ -12,6 +14,7 @@ export interface NearbyPublisher {
 }
 
 export interface RankingData {
+  score: number;
   rank: number;
   totalPublishers: number;
   percentile: number;
@@ -20,131 +23,183 @@ export interface RankingData {
 }
 
 interface MemberRankingBannerProps {
-  aggregate: RankingData;
-  /** Ranking recomputed per content type from the leaderboard data */
-  perContentType: Record<string, RankingData>;
-  /** Content type key -> human label, for banner captions */
+  historical: RankingData | null;
+  current: RankingData | null;
+  historicalByContentType: Record<string, RankingData>;
+  currentByContentType: Record<string, RankingData>;
   contentTypeLabels: Record<string, string>;
+  benchmarkGeneratedAt: string | null;
+  currentBenchmarkGeneratedAt: string | null;
+  liveOverallScore: number;
+  liveCurrentScore: number;
+  contentTypeScores: ContentTypeScore[] | null;
+  aggregateBenchmarkAvailable: boolean;
+}
+
+interface RankingPanelProps {
+  title: string;
+  subtitle: string;
+  ranking: RankingData | null;
+  era: BenchmarkEra;
+  contentType: string;
+  contentTypeLabel: string | null;
+  active: boolean;
+  generatedAt: string | null;
+  liveScore: number | null;
+}
+
+function formatSnapshot(value: string | null): string {
+  if (!value) return 'Snapshot date unavailable';
+  return `Snapshot ${formatDataDate(value)}`;
+}
+
+function RankingPanel({
+  title,
+  subtitle,
+  ranking,
+  era,
+  contentType,
+  contentTypeLabel,
+  active,
+  generatedAt,
+  liveScore,
+}: RankingPanelProps) {
+  const current = era === 'current';
+  const scope = { era, contentType } as const;
+
+  return (
+    <section className={cn(
+      'flex min-w-0 flex-col p-4 sm:p-6',
+      current && 'bg-blue-50/70',
+      active && 'inset-ring-2 inset-ring-blue-500'
+    )}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className={cn('text-xs font-semibold uppercase tracking-wide', current ? 'text-blue-700' : 'text-gray-700')}>{title}</p>
+          <p className="mt-0.5 text-xs text-gray-500">{subtitle}</p>
+        </div>
+        {active && <span className="rounded-full bg-blue-600 px-2 py-1 text-[10px] font-semibold uppercase text-white">Emphasis</span>}
+      </div>
+
+      {ranking ? (
+        <>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <div>
+              <p className={cn('text-2xl font-bold sm:text-3xl', current ? 'text-blue-700' : 'text-gray-900')}>{ranking.score}</p>
+              <p className="text-xs text-gray-500">index / 100</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-900 sm:text-3xl">#{ranking.rank.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">of {ranking.totalPublishers.toLocaleString()}{contentTypeLabel && ' with this type'}</p>
+            </div>
+            <div className="text-right">
+              <p className={cn('text-xl font-bold sm:text-2xl', ranking.percentile >= 90 ? 'text-green-600' : ranking.percentile >= 50 ? 'text-blue-600' : 'text-gray-600')}>
+                Top {Math.max(1, 100 - ranking.percentile)}%
+              </p>
+              <p className="text-xs text-gray-500">percentile</p>
+            </div>
+          </div>
+
+          {liveScore !== null && liveScore !== ranking.score && (
+            <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+              Live profile: <strong>{liveScore}/100</strong>. Benchmark position #{ranking.rank.toLocaleString()} belongs to the snapshot value {ranking.score}/100 and has not been recalculated.
+            </p>
+          )}
+
+          {ranking.nearbyPublishers.length > 0 && (
+            <div className="mt-4 border-t border-gray-200 pt-3">
+              <p className="mb-2 text-xs font-medium text-gray-500">Nearby snapshot values</p>
+              <div className="space-y-1.5">
+                {ranking.nearbyPublishers.slice(0, 2).map((publisher) => (
+                  <Link
+                    key={publisher.id}
+                    href={buildMemberHref(publisher.id, scope)}
+                    className="flex min-w-0 items-center gap-2 rounded-lg bg-white/80 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-white"
+                  >
+                    <span className="font-semibold">#{publisher.rank}</span>
+                    <span className="min-w-0 flex-1 truncate">{publisher.name}</span>
+                    <span className="text-gray-500">{publisher.score}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="mt-4 text-sm text-gray-500">No {title.toLowerCase()} benchmark is available for this scope.</p>
+      )}
+
+      <p className="mt-3 text-[11px] text-gray-400">{formatSnapshot(generatedAt)}</p>
+      {ranking && (
+        <Link href={buildLeaderboardHref(scope)} className={cn('mt-auto pt-4 text-sm font-medium hover:underline', current ? 'text-blue-700' : 'text-gray-700')}>
+          Explore {title.toLowerCase()} benchmark -&gt;
+        </Link>
+      )}
+    </section>
+  );
 }
 
 export function MemberRankingBanner({
-  aggregate,
-  perContentType,
+  historical,
+  current,
+  historicalByContentType,
+  currentByContentType,
   contentTypeLabels,
+  benchmarkGeneratedAt,
+  currentBenchmarkGeneratedAt,
+  liveOverallScore,
+  liveCurrentScore,
+  contentTypeScores,
+  aggregateBenchmarkAvailable,
 }: MemberRankingBannerProps) {
-  const { contentTypeFilter } = useMemberContentType();
-
+  const { contentTypeFilter, era } = useMemberContentType();
   const filtered = contentTypeFilter !== 'all';
-  const ranking = filtered
-    ? (perContentType[contentTypeFilter] ?? null)
-    : aggregate;
-  const label = filtered ? contentTypeLabels[contentTypeFilter] : null;
-
-  if (!ranking) {
-    return (
-      <div className="mt-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 shadow-sm">
-        <p className="text-sm text-gray-600">
-          Benchmark comparisons are not available for {label ?? 'this content type'} —
-          there is no per-type data for this member yet.
-        </p>
-      </div>
-    );
-  }
+  const contentTypeLabel = filtered ? contentTypeLabels[contentTypeFilter] ?? contentTypeFilter : null;
+  const selectedScorable = filtered ? contentTypeScores?.find((entry) => entry.type === contentTypeFilter)?.scorable !== false : true;
+  const overallRanking = filtered && selectedScorable ? historicalByContentType[contentTypeFilter] ?? null : aggregateBenchmarkAvailable ? historical : null;
+  const currentRanking = filtered && selectedScorable ? currentByContentType[contentTypeFilter] ?? null : aggregateBenchmarkAvailable ? current : null;
+  const range = getEraRange();
+  const selectedLive = filtered ? contentTypeScores?.find((entry) => entry.type === contentTypeFilter) : null;
 
   return (
-    <div className="mt-6 rounded-xl border bg-gradient-to-r from-blue-50 to-indigo-50 p-4 sm:p-6 shadow-sm">
-      <div className="flex flex-col gap-4 sm:gap-6">
-        <div className="grid grid-cols-2 gap-4 sm:flex sm:items-center sm:gap-6">
-          <div className="text-center">
-            <p className="text-xs sm:text-sm font-medium text-gray-500">
-              {filtered ? `Benchmark position — ${label}` : 'Benchmark position'}
-            </p>
-            <p className="text-2xl sm:text-3xl font-bold text-blue-600">
-              #{ranking.rank.toLocaleString()}
-            </p>
-            <p className="text-xs text-gray-500">
-              of {ranking.totalPublishers.toLocaleString()}
-              {filtered && ' with this type'}
-            </p>
-          </div>
-          <div className="hidden sm:block h-12 w-px bg-gray-200" />
-          <div className="text-center">
-            <p className="text-xs sm:text-sm font-medium text-gray-500">Percentile</p>
-            <p
-              className={cn(
-                'text-2xl sm:text-3xl font-bold',
-                ranking.percentile >= 90
-                  ? 'text-green-600'
-                  : ranking.percentile >= 70
-                    ? 'text-blue-600'
-                    : ranking.percentile >= 50
-                      ? 'text-yellow-600'
-                      : 'text-gray-600'
-              )}
-            >
-              Top {100 - ranking.percentile}%
-            </p>
-            <p className="text-xs text-gray-500">
-              {filtered ? `of ${label?.toLowerCase()} publishers` : 'of all publishers'}
-            </p>
-          </div>
-          {ranking.topGap !== null && ranking.topGap > 0 && (
-            <>
-              <div className="hidden md:block h-12 w-px bg-gray-200" />
-              <div className="hidden md:block text-center">
-                <p className="text-sm font-medium text-gray-500">
-                  Gap to Top 10%
-                </p>
-                <p className="text-3xl font-bold text-indigo-600">
-                  +{ranking.topGap}
-                </p>
-                <p className="text-xs text-gray-500">points needed</p>
-              </div>
-            </>
-          )}
-        </div>
-        <Link
-          href="/leaderboard"
-          className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 w-full sm:w-auto sm:self-end"
-        >
-          Explore Full Benchmark
-        </Link>
-      </div>
-
-      {/* Nearby Publishers */}
-      {ranking.nearbyPublishers.length > 0 && (
-        <div className="mt-6 border-t border-gray-200 pt-4">
-          <p className="mb-3 text-sm font-medium text-gray-600">
-            Nearby benchmark values{filtered ? ` (${label})` : ''}:
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {ranking.nearbyPublishers.map((pub) => (
-              <Link
-                key={pub.id}
-                href={`/member/${pub.id}`}
-                className={cn(
-                  'inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm transition-colors',
-                  pub.rank < ranking.rank
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                )}
-              >
-                <span className="font-medium">#{pub.rank}</span>
-                <span className="max-w-[150px] truncate">{pub.name}</span>
-                <span className="text-xs">({pub.score} index)</span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {filtered && (
-        <p className="mt-4 text-xs text-gray-400">
-          Compared with members registering {label?.toLowerCase()} by their
-          all-years index value for that type, matching the overall benchmark
-          filter.
+    <section className="mt-6 overflow-hidden rounded-xl border bg-white shadow-sm">
+      <div className="border-b bg-gradient-to-r from-gray-50 to-blue-50 px-4 py-4 sm:px-6">
+        <h2 className="font-semibold text-gray-900">Benchmark comparison</h2>
+        <p className="mt-0.5 text-xs text-gray-500">
+          {contentTypeLabel
+            ? selectedScorable ? `${contentTypeLabel} compared like-for-like.` : `${contentTypeLabel} are not benchmarked because their schema does not support the same 11 metrics.`
+            : 'All Benchmarked Content Types compared across the all-years and Current eras.'}
         </p>
-      )}
-    </div>
+        {!filtered && !aggregateBenchmarkAvailable && (
+          <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900">
+            Aggregate benchmark positions are temporarily withheld: the saved benchmark still includes unsupported record schemas. Live scorable index values remain available below; benchmark positions will return after the next compatible snapshot generation.
+          </p>
+        )}
+      </div>
+      <div className="grid grid-cols-1 divide-y divide-gray-200 sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+        <RankingPanel
+          title="Overall"
+          subtitle="All years"
+          ranking={overallRanking}
+          era="overall"
+          contentType={contentTypeFilter}
+          contentTypeLabel={contentTypeLabel}
+          active={era === 'overall'}
+          generatedAt={benchmarkGeneratedAt}
+          liveScore={selectedLive?.score ?? (filtered ? null : liveOverallScore)}
+        />
+        <RankingPanel
+          title="Current"
+          subtitle={`${range.currentStart}-${range.currentEnd}`}
+          ranking={currentRanking}
+          era="current"
+          contentType={contentTypeFilter}
+          contentTypeLabel={contentTypeLabel}
+          active={era === 'current'}
+          generatedAt={currentBenchmarkGeneratedAt}
+          liveScore={selectedLive?.current?.score ?? (filtered ? null : liveCurrentScore)}
+        />
+      </div>
+    </section>
   );
 }

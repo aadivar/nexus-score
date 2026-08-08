@@ -15,6 +15,8 @@ import type {
   DimensionName,
   ContentTypeCoverage,
   ContentTypeScore,
+  ScorableEraScore,
+  ScorableMemberScore,
 } from './types.js';
 import {
   METRICS_BY_DIMENSION,
@@ -25,6 +27,7 @@ import {
   type MetricWeight,
 } from './weights.js';
 import { generateRecommendations } from '../recommendations/engine.js';
+import { isScorableContentType } from './content-types.js';
 
 /**
  * Calculate Nexus Score for a Crossref member (publisher)
@@ -34,8 +37,8 @@ export function calculateMemberScore(member: CrossrefMember): NexusScore {
   const coverage = member.coverage;
 
   // Calculate current and backfile dimensions separately, then average
-  const currentDimensions = calculateDimensions(coverage, 'current');
-  const backfileDimensions = calculateDimensions(coverage, 'backfile');
+  const currentDimensions = calculateDimensionsForPeriod(coverage, 'current');
+  const backfileDimensions = calculateDimensionsForPeriod(coverage, 'backfile');
   const hasBackfile = member.counts['backfile-dois'] > 0;
 
   // Average current and backfile to get overall dimensions (matching leaderboard logic)
@@ -79,8 +82,8 @@ export function calculateJournalScore(journal: CrossrefJournal): NexusScore {
   const coverage = journal.coverage;
 
   // Calculate current and backfile dimensions separately, then average
-  const currentDimensions = calculateDimensions(coverage, 'current');
-  const backfileDimensions = calculateDimensions(coverage, 'backfile');
+  const currentDimensions = calculateDimensionsForPeriod(coverage, 'current');
+  const backfileDimensions = calculateDimensionsForPeriod(coverage, 'backfile');
   const hasBackfile = journal.counts['backfile-dois'] > 0;
 
   // Average current and backfile to get overall dimensions (matching leaderboard logic)
@@ -119,7 +122,10 @@ export function calculateJournalScore(journal: CrossrefJournal): NexusScore {
 /**
  * Calculate all dimension scores for a specific period
  */
-function calculateDimensions(coverage: MemberCoverage, period: 'current' | 'backfile'): DimensionScores {
+export function calculateDimensionsForPeriod(
+  coverage: MemberCoverage,
+  period: 'current' | 'backfile'
+): DimensionScores {
   return {
     provenance: calculateDimension('provenance', coverage, period),
     people: calculateDimension('people', coverage, period),
@@ -339,9 +345,42 @@ const SIMPLIFIED_FIELD_MAP: Record<string, string> = {
 /**
  * Calculate a score from simplified coverage-type fields using the same weight system.
  */
-function scoreFromSimplifiedCoverage(coverage: Record<string, number>): {
+function buildContentTypeMetricDetails(
+  coverage: Record<string, number>,
+  percentages: ContentTypeScore['dimensions']
+): DimensionScores {
+  const result: Partial<DimensionScores> = {};
+
+  for (const dimension of Object.keys(METRICS_BY_DIMENSION) as DimensionName[]) {
+    const metrics = METRICS_BY_DIMENSION[dimension].map((metric) => {
+      const simplifiedKey = metric.key.replace(/-current$/, '');
+      const value = coverage[simplifiedKey] || 0;
+
+      return {
+        name: metric.name,
+        key: metric.key,
+        value: round(value),
+        contribution: round(value * metric.weight),
+        maxContribution: metric.weight,
+        status: valueToStatus(value),
+      };
+    });
+
+    result[dimension] = {
+      score: round(metrics.reduce((sum, metric) => sum + metric.contribution, 0)),
+      maxScore: DIMENSION_WEIGHTS[dimension],
+      percentage: percentages[dimension],
+      metrics,
+    };
+  }
+
+  return result as DimensionScores;
+}
+
+export function scoreFromSimplifiedCoverage(coverage: Record<string, number>): {
   score: number;
   dimensions: { provenance: number; people: number; organizations: number; funding: number; access: number };
+  metricDetails: DimensionScores;
 } {
   // Calculate each dimension percentage
   const refVal = coverage['references'] || 0;
@@ -372,7 +411,13 @@ function scoreFromSimplifiedCoverage(coverage: Record<string, number>): {
       access * DIMENSION_WEIGHTS.access) / 100
   );
 
-  return { score, dimensions: { provenance, people, organizations, funding, access } };
+  const dimensions = { provenance, people, organizations, funding, access };
+
+  return {
+    score,
+    dimensions,
+    metricDetails: buildContentTypeMetricDetails(coverage, dimensions),
+  };
 }
 
 /**
@@ -402,10 +447,10 @@ function coverageHasData(cov: Record<string, number>): boolean {
  * Top-level score uses the "all" period; current/backfile era scores are
  * attached when that era applies.
  *
- * A type is included when the member has works of that type (counts-type),
- * even if every coverage field is 0% — an all-zero type is meaningful signal
- * (it dilutes the aggregate score), not missing data. When counts are not
- * provided, falls back to including only types with nonzero coverage.
+ * A type is included in the diagnostic breakdown when the member has works of
+ * that type (counts-type), even if every returned coverage field is 0%.
+ * `scorable` separately says whether the Participation Report methodology
+ * applies; unsupported schemas remain visible but do not enter member totals.
  */
 export function calculateContentTypeScores(
   coverageType: CrossrefMember['coverage-type'] | undefined,
@@ -424,14 +469,16 @@ export function calculateContentTypeScores(
       worksAll !== undefined ? worksAll > 0 : coverageHasData(allCov);
     if (!include) continue;
 
-    const { score, dimensions } = scoreFromSimplifiedCoverage(allCov);
+    const { score, dimensions, metricDetails } = scoreFromSimplifiedCoverage(allCov);
 
     const entry: ContentTypeScore = {
       type,
       label: CONTENT_TYPE_LABELS[type] || type.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+      scorable: isScorableContentType(type),
       score,
       grade: scoreToGrade(score),
       dimensions,
+      metricDetails,
       works: worksAll,
     };
 
@@ -458,4 +505,60 @@ export function calculateContentTypeScores(
   // Sort by score descending, then by works so large zero-score types surface
   results.sort((a, b) => b.score - a.score || (b.works ?? 0) - (a.works ?? 0));
   return results;
+}
+
+function calculateScorableEra(
+  member: CrossrefMember,
+  era: 'all' | 'current' | 'backfile'
+): ScorableEraScore | null {
+  const counts = member['counts-type']?.[era];
+  const coverage = member['coverage-type']?.[era];
+  if (!counts || !coverage) return null;
+
+  const included = Object.entries(counts).filter(
+    ([type, works]) => isScorableContentType(type) && works > 0
+  );
+  const works = included.reduce((sum, [, count]) => sum + count, 0);
+  if (works === 0) return null;
+
+  // Missing coverage is missing data, not observed 0%. Do not manufacture a score.
+  if (included.some(([type]) => !getEraCoverage(coverage as unknown as Record<string, unknown>, type))) {
+    return null;
+  }
+
+  const weightedCoverage = Object.fromEntries(
+    Object.keys(SIMPLIFIED_FIELD_MAP).map((key) => {
+      const numerator = included.reduce((sum, [type, count]) => {
+        const typeCoverage = getEraCoverage(coverage as unknown as Record<string, unknown>, type)!;
+        return sum + (typeCoverage[key] ?? 0) * count;
+      }, 0);
+      return [key, numerator / works];
+    })
+  ) as unknown as ContentTypeCoverage;
+
+  const scored = scoreFromSimplifiedCoverage(
+    weightedCoverage as unknown as Record<string, number>
+  );
+  const registeredWorks = Object.values(counts).reduce((sum, count) => sum + count, 0);
+
+  return {
+    ...scored,
+    grade: scoreToGrade(scored.score),
+    coverage: weightedCoverage,
+    works,
+    excludedWorks: Math.max(0, registeredWorks - works),
+  };
+}
+
+/**
+ * Calculate the generic member-wide view from Crossref Participation Report
+ * work types only. This prevents schema-specific records such as peer reviews
+ * from being interpreted as 0% coverage for inapplicable article metadata.
+ */
+export function calculateScorableMemberScore(member: CrossrefMember): ScorableMemberScore {
+  return {
+    all: calculateScorableEra(member, 'all'),
+    current: calculateScorableEra(member, 'current'),
+    backfile: calculateScorableEra(member, 'backfile'),
+  };
 }

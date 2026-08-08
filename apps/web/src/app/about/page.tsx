@@ -93,7 +93,7 @@ export default function AboutPage() {
         <section className="mt-12">
           <h2 className="text-2xl font-semibold text-gray-900">Reading the Index</h2>
           <p className="mt-4 text-gray-600">
-            The index value is a diagnostic signal, not a grade. It asks how much of the
+            The index value is a diagnostic signal, not a quality rating. It asks how much of the
             metadata visible in Crossref supports discovery, connection, and reuse. The
             bands below describe metadata coverage—not institutional performance. Missing
             fields may also reflect discipline, content type, or workflow context.
@@ -163,10 +163,106 @@ export default function AboutPage() {
             percentage of works that contain each metadata element.
           </p>
           <p className="mt-4 text-gray-600">
-            The &quot;current&quot; metrics reflect works published in the last 2 calendar
-            years, while &quot;backfile&quot; covers older works. The trend indicator
-            compares these two periods to show improvement or decline.
+            The &quot;current&quot; metrics reflect the current calendar year plus the two
+            preceding calendar years, while &quot;backfile&quot; covers earlier works. The
+            trend indicator compares these two periods to show improvement or decline.
           </p>
+        </section>
+
+        {/* Evolving methodology */}
+        <section id="future-directions" className="mt-12 scroll-mt-24">
+          <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 shadow-sm sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Evolving methodology</p>
+            <h2 className="mt-2 text-2xl font-semibold text-gray-900">Future directions for research-object benchmarks</h2>
+            <p className="mt-4 leading-7 text-gray-700">
+              Journal-article metrics should not be imposed on every research object. A peer review,
+              dataset, dissertation, standard, software release, or book has a different purpose and
+              therefore needs a different definition of complete, connected metadata. Types labelled
+              <strong> Coming soon</strong> are visible but deliberately not benchmarked until a
+              type-appropriate, actionable profile has been validated.
+            </p>
+            <p className="mt-4 leading-7 text-gray-700">
+              One reference model is the{' '}
+              <a
+                href="https://casrai.org/dictionary/objects"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:decoration-indigo-700"
+              >
+                CASRAI Dictionary object templates
+              </a>
+              . CASRAI publishes 123 structured research-information objects—including awards,
+              books, conference papers, datasets, patents, people, projects, reports, reviews, and
+              technical standards. Each template describes its fields, data types, requiredness,
+              and links to shared terms or controlled picklists. Nexus can use that structure as a
+              vocabulary and crosswalk reference while Crossref remains the source of observed
+              publisher metadata.
+            </p>
+
+            <div className="mt-6 grid overflow-hidden rounded-xl border border-blue-200 bg-white sm:grid-cols-2 sm:divide-x sm:divide-blue-200">
+              <div className="p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Foundation today</p>
+                <h3 className="mt-2 font-semibold text-gray-900">Crossref Participation Reports</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  The current implementation starts with Participation Report coverage
+                  data exposed through Crossref&apos;s <code className="rounded bg-slate-100 px-1.5 py-0.5 text-xs">/members</code> API.
+                  Crossref is the first data environment—not the boundary of the intelligence layer.
+                </p>
+              </div>
+              <div className="border-t border-blue-200 p-5 sm:border-t-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">Extension path</p>
+                <h3 className="mt-2 font-semibold text-gray-900">Additional data environments</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  Future adapters can bring in other scholarly metadata, registry, repository,
+                  and research-information environments. Each source must receive an explicit
+                  field crosswalk, provenance rules, validation tests, and a versioned methodology
+                  before it contributes to a benchmark.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-7 grid gap-4 sm:grid-cols-2">
+              <article className="rounded-lg border bg-white p-5">
+                <h3 className="font-semibold text-gray-900">1. Object-specific profiles</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  Map each Crossref content type to the closest research-object definition, then
+                  measure fields that are meaningful for that object. Peer reviews, for example,
+                  should emphasize the reviewed-object relationship, review stage and type—not
+                  article-only fields that do not apply.
+                </p>
+              </article>
+              <article className="rounded-lg border bg-white p-5">
+                <h3 className="font-semibold text-gray-900">2. Applicability and context</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  Distinguish missing metadata from a legitimately inapplicable field. This includes
+                  institutional authorship, unfunded research, non-text outputs, and object types
+                  where contributor, funding, access, or version signals work differently.
+                </p>
+              </article>
+              <article className="rounded-lg border bg-white p-5">
+                <h3 className="font-semibold text-gray-900">3. Actionable crosswalks</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  Every proposed signal must map back to a deposit field, identifier, relationship,
+                  or workflow action. CASRAI can clarify the object model; Crossref schema support
+                  and publisher control determine whether a signal can enter the benchmark.
+                </p>
+              </article>
+              <article className="rounded-lg border bg-white p-5">
+                <h3 className="font-semibold text-gray-900">4. Versioned public validation</h3>
+                <p className="mt-2 text-sm leading-6 text-gray-600">
+                  Publish the proposed mapping, metrics, applicability rules, weights, and test
+                  results for community review. A content type becomes selectable only after the
+                  methodology is reproducible, fair across real deposits, and tied to practical fixes.
+                </p>
+              </article>
+            </div>
+
+            <div className="mt-6 rounded-lg border border-indigo-200 bg-indigo-100/60 px-4 py-3 text-sm leading-6 text-indigo-950">
+              <strong>Methodology status:</strong> these are research and governance directions,
+              not committed scoring changes. Existing weights and benchmark values remain unchanged
+              until a versioned proposal is reviewed and adopted.
+            </div>
+          </div>
         </section>
 
         {/* Open Source */}

@@ -71,16 +71,6 @@ export default function RootLayout({
                 <span className="hidden sm:inline">Benchmark</span>
               </Link>
               <Link
-                href="/leaderboard/current"
-                className="flex items-center gap-1.5 text-sm font-medium text-emerald-600 hover:text-emerald-800"
-              >
-                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
-                  <polyline points="17 6 23 6 23 12" />
-                </svg>
-                <span className="hidden sm:inline">Current Era</span>
-              </Link>
-              <Link
                 href="/leaderboard/current/insights"
                 className="flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"
               >

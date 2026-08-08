@@ -5,6 +5,7 @@ import { Search, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { trackEvent, normalizeQuery } from '@/lib/analytics';
+import { buildMemberHref, DEFAULT_BENCHMARK_SCOPE, type BenchmarkScope } from '@/lib/benchmark-scope';
 
 interface SearchResult {
   id: number;
@@ -15,11 +16,13 @@ interface SearchResult {
 interface MemberSearchProps {
   placeholder?: string;
   className?: string;
+  scope?: BenchmarkScope;
 }
 
 export function MemberSearch({
   placeholder = 'Search publishers...',
   className,
+  scope = DEFAULT_BENCHMARK_SCOPE,
 }: MemberSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -77,7 +80,7 @@ export function MemberSearch({
   const handleSelect = (member: SearchResult) => {
     setIsOpen(false);
     setQuery('');
-    router.push(`/member/${member.id}`);
+    router.push(buildMemberHref(member.id, scope));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
