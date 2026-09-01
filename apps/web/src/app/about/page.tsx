@@ -171,7 +171,7 @@ export default function AboutPage() {
 
         {/* Evolving methodology */}
         <section id="future-directions" className="mt-12 scroll-mt-24">
-          <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 shadow-sm sm:p-8">
+          <div className="rounded-xl border border-brand-rule bg-brand-mist p-6 shadow-sm sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-wider text-indigo-700">Evolving methodology</p>
             <h2 className="mt-2 text-2xl font-semibold text-gray-900">Future directions for research-object benchmarks</h2>
             <p className="mt-4 leading-7 text-gray-700">

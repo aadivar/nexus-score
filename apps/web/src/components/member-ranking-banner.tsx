@@ -163,7 +163,7 @@ export function MemberRankingBanner({
 
   return (
     <section className="mt-6 overflow-hidden rounded-xl border bg-white shadow-sm">
-      <div className="border-b bg-gradient-to-r from-gray-50 to-blue-50 px-4 py-4 sm:px-6">
+      <div className="border-b bg-brand-mist px-4 py-4 sm:px-6">
         <h2 className="font-semibold text-gray-900">Benchmark comparison</h2>
         <p className="mt-0.5 text-xs text-gray-500">
           {contentTypeLabel

@@ -77,7 +77,7 @@ function DimensionColumn({
                 </div>
                 <div className="mt-1.5 h-2.5 w-full rounded-full bg-gray-100">
                   <div
-                    className={cn('h-2.5 rounded-full transition-all', dimensionColors[key])}
+                    className={cn('h-2.5 rounded-full transition-colors', dimensionColors[key])}
                     style={{ width: `${dimension.percentage}%` }}
                   />
                 </div>

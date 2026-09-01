@@ -1,0 +1,10 @@
+{
+  "scannedAt": "2026-09-01",
+  "framework": "Next.js 16 App Router with Tailwind CSS 4",
+  "fontStack": "Inter via next/font/google with system sans fallbacks",
+  "palette": "Tailwind utility colours plus root background/foreground variables",
+  "motion": "motion-cut; no animation library installed",
+  "spacing": "Tailwind default 4px scale",
+  "brandReference": "docs/indigo-mono-remix-colour-brand-guidelines.pptx",
+  "visualReference": "https://www.annexis.org/"
+}

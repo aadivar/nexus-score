@@ -54,12 +54,12 @@ function RadarProfile({
         <div className="mt-2 h-56 sm:h-64">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data} cx="50%" cy="50%" outerRadius="68%">
-              <PolarGrid stroke="#e5e7eb" />
-              <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 10, fill: '#6b7280' }} />
+              <PolarGrid stroke="var(--color-rule)" />
+              <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 10, fill: 'var(--color-neutral)' }} />
               <PolarRadiusAxis
                 angle={90}
                 domain={[0, 100]}
-                tick={{ fontSize: 8, fill: '#9ca3af' }}
+                tick={{ fontSize: 8, fill: 'var(--color-muted)' }}
                 tickCount={5}
               />
               <Radar
@@ -95,13 +95,13 @@ export function DimensionRadar({ historical, current, scopeLabel }: DimensionRad
           title="Backfile"
           subtitle="Older records"
           dimensions={historical}
-          color="#6b7280"
+          color="var(--color-neutral)"
         />
         <RadarProfile
           title="Current"
           subtitle={`${currentYear - 2}–${currentYear}`}
           dimensions={current}
-          color="#3b82f6"
+          color="var(--color-signal)"
         />
       </div>
     </div>

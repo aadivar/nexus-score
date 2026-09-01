@@ -8,7 +8,7 @@ const dimensionTable = [
   {
     name: 'Provenance',
     points: 25,
-    badgeClass: 'bg-blue-100 text-blue-700',
+    badgeClass: 'border border-brand-rule bg-brand-paper text-brand-ink',
     measures: 'References (15), Update Policies (5), Similarity Check (5)',
     aiNeeds: 'Trust and traceability of the claim',
     plainEnglish:
@@ -17,7 +17,7 @@ const dimensionTable = [
   {
     name: 'People',
     points: 20,
-    badgeClass: 'bg-green-100 text-green-700',
+    badgeClass: 'border border-brand-rule bg-brand-paper text-brand-ink',
     measures: 'ORCID iD Coverage (20)',
     aiNeeds: 'Unambiguous author attribution',
     plainEnglish:
@@ -26,7 +26,7 @@ const dimensionTable = [
   {
     name: 'Organizations',
     points: 15,
-    badgeClass: 'bg-purple-100 text-purple-700',
+    badgeClass: 'border border-brand-rule bg-brand-paper text-brand-ink',
     measures: 'Affiliations (5), ROR IDs (10)',
     aiNeeds: 'Machine-readable institutional links',
     plainEnglish:
@@ -35,7 +35,7 @@ const dimensionTable = [
   {
     name: 'Funding',
     points: 20,
-    badgeClass: 'bg-yellow-100 text-yellow-700',
+    badgeClass: 'border border-brand-rule bg-brand-paper text-brand-ink',
     measures: 'Funder Registry IDs (10), Award Numbers (10)',
     aiNeeds: 'Investment traceability for funders',
     plainEnglish:
@@ -44,7 +44,7 @@ const dimensionTable = [
   {
     name: 'Access',
     points: 20,
-    badgeClass: 'bg-red-100 text-red-700',
+    badgeClass: 'border border-brand-rule bg-brand-paper text-brand-ink',
     measures: 'Licenses (7), Full-text Links (7), Abstracts (6)',
     aiNeeds: 'Whether AI can legally read and ingest the work',
     plainEnglish:
@@ -56,55 +56,48 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <PilotBanner />
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-blue-700 py-24 text-white sm:py-28">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.16),transparent_38%),radial-gradient(circle_at_bottom_right,rgba(15,23,42,0.25),transparent_42%)]" />
-        <div className="absolute -left-24 top-20 h-72 w-72 rounded-full border border-white/10" />
-        <div className="absolute -right-20 -top-24 h-96 w-96 rounded-full border border-white/10" />
-        <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-blue-200">An actionable intelligence layer to enhance trust and reuse of a research record</p>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-            Measure your{' '}
-            <span className="relative whitespace-nowrap underline decoration-2 underline-offset-4">
-              metadata
-            </span>{' '}
-            completeness
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-blue-100">
-            Nexus-Index is a diagnostic benchmark of the metadata publishers
-            deposit into{' '}
-            <a
-              href="https://www.crossref.org/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-medium text-white underline decoration-blue-300 underline-offset-2 hover:decoration-white"
-            >
-              Crossref
-            </a>{' '}
-            . It shows what is visible, what is missing, and what can be improved across
-            five dimensions.
-          </p>
-          <div className="mt-10">
-            <MemberSearch
-              placeholder="Search for a publisher (e.g., Elsevier, Nature)..."
-              className="mx-auto max-w-xl"
-            />
-            <p className="mt-3 text-sm text-blue-100">
-              Opens Journal Articles - Current ({new Date().getFullYear() - 2}-{new Date().getFullYear()}). The profile keeps Overall and Backfile visible for comparison and labels other record schemas as Not benchmarked.
+      {/* Hallmark · Focused Search hero: compact introduction · search-led · no enrichment */}
+      <section className="relative overflow-hidden border-b border-brand-rule bg-brand-paper pb-16 pt-12 sm:pb-24 sm:pt-16">
+        <div aria-hidden="true" className="hero-ring hero-ring--outer pointer-events-none absolute -right-28 top-10 hidden h-96 w-96 rounded-full border-2 sm:block" />
+        <div aria-hidden="true" className="hero-ring hero-ring--inner pointer-events-none absolute -right-4 top-32 hidden h-64 w-64 rounded-full border-2 sm:block" />
+        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="min-w-0">
+            <h1 className="hero-title max-w-3xl text-brand-ink">
+              Measure your <span className="text-brand-signal">metadata</span> completeness
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-brand-ink">
+              Nexus-Index is a diagnostic benchmark of the metadata publishers
+              deposit into{' '}
+              <a
+                href="https://www.crossref.org/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="brand-link rounded font-semibold underline"
+              >
+                Crossref
+              </a>
+              . It shows what is visible, what is missing, and what can be improved across
+              five dimensions.
             </p>
+            <div className="mt-8 max-w-2xl">
+              <MemberSearch placeholder="Search for a publisher (e.g., Elsevier, Nature)…" />
+              <p className="mt-3 max-w-xl text-sm leading-6 text-brand-muted">
+                Opens Journal Articles — Current ({new Date().getFullYear() - 2}–{new Date().getFullYear()}). Overall and Backfile remain visible for comparison.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
-      <div className="bg-white px-4 py-6 sm:px-6 lg:px-8">
+      <div className="bg-brand-paper px-4 py-6 sm:px-6 lg:px-8">
         <DataEnvironmentNotice className="mx-auto max-w-6xl" />
       </div>
 
       {/* Dimensions Table */}
       <section className="bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">The framework</p>
+          <div className="max-w-3xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-muted">The framework</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">
               Dimensions (100 points total)
             </h2>
@@ -201,8 +194,7 @@ export default function HomePage() {
       {/* Beyond a Single Metadata Source */}
       <section className="border-y border-slate-200 bg-slate-50 py-20 sm:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="border-l-4 border-blue-600 pl-6 sm:pl-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">The wider ecosystem</p>
+          <div>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">
               Beyond a Single Metadata Source
             </h2>
@@ -264,7 +256,6 @@ export default function HomePage() {
       {/* What Nexus-Index is — and what it is not */}
       <section className="bg-white py-20 sm:py-24">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">The boundaries</p>
           <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight text-gray-900">
             What Nexus-Index Is — and Is Not
           </h2>
@@ -350,7 +341,6 @@ export default function HomePage() {
       {/* Media Mentions */}
       <section className="border-y border-slate-200 bg-slate-50 py-20 sm:py-24">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Community and dialogue</p>
           <h2 className="mt-3 text-center text-3xl font-semibold tracking-tight text-gray-900">
             In the Conversation
           </h2>
@@ -398,7 +388,7 @@ export default function HomePage() {
                 href={mention.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+                className="group min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-5 whitespace-normal shadow-sm transition-colors hover:border-brand-signal"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-wide text-blue-600">
@@ -406,7 +396,7 @@ export default function HomePage() {
                   </span>
                   <span className="text-xs text-gray-400">{mention.outlet}</span>
                 </div>
-                <p className="mt-3 text-sm font-medium text-gray-900 group-hover:text-blue-700">
+                <p className="mt-3 break-words text-sm font-medium leading-6 text-gray-900 group-hover:text-blue-700">
                   {mention.title}
                 </p>
               </a>
@@ -418,7 +408,6 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="bg-blue-50 py-20 sm:py-24">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Open infrastructure</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-900">
             Aligned with the Open Research Information Movement
           </h2>

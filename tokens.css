@@ -1,0 +1,94 @@
+/* Hallmark · macrostructure: Focused Search / Workbench / Long Document · pre-emit critique: P5 H5 E5 S5 R5 V4 · genre: modern-minimal · design-system: design.md · theme: studied-DNA (source: brand guide + annexis.org) · nav: N1b · footer: Ft2 · contrast: pass (40–41) · slop: pass (42–45) · honest: pass (46) · chrome: pass (47) · tokens: pass (48) · responsive: pass (49) · icons: pass (30) · mobile: pass (34, 49, 50–57) · designed-as-app */
+
+:root {
+  /* Indigo Mono Remix — exact source colours expressed in OKLCH. */
+  --color-paper: oklch(100% 0 0); /* #FFFFFF */
+  --color-paper-2: oklch(98.415% 0.00341 247.86); /* #F8FAFC */
+  --color-paper-3: oklch(96.826% 0.00685 247.9); /* #F1F5F9 */
+  --color-rule: oklch(92.876% 0.01262 255.51); /* #E2E8F0 */
+  --color-rule-2: oklch(86.898% 0.01985 252.89); /* #CBD5E1 */
+  --color-muted: oklch(55.439% 0.04072 257.42); /* #64748B */
+  --color-neutral: oklch(44.553% 0.03745 257.28); /* #475569 */
+  --color-ink-2: oklch(37.17% 0.03916 257.29); /* #334155 */
+  --color-primary: oklch(20.768% 0.03982 265.75); /* #0F172A */
+  --color-ink: oklch(13.627% 0.03641 259.2); /* #020817 */
+  --color-signal: oklch(64.299% 0.19056 147.1); /* #00AA3E */
+  --color-accent: var(--color-signal);
+  --color-accent-ink: var(--color-ink);
+  --color-focus: var(--color-signal);
+
+  --color-graphite: oklch(15.907% 0 0); /* #0D0D0D */
+  --color-graphite-card: oklch(19.125% 0 0); /* #141414 */
+  --color-graphite-raised: oklch(31.317% 0 0); /* #313131 */
+  --color-graphite-border: oklch(27.95% 0.03685 260.03); /* #1E293B */
+  --color-graphite-type: oklch(98.415% 0.00341 247.86); /* #F8FAFC */
+  --color-graphite-muted: oklch(71.067% 0.03511 256.79); /* #94A3B8 */
+
+  --font-display: ui-sans-serif, system-ui, sans-serif;
+  --font-body: ui-sans-serif, system-ui, sans-serif;
+  --font-outlier: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-display-s: clamp(2.25rem, 4vw, 3rem);
+  --text-display: clamp(2.5rem, 4.5vw, 3.6rem);
+
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4.5rem;
+  --space-3xl: 7rem;
+  --space-4xl: 10rem;
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+
+  --rule-hair: 1px;
+  --rule-fine: 2px;
+  --radius-card: 0.5rem;
+  --radius-pill: 999px;
+  --radius-input: 0.5rem;
+  --shadow-card: 0 1px 2px oklch(13.627% 0.03641 259.2 / 0.06);
+
+  --page-max: 80rem;
+  --page-gutter: clamp(1rem, 4vw, 2rem);
+
+  --z-base: 1;
+  --z-raised: 10;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-paper: var(--color-graphite);
+    --color-paper-2: var(--color-graphite-card);
+    --color-paper-3: var(--color-graphite-raised);
+    --color-rule: var(--color-graphite-border);
+    --color-rule-2: var(--color-graphite-muted);
+    --color-muted: var(--color-graphite-muted);
+    --color-neutral: oklch(82% 0.02 256.79);
+    --color-ink-2: oklch(90% 0.01 247.86);
+    --color-primary: var(--color-graphite-type);
+    --color-ink: var(--color-graphite-type);
+    --color-accent-ink: var(--color-graphite);
+    --shadow-card: none;
+  }
+}

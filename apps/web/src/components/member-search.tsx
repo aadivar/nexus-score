@@ -93,7 +93,7 @@ export function MemberSearch({
   return (
     <div ref={containerRef} className={cn('relative', className)}>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+        <Search aria-hidden="true" className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-muted" />
         <input
           ref={inputRef}
           type="text"
@@ -105,26 +105,32 @@ export function MemberSearch({
           onFocus={() => setIsOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
-          className="w-full rounded-lg border border-gray-200 bg-white py-3 pl-10 pr-4 text-gray-900 placeholder-gray-400 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          role="combobox"
+          aria-expanded={isOpen}
+          aria-autocomplete="list"
+          aria-controls="publisher-search-results"
+          className="h-14 w-full rounded-lg border border-brand-rule-2 bg-brand-paper py-3 pl-12 pr-12 text-brand-ink placeholder:text-brand-muted hover:bg-brand-mist focus:border-brand-ink focus:outline-brand-signal"
         />
         {isLoading && (
-          <Loader2 className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-gray-400" />
+          <Loader2 aria-hidden="true" className="absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 animate-spin text-brand-signal" />
         )}
       </div>
 
       {isOpen && (results.length > 0 || query.length >= 2) && (
-        <div className="absolute z-50 mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-lg">
+        <div id="publisher-search-results" className="absolute z-50 mt-2 w-full rounded-lg border border-brand-rule bg-brand-paper shadow-lg">
           {results.length > 0 ? (
-            <ul className="max-h-80 overflow-auto py-2">
+            <ul className="max-h-80 overflow-auto py-2" role="listbox">
               {results.map((member) => (
                 <li key={member.id}>
                   <button
                     onClick={() => handleSelect(member)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
+                    role="option"
+                    aria-selected="false"
+                    className="flex min-h-14 w-full items-center justify-between px-4 py-3 text-left hover:bg-brand-mist focus-visible:bg-brand-mist"
                   >
                     <div>
-                      <p className="font-medium text-gray-900">{member.name}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="whitespace-normal font-medium text-brand-ink">{member.name}</p>
+                      <p className="whitespace-normal text-sm text-brand-muted">
                         ID: {member.id} &middot;{' '}
                         {member.totalWorks.toLocaleString()} works
                       </p>
@@ -134,7 +140,7 @@ export function MemberSearch({
               ))}
             </ul>
           ) : query.length >= 2 && !isLoading ? (
-            <p className="px-4 py-3 text-sm text-gray-500">No publishers found</p>
+            <p className="px-4 py-3 text-sm text-brand-muted">No publishers found</p>
           ) : null}
         </div>
       )}

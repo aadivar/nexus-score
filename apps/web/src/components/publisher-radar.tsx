@@ -63,14 +63,14 @@ export function PublisherRadar({ id, name, score, dimensions, scope, onClose }: 
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart data={data} cx="50%" cy="50%" outerRadius="75%">
-              <PolarGrid stroke="#e5e7eb" />
-              <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: '#6b7280' }} />
-              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: '#9ca3af' }} tickCount={5} />
+              <PolarGrid stroke="var(--color-rule)" />
+              <PolarAngleAxis dataKey="dimension" tick={{ fontSize: 11, fill: 'var(--color-neutral)' }} />
+              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 9, fill: 'var(--color-muted)' }} tickCount={5} />
               <Radar
                 name={name}
                 dataKey="value"
-                stroke="#3b82f6"
-                fill="#3b82f6"
+                stroke="var(--color-signal)"
+                fill="var(--color-signal)"
                 fillOpacity={0.15}
                 strokeWidth={2}
               />
@@ -90,7 +90,7 @@ export function PublisherRadar({ id, name, score, dimensions, scope, onClose }: 
                 <div className="h-2 rounded-full bg-gray-100">
                   <div
                     className={cn(
-                      'h-2 rounded-full transition-all',
+                      'h-2 rounded-full transition-colors',
                       value >= 80 ? 'bg-green-500' : value >= 50 ? 'bg-yellow-500' : value >= 20 ? 'bg-orange-500' : 'bg-red-500'
                     )}
                     style={{ width: `${value}%` }}
