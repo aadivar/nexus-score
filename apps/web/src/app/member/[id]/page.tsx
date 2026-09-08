@@ -122,25 +122,32 @@ const client = new CrossrefClient({
   mailto: process.env.CROSSREF_MAILTO || 'varma2friend@gmail.com',
 });
 
+// These snapshots are immutable within a deployment. Reuse the parsed data
+// across rankings and requests instead of parsing ~46 MB for every page view.
+let leaderboardCache: LeaderboardData | null | undefined;
+let currentLeaderboardCache: CurrentLeaderboardData | null | undefined;
+
 function getLeaderboardData(): LeaderboardData | null {
+  if (leaderboardCache !== undefined) return leaderboardCache;
   const dataPath = join(process.cwd(), 'data', 'leaderboard.json');
-  if (!existsSync(dataPath)) return null;
+  if (!existsSync(dataPath)) return (leaderboardCache = null);
   try {
     const content = readFileSync(dataPath, 'utf-8');
-    return JSON.parse(content) as LeaderboardData;
+    return (leaderboardCache = JSON.parse(content) as LeaderboardData);
   } catch {
-    return null;
+    return (leaderboardCache = null);
   }
 }
 
 function getCurrentLeaderboardData(): CurrentLeaderboardData | null {
+  if (currentLeaderboardCache !== undefined) return currentLeaderboardCache;
   const dataPath = join(process.cwd(), 'data', 'current-leaderboard.json');
-  if (!existsSync(dataPath)) return null;
+  if (!existsSync(dataPath)) return (currentLeaderboardCache = null);
   try {
     const content = readFileSync(dataPath, 'utf-8');
-    return JSON.parse(content) as CurrentLeaderboardData;
+    return (currentLeaderboardCache = JSON.parse(content) as CurrentLeaderboardData);
   } catch {
-    return null;
+    return (currentLeaderboardCache = null);
   }
 }
 

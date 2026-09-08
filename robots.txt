@@ -6,9 +6,9 @@
 # Machine-readable policy:
 #   https://github.com/aadivar/nexus-score/blob/main/ai.txt
 
-# General crawlers (search engines etc.) — allowed
+# All crawlers, including search engines, are disallowed.
 User-agent: *
-Allow: /
+Disallow: /
 
 # AI crawlers and training agents — disallowed
 # Nexus Score derivative data is CC BY-NC 4.0. Commercial use — including
