@@ -1,6 +1,7 @@
 import { MemberSearch } from '@/components/member-search';
 import { PilotBanner } from '@/components/pilot-banner';
 import { DataEnvironmentNotice } from '@/components/data-environment-notice';
+import { NewHomeBadge } from '@/components/new-home-badge';
 import Link from 'next/link';
 
 // The five index dimensions (weights defined in @nexus-score/core scoring/weights.ts)
@@ -60,8 +61,8 @@ export default function HomePage() {
       <section className="relative overflow-hidden border-b border-brand-rule bg-brand-paper pb-16 pt-12 sm:pb-24 sm:pt-16">
         <div aria-hidden="true" className="hero-ring hero-ring--outer pointer-events-none absolute -right-28 top-10 hidden h-96 w-96 rounded-full border-2 sm:block" />
         <div aria-hidden="true" className="hero-ring hero-ring--inner pointer-events-none absolute -right-4 top-32 hidden h-64 w-64 rounded-full border-2 sm:block" />
-        <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="min-w-0">
+        <div className="relative z-10 mx-auto grid max-w-6xl gap-8 px-4 sm:px-6 lg:grid-cols-[minmax(0,1fr)_12.5rem] lg:items-center lg:gap-12 lg:px-8">
+          <div className="min-w-0 lg:col-start-1 lg:row-start-1">
             <h1 className="hero-title max-w-3xl text-brand-ink">
               Measure your <span className="text-brand-signal">metadata</span> completeness
             </h1>
@@ -85,6 +86,9 @@ export default function HomePage() {
                 Opens Journal Articles — Current ({new Date().getFullYear() - 2}–{new Date().getFullYear()}). Overall and Backfile remain visible for comparison.
               </p>
             </div>
+          </div>
+          <div className="row-start-1 justify-self-start lg:col-start-2 lg:justify-self-end">
+            <NewHomeBadge />
           </div>
         </div>
       </section>
